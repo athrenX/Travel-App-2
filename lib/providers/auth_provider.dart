@@ -48,4 +48,21 @@ class AuthProvider with ChangeNotifier {
     _user = null;
     notifyListeners();
   }
+
+    Future<User?> getCurrentUser() async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      // Sementara ambil dari _user yang sudah diset saat login/register
+      // Kalau kamu mau ambil dari penyimpanan lokal atau API, bisa diubah nanti
+      return _user;
+    } catch (e) {
+      throw e;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
 }
