@@ -11,7 +11,7 @@ class PemilihanKendaraanScreen extends StatefulWidget {
   final Destinasi destinasi;
 
   const PemilihanKendaraanScreen({Key? key, required this.destinasi})
-    : super(key: key);
+      : super(key: key);
 
   @override
   State<PemilihanKendaraanScreen> createState() =>
@@ -23,11 +23,13 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
   String selectedFilter = 'Semua';
   bool isLoading = false;
 
-  // Warna tema biru-putih
-  static const Color primaryBlue = Color(0xFF1A5CAB);
-  static const Color secondaryBlue = Color(0xFF2D82D7);
-  static const Color lightBlue = Color(0xFFE8F3FF);
+  // Enhanced color scheme
+  static const Color primaryBlue = Color(0xFF1A73E8);
+  static const Color darkBlue = Color(0xFF0D47A1);
+  static const Color lightBlue = Color(0xFFE8F0FE);
+  static const Color accentColor = Color(0xFF34A853);
   static const Color whiteColor = Colors.white;
+  static const Color cardShadowColor = Color(0x1A000000);
 
   @override
   void initState() {
@@ -49,7 +51,11 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Gagal memuat data kendaraan: ${error.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: Colors.red[700],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         );
       }
@@ -62,7 +68,6 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
     }
   }
 
-  // Filter kendaraan berdasarkan kategori
   List<Kendaraan> _filterKendaraan(List<Kendaraan> list) {
     if (selectedFilter == 'Semua') return list;
 
@@ -77,151 +82,163 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
         .toList();
   }
 
-  // Menampilkan dialog dengan gambar kendaraan
   void _showVehicleImageDialog(Kendaraan kendaraan) {
-    showDialog(
-      context: context,
-      builder:
-          (ctx) => Dialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+  showDialog(
+    context: context,
+    builder: (ctx) => Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Gambar kendaraan
+          Container(
+            height: 200,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              color: lightBlue,
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(16),
+            child: kendaraan.gambar.isNotEmpty
+                ? Image.network(
+                    kendaraan.gambar,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Icon(
+                      Icons.directions_bus,
+                      size: 60,
+                      color: primaryBlue,
+                    ),
+                  )
+                : Icon(
+                    Icons.directions_bus,
+                    size: 60,
+                    color: primaryBlue,
                   ),
-                  child:
-                      kendaraan.gambar.isNotEmpty
-                          ? Image.asset(
-                            kendaraan.gambar,
-                            height: 200,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                          )
-                          : Container(
-                            height: 200,
-                            width: double.infinity,
-                            color: Colors.grey.shade300,
-                            child: const Icon(
-                              Icons.directions_bus,
-                              size: 80,
-                              color: Colors.grey,
-                            ),
-                          ),
+          ),
+          
+          // Detail kendaraan
+          Padding(
+            padding: EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Text(
+                  kendaraan.jenis,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        kendaraan.jenis,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.category,
-                            size: 16,
-                            color: Colors.grey,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Tipe: ${kendaraan.tipe}',
-                            style: const TextStyle(color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.people,
-                            size: 16,
-                            color: Colors.grey,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Kapasitas: ${kendaraan.kapasitas} orang',
-                            style: const TextStyle(color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.attach_money,
-                            size: 16,
-                            color: primaryBlue,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Harga: ${formatRupiah(kendaraan.harga)}',
-                            style: const TextStyle(
-                              color: primaryBlue,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                            setState(() {
-                              selectedKendaraan = kendaraan;
-                            });
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: primaryBlue,
-                            foregroundColor: whiteColor,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: const Text('Pilih Kendaraan Ini'),
-                        ),
-                      ),
-                    ],
+                SizedBox(height: 12),
+                _buildDetailRow(Icons.category, 'Tipe: ${kendaraan.tipe}'),
+                _buildDetailRow(Icons.people, 'Kapasitas: ${kendaraan.kapasitas} orang'),
+                _buildDetailRow(Icons.speed, 'Fasilitas: ${kendaraan.fasilitas}'),
+                SizedBox(height: 16),
+                Text(
+                  formatRupiah(kendaraan.harga),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: primaryBlue,
+                  ),
+                ),
+                SizedBox(height: 16),
+                Material(
+                  elevation: 2,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      setState(() {
+                        selectedKendaraan = kendaraan;
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryBlue,
+                      foregroundColor: whiteColor,
+                      minimumSize: Size(double.infinity, 50),
+                    ),
+                    child: Text('Pilih Kendaraan Ini'),
                   ),
                 ),
               ],
             ),
           ),
+        ],
+      ),
+    ),
+  );
+}
+
+  Widget _buildDetailRow(IconData icon, String text) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: Colors.grey[600]),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 15,
+              color: Colors.grey[800],
+              height: 1.4,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: whiteColor,
+      backgroundColor: lightBlue,
       appBar: AppBar(
         title: const Text(
           'Pilih Kendaraan',
-          style: TextStyle(color: whiteColor),
+          style: TextStyle(
+            color: whiteColor,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
         ),
         backgroundColor: primaryBlue,
         elevation: 0,
         iconTheme: const IconThemeData(color: whiteColor),
+        centerTitle: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(20),
+          ),
+        ),
       ),
       body: RefreshIndicator(
         onRefresh: _loadKendaraan,
         color: primaryBlue,
+        backgroundColor: whiteColor,
+        displacement: 40,
+        strokeWidth: 3,
         child: Consumer<KendaraanProvider>(
           builder: (ctx, kendaraanProvider, _) {
             if (isLoading || kendaraanProvider.isLoading) {
-              return const Center(
-                child: CircularProgressIndicator(color: primaryBlue),
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircularProgressIndicator(
+                      color: primaryBlue,
+                      strokeWidth: 3,
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Memuat kendaraan...',
+                      style: TextStyle(
+                        color: Colors.grey[700],
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
               );
             }
 
@@ -232,24 +249,46 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
-                      Icons.directions_car,
-                      size: 80,
-                      color: Colors.grey,
+                    Image.asset(
+                      'assets/images/no_vehicle.png',
+                      height: 150,
+                      color: primaryBlue.withOpacity(0.5),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
                     const Text(
-                      'Tidak ada kendaraan tersedia.',
-                      style: TextStyle(fontSize: 18),
+                      'Tidak ada kendaraan tersedia',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: darkBlue,
+                      ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 40),
+                      child: Text(
+                        'Silakan coba lagi atau periksa koneksi internet Anda',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
                     ElevatedButton(
                       onPressed: _loadKendaraan,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: primaryBlue,
                         foregroundColor: whiteColor,
-                      ),
-                      child: const Text('Coba lagi'),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12),
+                        ),
+                      child: const Text('MUAT ULANG'),
                     ),
                   ],
                 ),
@@ -260,289 +299,322 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
 
             return Column(
               children: [
-                // Informasi Destinasi Card
-                Card(
-                  margin: const EdgeInsets.all(16),
-                  elevation: 3,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  color: whiteColor,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.location_on, color: primaryBlue),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                widget.destinasi.nama,
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
+                // Destination Card
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: whiteColor,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: cardShadowColor,
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
                         ),
-                        const Divider(height: 24),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.map,
-                                    color: Colors.grey.shade700,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Expanded(
-                                    child: Text(
-                                      widget.destinasi.lokasi,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey.shade700,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
+                      ],
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: primaryBlue.withOpacity(0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.location_on,
+                                  color: primaryBlue,
+                                  size: 24,
+                                ),
                               ),
-                            ),
-                            Row(
-                              children: [
-                                Text(
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  widget.destinasi.nama,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: darkBlue,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Divider(
+                            height: 1,
+                            color: Colors.grey[300],
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.place,
+                                          size: 18,
+                                          color: Colors.grey[600]),
+                                        const SizedBox(width: 6),
+                                        Expanded(
+                                          child: Text(
+                                            widget.destinasi.lokasi,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey[700],
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.calendar_today,
+                                          size: 18,
+                                          color: Colors.grey[600]),
+                                        const SizedBox(width: 6),
+                                        const Text(
+                                          'Buka setiap hari',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: accentColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
                                   formatRupiah(widget.destinasi.harga),
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
-                                    color: primaryBlue,
+                                    color: accentColor,
                                   ),
                                 ),
-                              ],
-                            ),
-                          ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Filter Section
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: whiteColor,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: cardShadowColor,
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'FILTER KENDARAAN',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              _buildFilterChip('Semua'),
+                              const SizedBox(width: 8),
+                              _buildFilterChip('Kecil'),
+                              const SizedBox(width: 8),
+                              _buildFilterChip('Besar'),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
                 ),
 
-                // Filter Kendaraan
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  color: lightBlue,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Filter Kendaraan:',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: primaryBlue,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            FilterChip(
-                              label: const Text('Semua'),
-                              selected: selectedFilter == 'Semua',
-                              onSelected: (val) {
-                                setState(() {
-                                  selectedFilter = 'Semua';
-                                });
-                              },
-                              backgroundColor: whiteColor,
-                              selectedColor: primaryBlue.withOpacity(0.2),
-                              checkmarkColor: primaryBlue,
-                              labelStyle: TextStyle(
-                                color:
-                                    selectedFilter == 'Semua'
-                                        ? primaryBlue
-                                        : Colors.black,
-                                fontWeight:
-                                    selectedFilter == 'Semua'
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            FilterChip(
-                              label: const Text('Kecil'),
-                              selected: selectedFilter == 'Kecil',
-                              onSelected: (val) {
-                                setState(() {
-                                  selectedFilter = 'Kecil';
-                                });
-                              },
-                              backgroundColor: whiteColor,
-                              selectedColor: primaryBlue.withOpacity(0.2),
-                              checkmarkColor: primaryBlue,
-                              labelStyle: TextStyle(
-                                color:
-                                    selectedFilter == 'Kecil'
-                                        ? primaryBlue
-                                        : Colors.black,
-                                fontWeight:
-                                    selectedFilter == 'Kecil'
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            FilterChip(
-                              label: const Text('Besar'),
-                              selected: selectedFilter == 'Besar',
-                              onSelected: (val) {
-                                setState(() {
-                                  selectedFilter = 'Besar';
-                                });
-                              },
-                              backgroundColor: whiteColor,
-                              selectedColor: primaryBlue.withOpacity(0.2),
-                              checkmarkColor: primaryBlue,
-                              labelStyle: TextStyle(
-                                color:
-                                    selectedFilter == 'Besar'
-                                        ? primaryBlue
-                                        : Colors.black,
-                                fontWeight:
-                                    selectedFilter == 'Besar'
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Jumlah kendaraan yang ditemukan
+                // Results Count
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
                   child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
                         '${filteredList.length} kendaraan ditemukan',
                         style: TextStyle(
-                          color: Colors.grey.shade700,
+                          color: Colors.grey[700],
                           fontWeight: FontWeight.w500,
+                          fontSize: 14,
                         ),
                       ),
+                      if (selectedKendaraan != null)
+                        Text(
+                          '1 dipilih',
+                          style: TextStyle(
+                            color: primaryBlue,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
                     ],
                   ),
                 ),
 
-                // Daftar Kendaraan
+                // Vehicle List
                 Expanded(
-                  child:
-                      filteredList.isEmpty
-                          ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.filter_alt_off,
-                                  size: 60,
-                                  color: Colors.grey,
+                  child: filteredList.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.filter_alt_off,
+                                size: 60,
+                                color: Colors.grey[400],
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Tidak ada kendaraan\ndengan filter "$selectedFilter"',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey[600],
                                 ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'Tidak ada kendaraan dengan filter "$selectedFilter".',
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(fontSize: 16),
-                                ),
-                              ],
-                            ),
-                          )
-                          : ListView.builder(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            itemCount: filteredList.length,
-                            itemBuilder: (ctx, index) {
-                              final kendaraan = filteredList[index];
-                              return KendaraanCardCustom(
-                                kendaraan: kendaraan,
-                                isSelected:
-                                    selectedKendaraan?.id == kendaraan.id,
-                                onTap: () {
+                              ),
+                              const SizedBox(height: 8),
+                              TextButton(
+                                onPressed: () {
                                   setState(() {
-                                    selectedKendaraan = kendaraan;
+                                    selectedFilter = 'Semua';
                                   });
                                 },
-                                onImageTap: () {
-                                  _showVehicleImageDialog(kendaraan);
-                                },
-                              );
-                            },
+                                child: const Text(
+                                  'Reset Filter',
+                                  style: TextStyle(
+                                    color: primaryBlue,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                          itemCount: filteredList.length,
+                          itemBuilder: (ctx, index) {
+                            final kendaraan = filteredList[index];
+                            return KendaraanCardCustom(
+                              kendaraan: kendaraan,
+                              isSelected: selectedKendaraan?.id == kendaraan.id,
+                              onTap: () {
+                                setState(() {
+                                  selectedKendaraan = kendaraan;
+                                });
+                              },
+                              onImageTap: () {
+                                _showVehicleImageDialog(kendaraan);
+                              },
+                            );
+                          },
+                        ),
                 ),
 
-                // Tombol lanjut
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: whiteColor,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, -5),
-                      ),
-                    ],
-                  ),
-                  child: SafeArea(
-                    child: ElevatedButton.icon(
-                      icon: const Icon(Icons.arrow_forward),
-                      label: const Text('Lanjut ke Pemesanan'),
-                      onPressed:
-                          selectedKendaraan == null
-                              ? null
-                              : () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder:
-                                        (ctx) => PemesananScreen(
-                                          destinasi: widget.destinasi,
-                                          kendaraan: selectedKendaraan!,
-                                        ),
-                                  ),
-                                );
-                              },
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(50),
-                        backgroundColor: primaryBlue,
-                        foregroundColor: whiteColor,
-                        disabledBackgroundColor: Colors.grey.shade300,
-                        disabledForegroundColor: Colors.grey.shade500,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                // Continue Button
+                if (selectedKendaraan != null)
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: whiteColor,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, -5),
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ],
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(20),
+                      ),
+                    ),
+                    child: SafeArea(
+                      child: SizedBox(
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (ctx) => PemesananScreen(
+                                  destinasi: widget.destinasi,
+                                  kendaraan: selectedKendaraan!,
+                                ),
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primaryBlue,
+                            foregroundColor: whiteColor,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 2,
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'LANJUT KE PEMESANAN',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              Icon(Icons.arrow_forward, size: 20),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
               ],
             );
           },
@@ -551,7 +623,34 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
     );
   }
 
-  // Fungsi untuk memformat nilai harga ke format Rupiah
+  Widget _buildFilterChip(String label) {
+    final isSelected = selectedFilter == label;
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (val) {
+        setState(() {
+          selectedFilter = label;
+        });
+      },
+      labelStyle: TextStyle(
+        color: isSelected ? whiteColor : Colors.grey[700],
+        fontWeight: FontWeight.bold,
+      ),
+      selectedColor: primaryBlue,
+      backgroundColor: whiteColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: isSelected ? primaryBlue : Colors.grey[300]!,
+          width: 1,
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      visualDensity: VisualDensity.compact,
+    );
+  }
+
   String formatRupiah(dynamic price) {
     try {
       double numericPrice;
@@ -561,19 +660,16 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
       } else if (price is double) {
         numericPrice = price;
       } else if (price is String) {
-        // Bersihkan string dari format Rupiah yang mungkin sudah ada
-        String cleanPrice =
-            price
-                .replaceAll('Rp', '')
-                .replaceAll('.', '')
-                .replaceAll(',', '')
-                .trim();
+        String cleanPrice = price
+            .replaceAll('Rp', '')
+            .replaceAll('.', '')
+            .replaceAll(',', '')
+            .trim();
         numericPrice = double.tryParse(cleanPrice) ?? 0.0;
       } else {
         return 'Rp 0';
       }
 
-      // Gunakan NumberFormat untuk format Rupiah
       final formatter = NumberFormat.currency(
         locale: 'id_ID',
         symbol: 'Rp',
@@ -587,12 +683,17 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
   }
 }
 
-// Custom Kendaraan Card dengan gambar yang bisa di-tap
 class KendaraanCardCustom extends StatelessWidget {
   final Kendaraan kendaraan;
   final bool isSelected;
   final VoidCallback onTap;
   final VoidCallback onImageTap;
+
+  // Warna yang didefinisikan dalam class
+  static const Color primaryBlue = Color(0xFF1A73E8);
+  static const Color lightBlue = Color(0xFFE8F0FE);
+  static const Color accentColor = Color(0xFF34A853);
+  static const Color whiteColor = Colors.white;
 
   const KendaraanCardCustom({
     Key? key,
@@ -602,88 +703,70 @@ class KendaraanCardCustom extends StatelessWidget {
     required this.onImageTap,
   }) : super(key: key);
 
+  // Method untuk format rupiah
+  String formatRupiah(dynamic price) {
+    try {
+      double numericPrice = price is int ? price.toDouble() : price is double ? price : 0.0;
+      final formatter = NumberFormat.currency(
+        locale: 'id_ID',
+        symbol: 'Rp',
+        decimalDigits: 0,
+      );
+      return formatter.format(numericPrice);
+    } catch (e) {
+      return 'Rp 0';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: isSelected ? 4 : 1,
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side:
-            isSelected
-                ? const BorderSide(
-                  color: _PemilihanKendaraanScreenState.primaryBlue,
-                  width: 2,
-                )
-                : BorderSide.none,
       ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(16),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Gambar kendaraan (dapat di-tap)
+              // Gambar kendaraan
               GestureDetector(
                 onTap: onImageTap,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Stack(
-                    children: [
-                      kendaraan.gambar.isNotEmpty
-                          ? Image.network(
-                            kendaraan.gambar,
-                            width: 100,
-                            height: 80,
-                            fit: BoxFit.cover,
-                            errorBuilder:
-                                (context, error, stackTrace) => Container(
-                                  width: 100,
-                                  height: 80,
-                                  color: Colors.grey.shade200,
-                                  child: const Icon(
-                                    Icons.directions_bus,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                          )
-                          : Container(
-                            width: 100,
-                            height: 80,
-                            color: Colors.grey.shade200,
-                            child: const Icon(
-                              Icons.directions_bus,
-                              color: Colors.grey,
-                            ),
-                          ),
-                      Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: _PemilihanKendaraanScreenState.primaryBlue
-                                .withOpacity(0.7),
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(8),
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.zoom_in,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                        ),
-                      ),
-                    ],
+                child: Container(
+                  width: 100,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: lightBlue,
                   ),
+                  child: kendaraan.gambar.isNotEmpty
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            kendaraan.gambar,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Icon(
+                              Icons.directions_bus,
+                              size: 40,
+                              color: primaryBlue,
+                            ),
+                          ),
+                        )
+                      : Icon(
+                          Icons.directions_bus,
+                          size: 40,
+                          color: primaryBlue,
+                        ),
                 ),
               ),
-              const SizedBox(width: 12),
-
-              // Informasi kendaraan
+              
+              const SizedBox(width: 16),
+              
+              // Detail kendaraan
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -694,91 +777,46 @@ class KendaraanCardCustom extends StatelessWidget {
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.category,
-                          size: 14,
-                          color: Colors.grey,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          kendaraan.tipe,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade700,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        const Icon(Icons.people, size: 14, color: Colors.grey),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${kendaraan.kapasitas} orang',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade700,
-                          ),
-                        ),
-                      ],
                     ),
                     const SizedBox(height: 8),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          _formatRupiah(kendaraan.harga),
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: _PemilihanKendaraanScreenState.primaryBlue,
-                          ),
-                        ),
-                        if (isSelected)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _PemilihanKendaraanScreenState.primaryBlue,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Row(
-                              children: [
-                                Icon(
-                                  Icons.check,
-                                  color: Colors.white,
-                                  size: 16,
-                                ),
-                                SizedBox(width: 2),
-                                Text(
-                                  'Dipilih',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                        Icon(Icons.category, size: 16, color: Colors.grey),
+                        const SizedBox(width: 4),
+                        Text(kendaraan.tipe),
+                        const SizedBox(width: 16),
+                        Icon(Icons.people, size: 16, color: Colors.grey),
+                        const SizedBox(width: 4),
+                        Text('${kendaraan.kapasitas} orang'),
                       ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      formatRupiah(kendaraan.harga),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: primaryBlue,
+                      ),
                     ),
                   ],
                 ),
               ),
+              
+              // Indikator terpilih
+              if (isSelected)
+                Icon(
+                  Icons.check_circle,
+                  color: primaryBlue,
+                ),
             ],
           ),
         ),
       ),
     );
   }
+}
 
-  // Format Rupiah untuk Card
   String _formatRupiah(dynamic price) {
     try {
       double numericPrice;
@@ -788,12 +826,11 @@ class KendaraanCardCustom extends StatelessWidget {
       } else if (price is double) {
         numericPrice = price;
       } else if (price is String) {
-        String cleanPrice =
-            price
-                .replaceAll('Rp', '')
-                .replaceAll('.', '')
-                .replaceAll(',', '')
-                .trim();
+        String cleanPrice = price
+            .replaceAll('Rp', '')
+            .replaceAll('.', '')
+            .replaceAll(',', '')
+            .trim();
         numericPrice = double.tryParse(cleanPrice) ?? 0.0;
       } else {
         return 'Rp 0';
@@ -810,4 +847,3 @@ class KendaraanCardCustom extends StatelessWidget {
       return 'Rp 0';
     }
   }
-}
