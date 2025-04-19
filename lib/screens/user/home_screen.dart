@@ -1,3 +1,5 @@
+// Implementasi fitur pencarian untuk Java Wonderland App
+
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:provider/provider.dart';
@@ -5,78 +7,37 @@ import 'package:travelapp/main.dart';
 import 'package:travelapp/providers/auth_provider.dart';
 import 'package:travelapp/providers/destinasi_provider.dart';
 import 'package:travelapp/screens/auth/login_screen.dart';
-import 'package:travelapp/widgets/destinasi_card.dart';
-import 'package:travelapp/screens/user/detail_destinasi_screen.dart'; // Ensure this import points to the correct file
-import 'package:travelapp/screens/user/profil_screen.dart'; // Import the ProfileScreen file
+import 'package:travelapp/screens/user/detail_destinasi_screen.dart';
+import 'package:travelapp/screens/user/profil_screen.dart';
+
+import 'package:travelapp/screens/user/order_screen.dart';
+import 'package:travelapp/providers/order_provider.dart'; // Ensure this import exists
 
 void main() {
   runApp(
     MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => DestinasiProvider())],
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => DestinasiProvider()),
+      ],
       child: MyApp(),
     ),
   );
 }
 
-Widget build(BuildContext context) {
-  return MaterialApp(
-    title: 'Java Wonderland',
-    debugShowCheckedModeBanner: false,
-    theme: ThemeData(
-      primarySwatch: Colors.blue,
-      visualDensity: VisualDensity.adaptivePlatformDensity,
-    ),
-    home: Scaffold(
-      appBar: AppBar(
-        title: const Text('Java Wonderland'),
-        actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.logout,
-              color: Colors.white,
-            ), // Tetapkan warna ikon
-            onPressed: () => _handleLogout(context),
-            tooltip: 'Logout',
-          ),
-        ],
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Java Wonderland',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      body: const HomeScreen(),
-    ),
-  );
-}
-
-void _handleLogout(BuildContext context) {
-  showDialog(
-    context: context,
-    builder:
-        (context) => AlertDialog(
-          title: const Text('Konfirmasi Logout'),
-          content: const Text('Apakah anda yakin ingin keluar?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Batal'),
-            ),
-            TextButton(
-              onPressed: () async {
-                // Get the AuthProvider and call logout
-                await Provider.of<AuthProvider>(
-                  context,
-                  listen: false,
-                ).logout();
-
-                // Navigate to login screen and clear navigation stack
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => LoginScreen()),
-                  (route) => false,
-                );
-              },
-              child: const Text('Logout'),
-            ),
-          ],
-        ),
-  );
+      home: HomeScreen(),
+    );
+  }
 }
 
 class HomeScreen extends StatefulWidget {
@@ -97,44 +58,70 @@ class _HomeScreenState extends State<HomeScreen> {
   Timer? _popupHideTimer;
   String _selectedCategory = 'Semua';
 
+  // Variabel untuk pencarian
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  final FocusNode _searchFocusNode = FocusNode();
+  bool _showClearButton = false;
+
   @override
   void initState() {
     super.initState();
     // Hide loader after 2 seconds
     Future.delayed(const Duration(seconds: 2), () {
-      setState(() {
-        showLoader = false;
-      });
+      if (mounted) {
+        setState(() {
+          showLoader = false;
+        });
+      }
     });
 
     // Show popup after 3 seconds
     _popupTimer = Timer(const Duration(seconds: 3), () {
-      setState(() {
-        showPopup = true;
-      });
+      if (mounted) {
+        setState(() {
+          showPopup = true;
+        });
+      }
     });
 
     // Hide popup after 10 seconds
     _popupHideTimer = Timer(const Duration(seconds: 10), () {
-      setState(() {
-        showPopup = false;
-      });
+      if (mounted) {
+        setState(() {
+          showPopup = false;
+        });
+      }
     });
 
     // Auto scroll carousel
     _carouselTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      if (_currentCarouselIndex < 2) {
-        _currentCarouselIndex++;
-      } else {
-        _currentCarouselIndex = 0;
+      if (mounted) {
+        setState(() {
+          if (_currentCarouselIndex < 5) {
+            _currentCarouselIndex++;
+          } else {
+            _currentCarouselIndex = 0;
+          }
+        });
+
+        if (_pageController.hasClients) {
+          _pageController.animateToPage(
+            _currentCarouselIndex,
+            duration: const Duration(milliseconds: 800),
+            curve: Curves.easeInOut,
+          );
+        }
       }
-      if (_pageController.hasClients) {
-        _pageController.animateToPage(
-          _currentCarouselIndex,
-          duration: const Duration(milliseconds: 800),
-          curve: Curves.easeInOut,
-        );
-      }
+    });
+
+    // Menambahkan listener untuk pencarian
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text;
+        _showClearButton = _searchController.text.isNotEmpty;
+      });
     });
   }
 
@@ -144,13 +131,101 @@ class _HomeScreenState extends State<HomeScreen> {
     _popupTimer?.cancel();
     _popupHideTimer?.cancel();
     _pageController.dispose();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
+  // Handle logout function
+  void _handleLogout(BuildContext context) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Konfirmasi Logout'),
+            content: const Text('Apakah anda yakin ingin keluar?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Batal'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  try {
+                    await Provider.of<AuthProvider>(
+                      context,
+                      listen: false,
+                    ).logout();
+
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (_) => LoginScreen()),
+                      (route) => false,
+                    );
+                  } catch (e) {
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text('Error: $e')));
+                  }
+                },
+                child: const Text('Logout'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  // Toggle mode pencarian
+  void _toggleSearch() {
+    setState(() {
+      _isSearching = !_isSearching;
+      if (!_isSearching) {
+        _searchController.clear();
+        _searchQuery = '';
+      } else {
+        // Fokus ke field pencarian saat mode pencarian aktif
+        Future.delayed(const Duration(milliseconds: 100), () {
+          FocusScope.of(context).requestFocus(_searchFocusNode);
+        });
+      }
+    });
+  }
+
+  // Build AppBar sesuai dengan mode pencarian
+  PreferredSizeWidget _buildAppBar() {
+    if (_isSearching) {
+      return AppBar(
+        backgroundColor: Colors.blue.shade800,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: _toggleSearch,
+        ),
+        titleSpacing: 0,
+        title: TextField(
+          controller: _searchController,
+          focusNode: _searchFocusNode,
+          autofocus: true,
+          style: const TextStyle(color: Colors.white),
+          cursorColor: Colors.white,
+          decoration: const InputDecoration(
+            hintText: 'Cari destinasi wisata...',
+            hintStyle: TextStyle(color: Colors.white70),
+            border: InputBorder.none,
+            contentPadding: EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+          ),
+        ),
+        actions: [
+          if (_showClearButton)
+            IconButton(
+              icon: const Icon(Icons.clear),
+              onPressed: () {
+                _searchController.clear();
+              },
+            ),
+        ],
+      );
+    } else {
+      return AppBar(
         backgroundColor: Colors.blue.shade800,
         title: const Text(
           'JAVA WONDERLAND',
@@ -159,7 +234,7 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
-            onPressed: () {},
+            onPressed: _toggleSearch,
             tooltip: 'Cari',
           ),
           IconButton(
@@ -172,17 +247,20 @@ class _HomeScreenState extends State<HomeScreen> {
             },
             tooltip: 'Akun',
           ),
-
           IconButton(
-            icon: const Icon(
-              Icons.logout,
-              color: Colors.white,
-            ), // Tetapkan warna ikon
+            icon: const Icon(Icons.logout, color: Colors.white),
             onPressed: () => _handleLogout(context),
             tooltip: 'Logout',
           ),
         ],
-      ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: _buildAppBar(),
       body: Stack(
         children: [
           // Main content
@@ -195,245 +273,13 @@ class _HomeScreenState extends State<HomeScreen> {
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting &&
                   showLoader) {
-                return Center(child: CircularProgressIndicator());
+                return const Center(child: CircularProgressIndicator());
               } else if (snapshot.hasError) {
                 return Center(child: Text('Error: ${snapshot.error}'));
               } else {
-                return SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      // Carousel
-                      AspectRatio(
-                        aspectRatio: 16 / 9,
-                        child: Stack(
-                          children: [
-                            PageView(
-                              controller: _pageController,
-                              onPageChanged: (index) {
-                                setState(() {
-                                  _currentCarouselIndex = index;
-                                });
-                              },
-                              children: [
-                                _buildCarouselItem(
-                                  'assets/images/gambar_bromo.jpeg',
-                                  'Gunung Bromo',
-                                ),
-                                _buildCarouselItem(
-                                  'assets/images/gunung_sindoro.jpeg',
-                                  'Gunung Sindoro',
-                                ),
-                                _buildCarouselItem(
-                                  'assets/images/anyer.jpg',
-                                  'Pantai Anyer',
-                                ),
-                                _buildCarouselItem(
-                                  'assets/images/PANGANDARAN.webp',
-                                  'Pantai Pangandaran',
-                                ),
-                                _buildCarouselItem(
-                                  'assets/images/kawahIjen.webp',
-                                  'Kawah Ijen',
-                                ),
-                                _buildCarouselItem(
-                                  'assets/images/karimun jawa.webp',
-                                  'Pantai Karimun Jawa',
-                                ),
-                              ],
-                            ),
-                            Positioned(
-                              bottom: 10,
-                              left: 0,
-                              right: 0,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: List.generate(6, (index) {
-                                  return Container(
-                                    width: 10,
-                                    height: 10,
-                                    margin: const EdgeInsets.symmetric(
-                                      horizontal: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color:
-                                          _currentCarouselIndex == index
-                                              ? Colors.white
-                                              : Colors.white.withOpacity(0.5),
-                                    ),
-                                  );
-                                }),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Destinations section
-                      Container(
-                        padding: const EdgeInsets.symmetric(vertical: 24),
-                        child: Column(
-                          children: [
-                            const Padding(
-                              padding: EdgeInsets.only(bottom: 16),
-                              child: Text(
-                                'Pilihan Destinasi',
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children:
-                                    ['Semua', 'Gunung', 'Pantai'].map((
-                                      category,
-                                    ) {
-                                      final isSelected =
-                                          _selectedCategory == category;
-                                      return Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 6,
-                                        ),
-                                        child: ChoiceChip(
-                                          label: Text(category),
-                                          selected: isSelected,
-                                          onSelected: (_) {
-                                            setState(() {
-                                              _selectedCategory = category;
-                                            });
-                                          },
-                                          selectedColor: Colors.blue.shade700,
-                                          backgroundColor: Colors.grey.shade200,
-                                          labelStyle: TextStyle(
-                                            color:
-                                                isSelected
-                                                    ? Colors.white
-                                                    : Colors.black,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      );
-                                    }).toList(),
-                              ),
-                            ),
-                            Consumer<DestinasiProvider>(
-                              builder: (ctx, destinasiProvider, child) {
-                                final destinasiList =
-                                    destinasiProvider.destinasiList.where((
-                                      destinasi,
-                                    ) {
-                                      if (_selectedCategory == 'Semua')
-                                        return true;
-                                      return destinasi.kategori.toLowerCase() ==
-                                          _selectedCategory.toLowerCase();
-                                    }).toList();
-
-                                if (destinasiList.isEmpty) {
-                                  return Center(
-                                    child: Text('Tidak ada data destinasi'),
-                                  );
-                                }
-
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                  ),
-                                  child: ListView.builder(
-                                    shrinkWrap: true,
-                                    physics: NeverScrollableScrollPhysics(),
-                                    itemCount:
-                                        destinasiList.length > 6
-                                            ? 6
-                                            : destinasiList.length,
-                                    itemBuilder: (ctx, index) {
-                                      final destinasi = destinasiList[index];
-                                      return GestureDetector(
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder:
-                                                  (ctx) =>
-                                                      DetailDestinasiScreen(
-                                                        destinasi: destinasi,
-                                                      ),
-                                            ),
-                                          );
-                                        },
-                                        child: DestinasiCard(
-                                          destinasi: destinasi,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Activities section
-                      Container(
-                        color: Colors.grey.shade100,
-                        padding: const EdgeInsets.symmetric(vertical: 24),
-                        child: Column(
-                          children: [
-                            const Padding(
-                              padding: EdgeInsets.only(bottom: 16),
-                              child: Text(
-                                'Aktivitas Populer',
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                            SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              child: Row(
-                                children: [
-                                  _buildActivityCardHorizontal(
-                                    'assets/images/jemur.jpg',
-                                    'Berjemur',
-                                  ),
-                                  _buildActivityCardHorizontal(
-                                    'assets/images/Snorkling_Pangandaran.jpg',
-                                    'Snorkeling',
-                                  ),
-                                  _buildActivityCardHorizontal(
-                                    'assets/images/jetski.jpg',
-                                    'Jetski',
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Footer with copyright
-                      Container(
-                        padding: const EdgeInsets.symmetric(vertical: 24),
-                        width: double.infinity,
-                        child: const Text(
-                          '© 2025 Destinasi Wisata Indonesia',
-                          style: TextStyle(color: Colors.grey),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
+                return _isSearching
+                    ? _buildSearchResults()
+                    : _buildHomeContent();
               }
             },
           ),
@@ -445,8 +291,8 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Center(child: _buildCustomLoader()),
             ),
 
-          // Popup notification
-          if (showPopup)
+          // Popup notification (only show if not searching)
+          if (showPopup && !_isSearching)
             Positioned(
               left: 20,
               bottom: 80, // Position above bottom navigation bar
@@ -454,26 +300,531 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentNavIndex,
-        onTap: (index) {
-          setState(() {
-            _currentNavIndex = index;
-          });
+      bottomNavigationBar: Consumer<OrderProvider>(
+        builder: (context, orderProvider, child) {
+          return BottomNavigationBar(
+            currentIndex: _currentNavIndex,
+            onTap: (index) {
+              setState(() {
+                _currentNavIndex = index;
+              });
+
+              // Navigasi berdasarkan index
+              if (index == 2 || index == 3) {
+                // Reset notifikasi pesanan baru ketika diklik
+                orderProvider.resetPesananBaru();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => OrderScreen()),
+                );
+              }
+            },
+            selectedItemColor: Colors.blue.shade800,
+            unselectedItemColor: Colors.grey,
+            type: BottomNavigationBarType.fixed,
+            items: [
+              BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.explore),
+                label: 'Explore',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.favorite),
+                label: 'Favorites',
+              ),
+              BottomNavigationBarItem(
+                icon: Stack(
+                  children: [
+                    Icon(Icons.shopping_cart_rounded),
+                    if (orderProvider.adaPesananBaru)
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: Container(
+                          padding: EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                label: 'Pesanan',
+              ),
+            ],
+          );
         },
-        selectedItemColor: Colors.blue.shade800,
-        unselectedItemColor: Colors.grey,
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.explore), label: 'Explore'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.favorite),
-            label: 'Favorites',
+      ),
+    );
+  }
+
+  // Widget tampilan hasil pencarian
+  Widget _buildSearchResults() {
+    return Consumer<DestinasiProvider>(
+      builder: (ctx, destinasiProvider, child) {
+        final allDestinasi = destinasiProvider.destinasiList;
+
+        // Filter destinasi berdasarkan query pencarian
+        final filteredDestinasi =
+            allDestinasi.where((destinasi) {
+              final name = destinasi.nama.toLowerCase();
+              final location = destinasi.lokasi.toLowerCase();
+              final category = destinasi.kategori.toLowerCase();
+              final query = _searchQuery.toLowerCase();
+
+              return name.contains(query) ||
+                  location.contains(query) ||
+                  category.contains(query);
+            }).toList();
+
+        if (_searchQuery.isEmpty) {
+          // Tampilan saat belum ada query pencarian
+          return Container(
+            color: Colors.white,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.search, size: 80, color: Colors.grey.shade300),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Ketik untuk mencari destinasi wisata',
+                    style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Cari berdasarkan nama, lokasi, atau kategori',
+                    style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        if (filteredDestinasi.isEmpty) {
+          // Tampilan saat tidak ada hasil yang cocok
+          return Container(
+            color: Colors.white,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.sentiment_dissatisfied,
+                    size: 80,
+                    color: Colors.grey.shade300,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Tidak ada hasil untuk "$_searchQuery"',
+                    style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Coba kata kunci lain atau periksa ejaan',
+                    style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        // Tampilan hasil pencarian
+        return Container(
+          color: Colors.white,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Hasil Pencarian',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Ditemukan ${filteredDestinasi.length} hasil untuk "$_searchQuery"',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Divider(height: 1, thickness: 1, color: Colors.grey.shade200),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: GridView.builder(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: 0.75,
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 10,
+                        ),
+                    itemCount: filteredDestinasi.length,
+                    itemBuilder: (ctx, index) {
+                      final destinasi = filteredDestinasi[index];
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (ctx) => DetailDestinasiScreen(
+                                    destinasi: destinasi,
+                                  ),
+                            ),
+                          );
+                        },
+                        child: _buildDestinationCard(destinasi),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_bag),
-            label: 'Pesanan',
+        );
+      },
+    );
+  }
+
+  // Widget untuk tampilan home utama
+  Widget _buildHomeContent() {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          // Carousel
+          AspectRatio(
+            aspectRatio: 16 / 9,
+            child: Stack(
+              children: [
+                PageView(
+                  controller: _pageController,
+                  onPageChanged: (index) {
+                    setState(() {
+                      _currentCarouselIndex = index;
+                    });
+                  },
+                  children: [
+                    _buildCarouselItem(
+                      'assets/images/gambar_bromo.jpeg',
+                      'Gunung Bromo',
+                    ),
+                    _buildCarouselItem(
+                      'assets/images/gunung_sindoro.jpeg',
+                      'Gunung Sindoro',
+                    ),
+                    _buildCarouselItem(
+                      'assets/images/anyer.jpg',
+                      'Pantai Anyer',
+                    ),
+                    _buildCarouselItem(
+                      'assets/images/PANGANDARAN.webp',
+                      'Pantai Pangandaran',
+                    ),
+                    _buildCarouselItem(
+                      'assets/images/kawahIjen.webp',
+                      'Kawah Ijen',
+                    ),
+                    _buildCarouselItem(
+                      'assets/images/karimun jawa.webp',
+                      'Pantai Karimun Jawa',
+                    ),
+                  ],
+                ),
+                Positioned(
+                  bottom: 10,
+                  left: 0,
+                  right: 0,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(6, (index) {
+                      return Container(
+                        width: 10,
+                        height: 10,
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color:
+                              _currentCarouselIndex == index
+                                  ? Colors.white
+                                  : Colors.white.withOpacity(0.5),
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Destinations section with card grid
+          Container(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 16),
+                  child: Text(
+                    'Pilihan Destinasi',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+
+                // Category filters
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children:
+                          ['Semua', 'Gunung', 'Pantai'].map((category) {
+                            final isSelected = _selectedCategory == category;
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                              ),
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  setState(() {
+                                    _selectedCategory = category;
+                                  });
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor:
+                                      isSelected
+                                          ? Colors.blue.shade800
+                                          : Colors.grey.shade200,
+                                  foregroundColor:
+                                      isSelected
+                                          ? Colors.white
+                                          : Colors.black87,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 12,
+                                  ),
+                                  elevation: isSelected ? 4 : 1,
+                                ),
+                                child: Text(
+                                  category,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                    ),
+                  ),
+                ),
+
+                Consumer<DestinasiProvider>(
+                  builder: (ctx, destinasiProvider, child) {
+                    final destinasiList =
+                        destinasiProvider.destinasiList.where((destinasi) {
+                          if (_selectedCategory == 'Semua') return true;
+                          return destinasi.kategori.toLowerCase() ==
+                              _selectedCategory.toLowerCase();
+                        }).toList();
+
+                    if (destinasiList.isEmpty) {
+                      return SizedBox(
+                        height: 200,
+                        child: Center(
+                          child: Text(
+                            'Tidak ada destinasi ${_selectedCategory == "Semua" ? "" : _selectedCategory}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+
+                    return GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            childAspectRatio: 0.75,
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 10,
+                          ),
+                      itemCount:
+                          destinasiList.length > 8 ? 8 : destinasiList.length,
+                      itemBuilder: (ctx, index) {
+                        final destinasi = destinasiList[index];
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (ctx) => DetailDestinasiScreen(
+                                      destinasi: destinasi,
+                                    ),
+                              ),
+                            );
+                          },
+                          child: _buildDestinationCard(destinasi),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+
+          // Activities section
+          Container(
+            color: Colors.grey.shade100,
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: Column(
+              children: [
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 16),
+                  child: Text(
+                    'Aktivitas Populer',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      _buildActivityCardHorizontal(
+                        'assets/images/jemur.jpg',
+                        'Berjemur',
+                      ),
+                      _buildActivityCardHorizontal(
+                        'assets/images/Snorkling_Pangandaran.jpg',
+                        'Snorkeling',
+                      ),
+                      _buildActivityCardHorizontal(
+                        'assets/images/jetski.jpg',
+                        'Jetski',
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Footer with copyright
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            width: double.infinity,
+            child: const Text(
+              '© 2025 Destinasi Wisata Indonesia',
+              style: TextStyle(color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDestinationCard(dynamic destinasi) {
+    return Card(
+      elevation: 5,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+            child: Image.asset(
+              destinasi.gambar,
+              height: 130,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  height: 130,
+                  width: double.infinity,
+                  color: Colors.grey.shade300,
+                  child: Icon(
+                    Icons.landscape,
+                    size: 50,
+                    color: Colors.grey.shade500,
+                  ),
+                );
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  destinasi.nama,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(Icons.location_on, size: 14, color: Colors.grey),
+                    const SizedBox(width: 2),
+                    Expanded(
+                      child: Text(
+                        destinasi.lokasi,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade700,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.star, size: 16, color: Colors.amber),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${destinasi.rating}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -581,12 +932,12 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Row(
         children: [
-          Icon(Icons.card_giftcard, color: Colors.white, size: 36),
+          const Icon(Icons.card_giftcard, color: Colors.white, size: 36),
           const SizedBox(width: 12),
-          Expanded(
+          const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Text(
                   'Promo Spesial!',
                   style: TextStyle(

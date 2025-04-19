@@ -67,18 +67,13 @@ class _PemesananScreenState extends State<PemesananScreen> {
       appBar: AppBar(
         title: const Text(
           'Detail Pemesanan',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         centerTitle: true,
         backgroundColor: primaryColor,
         elevation: 0,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(
-            bottom: Radius.circular(20),
-          ),
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -103,7 +98,8 @@ class _PemesananScreenState extends State<PemesananScreen> {
                 icon: Icons.directions_bus,
                 title: 'Kendaraan',
                 content: widget.kendaraan.jenis,
-                subtitle: '${widget.kendaraan.tipe} • ${widget.kendaraan.kapasitas} orang',
+                subtitle:
+                    '${widget.kendaraan.tipe} • ${widget.kendaraan.kapasitas} orang',
               ),
               const SizedBox(height: 24),
 
@@ -196,19 +192,26 @@ class _PemesananScreenState extends State<PemesananScreen> {
                     if (_formKey.currentState!.validate()) {
                       final pemesanan = Pemesanan(
                         id: DateTime.now().millisecondsSinceEpoch.toString(),
-                        userId: 'userId', // Replace with actual user ID
-                        destinasiId: widget.destinasi.id,
-                        kendaraanId: widget.kendaraan.id,
+                        userId:
+                            'userId', // Ganti dengan ID pengguna yang sebenarnya
+                        destinasi:
+                            widget.destinasi, // Objek Destinasi yang dipilih
+                        kendaraan:
+                            widget.kendaraan, // Objek Kendaraan yang dipilih
                         jumlahPeserta: int.parse(_jumlahPesertaController.text),
                         tanggal: DateTime.now(),
                         totalHarga: totalHarga,
                       );
+
+                      // Menavigasi ke PembayaranScreen
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => PembayaranScreen(
-                            pemesanan: pemesanan,
-                          ),
+                          builder:
+                              (context) => PembayaranScreen(
+                                pemesanan:
+                                    pemesanan, // Mengirim data pemesanan ke PembayaranScreen
+                              ),
                         ),
                       );
                     }
@@ -223,10 +226,7 @@ class _PemesananScreenState extends State<PemesananScreen> {
                   ),
                   child: const Text(
                     'LANJUT KE PEMBAYARAN',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
