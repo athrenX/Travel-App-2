@@ -5,7 +5,8 @@ class Kendaraan {
   final double harga;
   final String tipe;
   final String gambar;
-  final String fasilitas; // Tambahkan properti ini
+  final String fasilitas;
+  final List<int> availableSeats;
 
   Kendaraan({
     required this.id,
@@ -14,8 +15,10 @@ class Kendaraan {
     required this.harga,
     required this.tipe,
     required this.gambar,
-    this.fasilitas = 'AC, Audio', // Berikan nilai default
-  });
+    this.fasilitas = 'AC, Audio',
+    List<int>? availableSeats,
+  }) : availableSeats = availableSeats ?? 
+        List.generate(kapasitas, (index) => index + 1)..removeWhere((seat) => [4, 13].contains(seat));
 
   Map<String, dynamic> toMap() {
     return {
@@ -25,7 +28,8 @@ class Kendaraan {
       'harga': harga,
       'tipe': tipe,
       'gambar': gambar,
-      'fasilitas': fasilitas, // Tambahkan ke map
+      'fasilitas': fasilitas,
+      'availableSeats': availableSeats,
     };
   }
 
@@ -34,10 +38,11 @@ class Kendaraan {
       id: map['id'],
       jenis: map['jenis'],
       kapasitas: map['kapasitas'],
-      harga: map['harga'],
+      harga: map['harga'] is int ? map['harga'].toDouble() : map['harga'],
       tipe: map['tipe'],
       gambar: map['gambar'],
-      fasilitas: map['fasilitas'] ?? 'AC, Audio', // Handle jika null
+      fasilitas: map['fasilitas'] ?? 'AC, Audio',
+      availableSeats: List<int>.from(map['availableSeats'] ?? []),
     );
   }
 }

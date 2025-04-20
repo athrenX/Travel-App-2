@@ -6,6 +6,8 @@ import 'package:travelapp/models/kendaraan.dart';
 import 'package:travelapp/providers/kendaraan_provider.dart';
 import 'package:travelapp/screens/user/pemesanan_screen.dart';
 import 'package:travelapp/widgets/kendaraan_card.dart';
+// Add this import with your other imports
+import 'package:travelapp/screens/user/pilih_kursi_screen.dart';
 
 class PemilihanKendaraanScreen extends StatefulWidget {
   final Destinasi destinasi;
@@ -578,16 +580,16 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
                         height: 56,
                         child: ElevatedButton(
                           onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (ctx) => PemesananScreen(
-                                  destinasi: widget.destinasi,
-                                  kendaraan: selectedKendaraan!,
-                                ),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (ctx) => PilihKursiScreen(
+                                destinasi: widget.destinasi,
+                                kendaraan: selectedKendaraan!,
                               ),
-                            );
-                          },
+                            ),
+                          );
+                        },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: primaryBlue,
                             foregroundColor: whiteColor,

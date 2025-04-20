@@ -3,16 +3,20 @@ import 'package:travelapp/models/kendaraan.dart';
 import 'package:travelapp/models/destinasi.dart';
 import 'package:travelapp/models/pemesanan.dart';
 import 'package:travelapp/screens/user/pembayaran_screen.dart';
-import 'package:intl/intl.dart'; // For currency formatting
+import 'package:intl/intl.dart';
 
 class PemesananScreen extends StatefulWidget {
   final Destinasi destinasi;
   final Kendaraan kendaraan;
+  final List<int> selectedSeats;
+  final int totalPrice; // This should already be the sum of selected seats only
 
   const PemesananScreen({
     Key? key,
     required this.destinasi,
     required this.kendaraan,
+    required this.selectedSeats,
+    required this.totalPrice,
   }) : super(key: key);
 
   @override
@@ -34,8 +38,9 @@ class _PemesananScreenState extends State<PemesananScreen> {
   @override
   void initState() {
     super.initState();
-    totalHarga = widget.kendaraan.harga;
-    _jumlahPesertaController.text = '1'; // Default value
+    // Initialize with the total price from selected seats only
+    totalHarga = widget.totalPrice.toDouble();
+    _jumlahPesertaController.text = widget.selectedSeats.length.toString();
   }
 
   @override
@@ -47,7 +52,9 @@ class _PemesananScreenState extends State<PemesananScreen> {
   void _updateTotalPrice() {
     setState(() {
       final jumlahPeserta = int.tryParse(_jumlahPesertaController.text) ?? 1;
-      totalHarga = widget.kendaraan.harga * jumlahPeserta;
+      // Calculate based on price per selected seat only
+      final hargaPerKursi = widget.destinasi.harga; // Price per seat
+      totalHarga = hargaPerKursi * jumlahPeserta;
     });
   }
 
@@ -60,8 +67,15 @@ class _PemesananScreenState extends State<PemesananScreen> {
     return formatCurrency.format(number);
   }
 
+  String _formatSeatNumbers() {
+    widget.selectedSeats.sort();
+    return widget.selectedSeats.join(', ');
+  }
+
   @override
   Widget build(BuildContext context) {
+    final hargaPerKursi = widget.destinasi.harga;
+
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
@@ -139,15 +153,15 @@ class _PemesananScreenState extends State<PemesananScreen> {
                   if (numValue == null || numValue <= 0) {
                     return 'Jumlah peserta harus lebih dari 0';
                   }
-                  if (numValue > widget.kendaraan.kapasitas) {
-                    return 'Melebihi kapasitas kendaraan';
+                  if (numValue > widget.selectedSeats.length) {
+                    return 'Melebihi jumlah kursi yang dipilih';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 24),
 
-              // Price Summary
+              // Price Summary - Only shows prices for selected seats
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -164,13 +178,13 @@ class _PemesananScreenState extends State<PemesananScreen> {
                 child: Column(
                   children: [
                     _buildPriceRow(
-                      'Harga Kendaraan',
-                      _formatRupiah(widget.kendaraan.harga),
+                      'Harga per Kursi',
+                      _formatRupiah(hargaPerKursi),
                     ),
                     const Divider(height: 24),
                     _buildPriceRow(
-                      'Jumlah Peserta',
-                      _jumlahPesertaController.text,
+                      'Jumlah Kursi',
+                      widget.selectedSeats.length.toString(),
                     ),
                     const Divider(height: 24),
                     _buildPriceRow(
@@ -192,18 +206,15 @@ class _PemesananScreenState extends State<PemesananScreen> {
                     if (_formKey.currentState!.validate()) {
                       final pemesanan = Pemesanan(
                         id: DateTime.now().millisecondsSinceEpoch.toString(),
-                        userId:
-                            'userId', // Ganti dengan ID pengguna yang sebenarnya
-                        destinasi:
-                            widget.destinasi, // Objek Destinasi yang dipilih
-                        kendaraan:
-                            widget.kendaraan, // Objek Kendaraan yang dipilih
+                        userId: 'userId',
+                        destinasi: widget.destinasi,
+                        kendaraan: widget.kendaraan,
+                        selectedSeats: widget.selectedSeats,
                         jumlahPeserta: int.parse(_jumlahPesertaController.text),
                         tanggal: DateTime.now(),
                         totalHarga: totalHarga,
                       );
 
-                      // Menavigasi ke PembayaranScreen
                       Navigator.push(
                         context,
                         MaterialPageRoute(

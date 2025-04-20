@@ -66,4 +66,55 @@ class AuthProvider with ChangeNotifier {
       notifyListeners();
     }
   }
+
+  // Tambahkan method untuk update profil
+  Future<void> updateUserProfile({
+    required String name,
+    required String email,
+  }) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      // Jika ingin melakukan update ke server:
+      // await _authService.updateProfile(name, email);
+
+      // Update data user secara lokal
+      if (_user != null) {
+        _user = _user!.copyWith(nama: name, email: email);
+      }
+
+      notifyListeners();
+    } catch (e) {
+      throw e;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Tambahkan method untuk ganti password
+  Future<bool> changePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      // Implementasi ganti password ke server
+      // Contoh:
+      // final result = await _authService.changePassword(oldPassword, newPassword);
+      // return result;
+
+      // Untuk sementara anggap berhasil
+      return true;
+    } catch (e) {
+      print('Error changing password: $e');
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 }
