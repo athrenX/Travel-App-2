@@ -10,6 +10,7 @@ class Pemesanan {
   final DateTime tanggal;
   final double totalHarga;
   String status; // Tambahkan properti status
+  final List<int> selectedSeats;
 
   Pemesanan({
     required this.id,
@@ -20,6 +21,7 @@ class Pemesanan {
     required this.tanggal,
     required this.totalHarga,
     this.status = "Sedang Diproses",  // Status default
+    required this.selectedSeats,
   });
 
   // Menambahkan metode toMap untuk mengonversi ke map dengan data destinasi dan kendaraan
@@ -32,7 +34,8 @@ class Pemesanan {
       'jumlahPeserta': jumlahPeserta,
       'tanggal': tanggal.toIso8601String(),
       'totalHarga': totalHarga,
-      'status': status,  // Menambahkan status pada toMap
+      'status': status,
+      'selectedSeats': selectedSeats,  // Menambahkan selectedSeats
     };
   }
 
@@ -41,12 +44,13 @@ class Pemesanan {
     return Pemesanan(
       id: map['id'],
       userId: map['userId'],
-      destinasi: destinasi,  // Mengambil objek Destinasi
-      kendaraan: kendaraan,  // Mengambil objek Kendaraan
+      destinasi: destinasi,
+      kendaraan: kendaraan,
       jumlahPeserta: map['jumlahPeserta'],
       tanggal: DateTime.parse(map['tanggal']),
       totalHarga: map['totalHarga'],
-      status: map['status'] ?? "Sedang Diproses", // Menambahkan status default jika tidak ada
+      status: map['status'] ?? "Sedang Diproses",
+      selectedSeats: List<int>.from(map['selectedSeats'] ?? []),  // Menambahkan selectedSeats
     );
   }
 }

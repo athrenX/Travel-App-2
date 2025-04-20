@@ -4,6 +4,7 @@ class User {
   final String email;
   final String password;
   final String role;
+  final String? fotoProfil;
 
   User({
     required this.id,
@@ -11,6 +12,7 @@ class User {
     required this.email,
     required this.password,
     required this.role,
+    this.fotoProfil,
   });
 
   // Add a factory constructor to create User from a Map (for future use with APIs)
@@ -21,6 +23,7 @@ class User {
       email: json['email'] ?? '',
       password: json['password'] ?? '',
       role: json['role'] ?? 'user',
+      fotoProfil: json['foto_profil'],
     );
   }
 
@@ -32,6 +35,7 @@ class User {
       'email': email,
       'password': password,
       'role': role,
+      'foto_profil': fotoProfil,
     };
   }
 
@@ -42,6 +46,7 @@ class User {
     String? email,
     String? password,
     String? role,
+    String? fotoProfil,
   }) {
     return User(
       id: id ?? this.id,
@@ -49,6 +54,7 @@ class User {
       email: email ?? this.email,
       password: password ?? this.password,
       role: role ?? this.role,
+      fotoProfil: fotoProfil ?? this.fotoProfil,
     );
   }
 }

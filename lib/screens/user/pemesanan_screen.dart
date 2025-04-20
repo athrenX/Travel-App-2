@@ -3,16 +3,20 @@ import 'package:travelapp/models/kendaraan.dart';
 import 'package:travelapp/models/destinasi.dart';
 import 'package:travelapp/models/pemesanan.dart';
 import 'package:travelapp/screens/user/pembayaran_screen.dart';
-import 'package:intl/intl.dart'; // For currency formatting
+import 'package:intl/intl.dart';
 
 class PemesananScreen extends StatefulWidget {
   final Destinasi destinasi;
   final Kendaraan kendaraan;
+  final List<int> selectedSeats;
+  final int totalPrice; // This should already be the sum of selected seats only
 
   const PemesananScreen({
     Key? key,
     required this.destinasi,
     required this.kendaraan,
+    required this.selectedSeats,
+    required this.totalPrice,
   }) : super(key: key);
 
   @override
@@ -34,8 +38,9 @@ class _PemesananScreenState extends State<PemesananScreen> {
   @override
   void initState() {
     super.initState();
-    totalHarga = widget.kendaraan.harga;
-    _jumlahPesertaController.text = '1'; // Default value
+    // Initialize with the total price from selected seats only
+    totalHarga = widget.totalPrice.toDouble();
+    _jumlahPesertaController.text = widget.selectedSeats.length.toString();
   }
 
   @override
@@ -47,7 +52,9 @@ class _PemesananScreenState extends State<PemesananScreen> {
   void _updateTotalPrice() {
     setState(() {
       final jumlahPeserta = int.tryParse(_jumlahPesertaController.text) ?? 1;
-      totalHarga = widget.kendaraan.harga * jumlahPeserta;
+      // Calculate based on price per selected seat only
+      final hargaPerKursi = widget.destinasi.harga; // Price per seat
+      totalHarga = hargaPerKursi * jumlahPeserta;
     });
   }
 
@@ -60,8 +67,15 @@ class _PemesananScreenState extends State<PemesananScreen> {
     return formatCurrency.format(number);
   }
 
+  String _formatSeatNumbers() {
+    widget.selectedSeats.sort();
+    return widget.selectedSeats.join(', ');
+  }
+
   @override
   Widget build(BuildContext context) {
+    final hargaPerKursi = widget.destinasi.harga;
+
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
@@ -98,8 +112,16 @@ class _PemesananScreenState extends State<PemesananScreen> {
                 icon: Icons.directions_bus,
                 title: 'Kendaraan',
                 content: widget.kendaraan.jenis,
-                subtitle:
-                    '${widget.kendaraan.tipe} • ${widget.kendaraan.kapasitas} orang',
+                subtitle: '${widget.kendaraan.tipe} • ${widget.kendaraan.kapasitas} kursi',
+              ),
+              const SizedBox(height: 16),
+
+              // Selected Seats Card - Only shows seats you actually selected
+              _buildInfoCard(
+                icon: Icons.event_seat,
+                title: 'Kursi Terpilih',
+                content: '${widget.selectedSeats.length} kursi',
+                subtitle: _formatSeatNumbers(),
               ),
               const SizedBox(height: 24),
 
@@ -139,15 +161,15 @@ class _PemesananScreenState extends State<PemesananScreen> {
                   if (numValue == null || numValue <= 0) {
                     return 'Jumlah peserta harus lebih dari 0';
                   }
-                  if (numValue > widget.kendaraan.kapasitas) {
-                    return 'Melebihi kapasitas kendaraan';
+                  if (numValue > widget.selectedSeats.length) {
+                    return 'Melebihi jumlah kursi yang dipilih';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 24),
 
-              // Price Summary
+              // Price Summary - Only shows prices for selected seats
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -164,13 +186,13 @@ class _PemesananScreenState extends State<PemesananScreen> {
                 child: Column(
                   children: [
                     _buildPriceRow(
-                      'Harga Kendaraan',
-                      _formatRupiah(widget.kendaraan.harga),
+                      'Harga per Kursi',
+                      _formatRupiah(hargaPerKursi),
                     ),
                     const Divider(height: 24),
                     _buildPriceRow(
-                      'Jumlah Peserta',
-                      _jumlahPesertaController.text,
+                      'Jumlah Kursi',
+                      widget.selectedSeats.length.toString(),
                     ),
                     const Divider(height: 24),
                     _buildPriceRow(
@@ -192,27 +214,22 @@ class _PemesananScreenState extends State<PemesananScreen> {
                     if (_formKey.currentState!.validate()) {
                       final pemesanan = Pemesanan(
                         id: DateTime.now().millisecondsSinceEpoch.toString(),
-                        userId:
-                            'userId', // Ganti dengan ID pengguna yang sebenarnya
-                        destinasi:
-                            widget.destinasi, // Objek Destinasi yang dipilih
-                        kendaraan:
-                            widget.kendaraan, // Objek Kendaraan yang dipilih
+                        userId: 'userId',
+                        destinasi: widget.destinasi,
+                        kendaraan: widget.kendaraan,
+                        selectedSeats: widget.selectedSeats,
                         jumlahPeserta: int.parse(_jumlahPesertaController.text),
                         tanggal: DateTime.now(),
                         totalHarga: totalHarga,
                       );
 
-                      // Menavigasi ke PembayaranScreen
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder:
-                              (context) => PembayaranScreen(
-                                pemesanan:
-                                    pemesanan, // Mengirim data pemesanan ke PembayaranScreen
-                              ),
-                       ),
+                          builder: (context) => PembayaranScreen(
+                            pemesanan: pemesanan,
+                          ),
+                        ),
                       );
                     }
                   },
@@ -238,71 +255,71 @@ class _PemesananScreenState extends State<PemesananScreen> {
   }
 
   Widget _buildInfoCard({
-    required IconData icon,
-    required String title,
-    required String content,
-    String? subtitle,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+  required IconData icon,
+  required String title,
+  required String content,
+  String? subtitle,
+}) {
+  return Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    ),
+    child: Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: primaryColor.withOpacity(0.1),
+            shape: BoxShape.circle,
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: primaryColor.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: primaryColor),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+          child: Icon(icon, color: primaryColor),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: textColor.withOpacity(0.6),
+                ), // Added missing closing parenthesis here
+              ),
+              const SizedBox(height: 4),
+              Text(
+                content,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              if (subtitle != null) ...[
+                const SizedBox(height: 4),
                 Text(
-                  title,
+                  subtitle,
                   style: TextStyle(
                     fontSize: 14,
                     color: textColor.withOpacity(0.6),
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  content,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: textColor.withOpacity(0.6),
-                    ),
-                  ),
-                ],
               ],
-            ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildPriceRow(String label, String value, {bool isTotal = false}) {
     return Row(
