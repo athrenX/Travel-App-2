@@ -7,6 +7,8 @@ import 'package:travelapp/providers/auth_provider.dart';
 import 'package:travelapp/providers/destinasi_provider.dart';
 import 'package:travelapp/providers/kendaraan_provider.dart';
 import 'package:travelapp/providers/order_provider.dart';
+import 'package:travelapp/providers/wishlist_provider.dart';
+import 'package:travelapp/providers/review_provider.dart';
 
 import 'package:travelapp/screens/auth/login_screen.dart';
 import 'package:travelapp/screens/auth/register_screen.dart';
@@ -31,6 +33,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => DestinasiProvider()),
         ChangeNotifierProvider(create: (_) => KendaraanProvider()),
         ChangeNotifierProvider(create: (_) => OrderProvider()),
+        ChangeNotifierProvider(create: (_) => WishlistProvider()),
+        ChangeNotifierProvider(create: (_) => ReviewProvider()),
       ],
       child: MaterialApp(
         title: 'Travel App',

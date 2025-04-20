@@ -6,12 +6,13 @@ import 'package:provider/provider.dart';
 import 'package:travelapp/main.dart';
 import 'package:travelapp/providers/auth_provider.dart';
 import 'package:travelapp/providers/destinasi_provider.dart';
+import 'package:travelapp/providers/wishlist_provider.dart'; // Add this import
 import 'package:travelapp/screens/auth/login_screen.dart';
 import 'package:travelapp/screens/user/detail_destinasi_screen.dart';
 import 'package:travelapp/screens/user/profil_screen.dart';
-
 import 'package:travelapp/screens/user/order_screen.dart';
-import 'package:travelapp/providers/order_provider.dart'; // Ensure this import exists
+import 'package:travelapp/providers/order_provider.dart';
+import 'package:travelapp/screens/user/wishlist_screen.dart'; // Add this import
 
 void main() {
   runApp(
@@ -19,6 +20,9 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => DestinasiProvider()),
+        ChangeNotifierProvider(
+          create: (_) => WishlistProvider(),
+        ), // Add this line
       ],
       child: MyApp(),
     ),
@@ -310,7 +314,49 @@ class _HomeScreenState extends State<HomeScreen> {
               });
 
               // Navigasi berdasarkan index
-              if (index == 2 || index == 3) {
+              if (index == 2) {
+                final authProvider = Provider.of<AuthProvider>(
+                  context,
+                  listen: false,
+                );
+                if (authProvider.isAuthenticated) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (context) => WishlistScreen(
+                            userId: authProvider.user!.id,
+                            resetNavbarToHome: () {
+                              setState(() {
+                                _currentNavIndex = 0;
+                              });
+                            },
+                          ),
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Silakan login untuk melihat wishlist'),
+                      duration: Duration(seconds: 2),
+                      action: SnackBarAction(
+                        label: 'Login',
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => LoginScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  );
+                  setState(() {
+                    _currentNavIndex = 0; // Return to home if not authenticated
+                  });
+                }
+              } else if (index == 3) {
                 // Reset notifikasi pesanan baru ketika diklik
                 orderProvider.resetPesananBaru();
                 Navigator.push(
@@ -330,7 +376,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.favorite),
-                label: 'Favorites',
+                label: 'Wishlist',
               ),
               BottomNavigationBarItem(
                 icon: Stack(
@@ -750,84 +796,162 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildDestinationCard(dynamic destinasi) {
-    return Card(
-      elevation: 5,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-            child: Image.asset(
-              destinasi.gambar,
-              height: 130,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  height: 130,
-                  width: double.infinity,
-                  color: Colors.grey.shade300,
-                  child: Icon(
-                    Icons.landscape,
-                    size: 50,
-                    color: Colors.grey.shade500,
-                  ),
-                );
-              },
-            ),
+    return Consumer<WishlistProvider>(
+      builder: (context, wishlistProvider, child) {
+        final isInWishlist = wishlistProvider.isInWishlist(destinasi.id);
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+        return Card(
+          elevation: 5,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
           ),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  destinasi.nama,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(Icons.location_on, size: 14, color: Colors.grey),
-                    const SizedBox(width: 2),
-                    Expanded(
-                      child: Text(
-                        destinasi.lokasi,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade700,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(15),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
+                    child: Image.asset(
+                      destinasi.gambar,
+                      height: 130,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          height: 130,
+                          width: double.infinity,
+                          color: Colors.grey.shade300,
+                          child: Icon(
+                            Icons.landscape,
+                            size: 50,
+                            color: Colors.grey.shade500,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: IconButton(
+                      icon: Icon(
+                        isInWishlist ? Icons.favorite : Icons.favorite_border,
+                        color: isInWishlist ? Colors.red : Colors.white,
+                        size: 24,
+                      ),
+                      onPressed: () {
+                        if (authProvider.isAuthenticated) {
+                          if (isInWishlist) {
+                            wishlistProvider.removeFromWishlist(destinasi.id);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  '${destinasi.nama} dihapus dari wishlist',
+                                ),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          } else {
+                            wishlistProvider.addToWishlist(
+                              authProvider.user!.id,
+                              destinasi.id,
+                            );
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  '${destinasi.nama} ditambahkan ke wishlist',
+                                ),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Silakan login untuk menambahkan ke wishlist',
+                              ),
+                              duration: Duration(seconds: 2),
+                              action: SnackBarAction(
+                                label: 'Login',
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => LoginScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.star, size: 16, color: Colors.amber),
-                    const SizedBox(width: 4),
                     Text(
-                      '${destinasi.rating}',
+                      destinasi.nama,
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on,
+                          size: 14,
+                          color: Colors.grey,
+                        ),
+                        const SizedBox(width: 2),
+                        Expanded(
+                          child: Text(
+                            destinasi.lokasi,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade700,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(Icons.star, size: 16, color: Colors.amber),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${destinasi.rating}',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 

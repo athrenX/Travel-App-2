@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:travelapp/models/pemesanan.dart';
 import 'package:travelapp/providers/order_provider.dart';
 import 'package:intl/intl.dart';
+import 'package:travelapp/screens/user/review_screen.dart';
 
 class OrderScreen extends StatelessWidget {
   @override
@@ -22,7 +23,6 @@ class OrderScreen extends StatelessWidget {
           IconButton(
             icon: Icon(Icons.filter_list, color: Colors.white),
             onPressed: () {
-              // Filter functionality
               showModalBottomSheet(
                 context: context,
                 builder: (context) => FilterBottomSheet(),
@@ -66,15 +66,13 @@ class OrderScreen extends StatelessWidget {
             ),
           ),
           SizedBox(height: 8),
-          // Order status tabs
+          // Updated status tabs without "Semua" and "Diproses"
           Container(
             height: 40,
             margin: EdgeInsets.symmetric(horizontal: 16),
             child: ListView(
               scrollDirection: Axis.horizontal,
               children: [
-                _buildStatusChip('Semua', true),
-                _buildStatusChip('Menunggu Pembayaran', false),
                 _buildStatusChip('Diproses', false),
                 _buildStatusChip('Selesai', false),
                 _buildStatusChip('Dibatalkan', false),
@@ -82,7 +80,6 @@ class OrderScreen extends StatelessWidget {
             ),
           ),
           SizedBox(height: 8),
-          // Order list
           Expanded(
             child:
                 daftarPesanan.isEmpty
@@ -103,6 +100,7 @@ class OrderScreen extends StatelessWidget {
       ),
     );
   }
+  // ... rest of your code remains the same
 
   Widget _buildStatusChip(String label, bool isSelected) {
     return Container(
@@ -337,7 +335,7 @@ class OrderScreen extends StatelessWidget {
                     ],
                   ),
                   // Action buttons based on status
-                  _buildActionButtons(pesanan.status, context),
+                  _buildActionButtons(pesanan.status, context, pesanan),
                 ],
               ),
             ),
@@ -347,7 +345,11 @@ class OrderScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButtons(String status, BuildContext context) {
+  Widget _buildActionButtons(
+    String status,
+    BuildContext context,
+    Pemesanan pesanan,
+  ) {
     switch (status.toLowerCase()) {
       case 'menunggu pembayaran':
         return Row(
@@ -369,33 +371,28 @@ class OrderScreen extends StatelessWidget {
               onPressed: () {},
               child: Text('Bayar'),
               style: ElevatedButton.styleFrom(
-                foregroundColor: Colors.blue.shade600,
+                backgroundColor: Colors.blue.shade600,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
                 padding: EdgeInsets.symmetric(horizontal: 12),
               ),
             ),
-          ],
-        );
-      case 'diproses':
-        return ElevatedButton(
-          onPressed: () {},
-          child: Text('Lihat Detail'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blue.shade600,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            padding: EdgeInsets.symmetric(horizontal: 12),
-          ),
-        );
-      case 'selesai':
-        return Row(
-          children: [
+            SizedBox(width: 8),
             OutlinedButton(
-              onPressed: () {},
-              child: Text('Ulasan'),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (context) => ReviewScreen(
+                          pemesanan: pesanan,
+                          destinasi: pesanan.destinasi,
+                        ),
+                  ),
+                );
+              },
+              child: Text('Beri Ulasan'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.blue.shade600,
                 side: BorderSide(color: Colors.blue.shade200),
@@ -405,26 +402,29 @@ class OrderScreen extends StatelessWidget {
                 padding: EdgeInsets.symmetric(horizontal: 12),
               ),
             ),
-            SizedBox(width: 8),
-            ElevatedButton(
-              onPressed: () {},
-              child: Text('Pesan Lagi'),
-              style: ElevatedButton.styleFrom(
-                foregroundColor: Colors.blue.shade600,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                padding: EdgeInsets.symmetric(horizontal: 12),
-              ),
-            ),
           ],
         );
+
+      // Add similar review button to other cases...
+
       default:
-        return ElevatedButton(
-          onPressed: () {},
-          child: Text('Lihat Detail'),
-          style: ElevatedButton.styleFrom(
+        return OutlinedButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder:
+                    (context) => ReviewScreen(
+                      pemesanan: pesanan,
+                      destinasi: pesanan.destinasi,
+                    ),
+              ),
+            );
+          },
+          child: Text('Beri Ulasan'),
+          style: OutlinedButton.styleFrom(
             foregroundColor: Colors.blue.shade600,
+            side: BorderSide(color: Colors.blue.shade200),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
@@ -495,7 +495,6 @@ class FilterBottomSheet extends StatelessWidget {
             runSpacing: 8,
             children: [
               _filterChip('Semua', true),
-              _filterChip('Menunggu Pembayaran', false),
               _filterChip('Diproses', false),
               _filterChip('Selesai', false),
               _filterChip('Dibatalkan', false),

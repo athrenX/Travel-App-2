@@ -10,6 +10,8 @@ class AuthProvider with ChangeNotifier {
   User? get user => _user;
   bool get isLoading => _isLoading;
 
+  bool get isAuthenticated => user != null;
+
   Future<User?> login(String email, String password) async {
     try {
       _isLoading = true;
@@ -17,7 +19,7 @@ class AuthProvider with ChangeNotifier {
 
       final user = await _authService.login(email, password);
       _user = user;
-      
+
       return user;
     } catch (e) {
       throw e;
@@ -34,7 +36,7 @@ class AuthProvider with ChangeNotifier {
 
       final user = await _authService.register(nama, email, password);
       _user = user;
-      
+
       return user;
     } catch (e) {
       throw e;
@@ -49,7 +51,7 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
-    Future<User?> getCurrentUser() async {
+  Future<User?> getCurrentUser() async {
     try {
       _isLoading = true;
       notifyListeners();
@@ -64,5 +66,4 @@ class AuthProvider with ChangeNotifier {
       notifyListeners();
     }
   }
-
 }

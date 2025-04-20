@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:travelapp/models/destinasi.dart';
+import 'package:travelapp/providers/wishlist_provider.dart';
 import 'package:travelapp/screens/user/pemilihan_kendaraan_screen.dart';
+import 'package:travelapp/screens/auth/login_screen.dart'; // Ensure this import points to the correct path
+import 'package:travelapp/providers/auth_provider.dart'; // Add this import for AuthProvider
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' as latlng2;
 
@@ -18,17 +22,30 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
   final MapController _mapController = MapController();
   double _currentZoom = 13.0;
   final ScrollController _scrollController = ScrollController();
+  bool _isInWishlist = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Check if the destination is in wishlist when screen loads
+    final wishlistProvider = Provider.of<WishlistProvider>(
+      context,
+      listen: false,
+    );
+    _isInWishlist = wishlistProvider.isInWishlist(widget.destinasi.id);
+  }
 
   @override
   Widget build(BuildContext context) {
     final destinasi = widget.destinasi;
     final theme = Theme.of(context);
+    final wishlistProvider = Provider.of<WishlistProvider>(context);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     return Scaffold(
       body: CustomScrollView(
         controller: _scrollController,
         slivers: [
-          // Hero image with back button overlay
           SliverAppBar(
             expandedHeight: 250,
             floating: false,
@@ -57,7 +74,6 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                       child: Image.asset(destinasi.gambar, fit: BoxFit.cover),
                     ),
                   ),
-                  // Gradient overlay for better text visibility
                   Positioned(
                     bottom: 0,
                     left: 0,
@@ -100,14 +116,64 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                 },
               ),
               IconButton(
-                icon: const CircleAvatar(
+                icon: CircleAvatar(
                   backgroundColor: Colors.white24,
-                  child: Icon(Icons.favorite_border, color: Colors.white),
+                  child: Icon(
+                    _isInWishlist ? Icons.favorite : Icons.favorite_border,
+                    color: _isInWishlist ? Colors.red : Colors.white,
+                  ),
                 ),
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Added to favorites!')),
-                  );
+                  if (authProvider.isAuthenticated) {
+                    setState(() {
+                      _isInWishlist = !_isInWishlist;
+                    });
+
+                    if (_isInWishlist) {
+                      wishlistProvider.addToWishlist(
+                        authProvider.user!.id,
+                        destinasi.id,
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            '${destinasi.nama} ditambahkan ke wishlist',
+                          ),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    } else {
+                      wishlistProvider.removeFromWishlist(destinasi.id);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            '${destinasi.nama} dihapus dari wishlist',
+                          ),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text(
+                          'Silakan login untuk mengakses wishlist',
+                        ),
+                        duration: const Duration(seconds: 2),
+                        action: SnackBarAction(
+                          label: 'Login',
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => LoginScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    );
+                  }
                 },
               ),
               const SizedBox(width: 8),
@@ -117,7 +183,6 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
           // Content
           SliverToBoxAdapter(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header Info
                 Container(
@@ -248,7 +313,7 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                             context,
                             MaterialPageRoute(
                               builder:
-                                  (_) => PemilihanKendaraanScreen(
+                                  (context) => PemilihanKendaraanScreen(
                                     destinasi: destinasi,
                                   ),
                             ),
