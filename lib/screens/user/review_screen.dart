@@ -55,17 +55,22 @@ class _ReviewScreenState extends State<ReviewScreen> {
           ),
         ),
         title: Row(
+          mainAxisSize: MainAxisSize.min, // Added to prevent overflow
           children: [
             Icon(
               _existingReview != null ? Icons.edit_note : Icons.rate_review,
               color: Colors.white,
             ),
             SizedBox(width: 8),
-            Text(
-              _existingReview != null ? 'Edit Ulasan' : 'Beri Ulasan',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+            Flexible(
+              // Wrapped with Flexible to prevent overflow
+              child: Text(
+                _existingReview != null ? 'Edit Ulasan' : 'Beri Ulasan',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -152,6 +157,8 @@ class _ReviewScreenState extends State<ReviewScreen> {
                                       fontSize: 22,
                                       color: Colors.white,
                                     ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                   SizedBox(height: 4),
                                   Row(
@@ -162,11 +169,15 @@ class _ReviewScreenState extends State<ReviewScreen> {
                                         color: Colors.white70,
                                       ),
                                       SizedBox(width: 4),
-                                      Text(
-                                        widget.destinasi.lokasi,
-                                        style: TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: 14,
+                                      Flexible(
+                                        // Added Flexible to prevent overflow
+                                        child: Text(
+                                          widget.destinasi.lokasi,
+                                          style: TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 14,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
                                     ],
@@ -206,47 +217,57 @@ class _ReviewScreenState extends State<ReviewScreen> {
                               size: 28,
                             ),
                             SizedBox(width: 8),
-                            Text(
-                              'Bagaimana pengalaman Anda?',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blue.shade800,
+                            Flexible(
+                              // Added Flexible to prevent overflow
+                              child: Text(
+                                'Bagaimana pengalaman Anda?',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue.shade800,
+                                ),
                               ),
                             ),
                           ],
                         ),
                         SizedBox(height: 16),
-                        Container(
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.shade50,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: List.generate(5, (index) {
-                              return AnimatedContainer(
-                                duration: Duration(milliseconds: 200),
-                                child: IconButton(
-                                  icon: Icon(
-                                    index < _rating
-                                        ? Icons.star_rounded
-                                        : Icons.star_outline_rounded,
-                                    color:
-                                        index < _rating
-                                            ? Colors.amber
-                                            : Colors.grey.shade400,
-                                    size: 48,
-                                  ),
-                                  onPressed: () {
-                                    setState(() {
-                                      _rating = index + 1;
-                                    });
-                                  },
-                                ),
-                              );
-                            }),
+                        SingleChildScrollView(
+                          // Added scroll for small devices
+                          scrollDirection: Axis.horizontal,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Center(
+                              child: Row(
+                                mainAxisSize:
+                                    MainAxisSize.min, // Ini yang utama
+                                children: List.generate(5, (index) {
+                                  return IconButton(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                    ), // Padding disesuaikan
+                                    icon: Icon(
+                                      index < _rating
+                                          ? Icons.star_rounded
+                                          : Icons.star_outline_rounded,
+                                      color:
+                                          index < _rating
+                                              ? Colors.amber
+                                              : Colors.grey.shade400,
+                                      size: 40, // Ukuran sedikit diperkecil
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        _rating = index + 1;
+                                      });
+                                    },
+                                  );
+                                }),
+                              ),
+                            ),
                           ),
                         ),
                         SizedBox(height: 8),
@@ -290,12 +311,15 @@ class _ReviewScreenState extends State<ReviewScreen> {
                               size: 28,
                             ),
                             SizedBox(width: 8),
-                            Text(
-                              'Tulis ulasan Anda',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blue.shade800,
+                            Flexible(
+                              // Added Flexible to prevent overflow
+                              child: Text(
+                                'Tulis ulasan Anda',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue.shade800,
+                                ),
                               ),
                             ),
                           ],
@@ -334,45 +358,53 @@ class _ReviewScreenState extends State<ReviewScreen> {
                   SizedBox(height: 32),
 
                   // Submit button
-                  GestureDetector(
-                    onTap: _submitReview,
-                    child: Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Colors.blue.shade700, Colors.blue.shade500],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.blue.withOpacity(0.3),
-                            blurRadius: 10,
-                            offset: Offset(0, 4),
+                  SizedBox(
+                    // Wrapped with SizedBox to constrain width
+                    width: double.infinity,
+                    child: GestureDetector(
+                      onTap: _submitReview,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.blue.shade700,
+                              Colors.blue.shade500,
+                            ],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
                           ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            _existingReview != null ? Icons.update : Icons.send,
-                            color: Colors.white,
-                          ),
-                          SizedBox(width: 10),
-                          Text(
-                            _existingReview != null
-                                ? 'Perbarui Ulasan'
-                                : 'Kirim Ulasan',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.blue.withOpacity(0.3),
+                              blurRadius: 10,
+                              offset: Offset(0, 4),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              _existingReview != null
+                                  ? Icons.update
+                                  : Icons.send,
+                              color: Colors.white,
+                            ),
+                            SizedBox(width: 10),
+                            Text(
+                              _existingReview != null
+                                  ? 'Perbarui Ulasan'
+                                  : 'Kirim Ulasan',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
