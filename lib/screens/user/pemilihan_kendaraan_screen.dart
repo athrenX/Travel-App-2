@@ -13,7 +13,7 @@ class PemilihanKendaraanScreen extends StatefulWidget {
   final Destinasi destinasi;
 
   const PemilihanKendaraanScreen({Key? key, required this.destinasi})
-      : super(key: key);
+    : super(key: key);
 
   @override
   State<PemilihanKendaraanScreen> createState() =>
@@ -85,91 +85,130 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
   }
 
   void _showVehicleImageDialog(Kendaraan kendaraan) {
-  showDialog(
-    context: context,
-    builder: (ctx) => Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Gambar kendaraan
-          Container(
-            height: 200,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              color: lightBlue,
+    showDialog(
+      context: context,
+      builder:
+          (ctx) => Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
             ),
-            child: kendaraan.gambar.isNotEmpty
-                ? Image.network(
-                    kendaraan.gambar,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Icon(
-                      Icons.directions_bus,
-                      size: 60,
-                      color: primaryBlue,
-                    ),
-                  )
-                : Icon(
-                    Icons.directions_bus,
-                    size: 60,
-                    color: primaryBlue,
-                  ),
-          ),
-          
-          // Detail kendaraan
-          Padding(
-            padding: EdgeInsets.all(16),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  kendaraan.jenis,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 12),
-                _buildDetailRow(Icons.category, 'Tipe: ${kendaraan.tipe}'),
-                _buildDetailRow(Icons.people, 'Kapasitas: ${kendaraan.kapasitas} orang'),
-                _buildDetailRow(Icons.speed, 'Fasilitas: ${kendaraan.fasilitas}'),
-                SizedBox(height: 16),
-                Text(
-                  formatRupiah(kendaraan.harga),
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: primaryBlue,
-                  ),
-                ),
-                SizedBox(height: 16),
-                Material(
-                  elevation: 2,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      setState(() {
-                        selectedKendaraan = kendaraan;
-                      });
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryBlue,
-                      foregroundColor: whiteColor,
-                      minimumSize: Size(double.infinity, 50),
+                // Gambar kendaraan - FIXED
+                Container(
+                  height: 200,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(20),
                     ),
-                    child: Text('Pilih Kendaraan Ini'),
+                    color: lightBlue,
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(20),
+                    ),
+                    child:
+                        kendaraan.gambar.isNotEmpty
+                            ? FadeInImage.assetNetwork(
+                              placeholder:
+                                  'assets/images/loading.gif', // Add a loading placeholder to your assets
+                              image: kendaraan.gambar,
+                              fit: BoxFit.cover,
+                              imageErrorBuilder:
+                                  (context, error, stackTrace) => Center(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.directions_bus,
+                                          size: 60,
+                                          color: primaryBlue,
+                                        ),
+                                        SizedBox(height: 8),
+                                        Text(
+                                          'Gambar tidak tersedia',
+                                          style: TextStyle(
+                                            color: Colors.grey[600],
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                            )
+                            : Center(
+                              child: Icon(
+                                Icons.directions_bus,
+                                size: 60,
+                                color: primaryBlue,
+                              ),
+                            ),
+                  ),
+                ),
+
+                // Detail kendaraan
+                Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Text(
+                        kendaraan.jenis,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 12),
+                      _buildDetailRow(
+                        Icons.category,
+                        'Tipe: ${kendaraan.tipe}',
+                      ),
+                      _buildDetailRow(
+                        Icons.people,
+                        'Kapasitas: ${kendaraan.kapasitas} orang',
+                      ),
+                      _buildDetailRow(
+                        Icons.speed,
+                        'Fasilitas: ${kendaraan.fasilitas}',
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        formatRupiah(kendaraan.harga),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: primaryBlue,
+                        ),
+                      ),
+                      SizedBox(height: 16),
+                      Material(
+                        elevation: 2,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            setState(() {
+                              selectedKendaraan = kendaraan;
+                            });
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primaryBlue,
+                            foregroundColor: whiteColor,
+                            minimumSize: Size(double.infinity, 50),
+                          ),
+                          child: Text('Pilih Kendaraan Ini'),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
-        ],
-      ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildDetailRow(IconData icon, String text) {
     return Row(
@@ -209,9 +248,7 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
         iconTheme: const IconThemeData(color: whiteColor),
         centerTitle: true,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(
-            bottom: Radius.circular(20),
-          ),
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
         ),
       ),
       body: RefreshIndicator(
@@ -234,10 +271,7 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
                     const SizedBox(height: 20),
                     Text(
                       'Memuat kendaraan...',
-                      style: TextStyle(
-                        color: Colors.grey[700],
-                        fontSize: 16,
-                      ),
+                      style: TextStyle(color: Colors.grey[700], fontSize: 16),
                     ),
                   ],
                 ),
@@ -271,10 +305,7 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
                       child: Text(
                         'Silakan coba lagi atau periksa koneksi internet Anda',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -288,8 +319,9 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
                         ),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 24,
-                          vertical: 12),
+                          vertical: 12,
                         ),
+                      ),
                       child: const Text('MUAT ULANG'),
                     ),
                   ],
@@ -350,10 +382,7 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
                             ],
                           ),
                           const SizedBox(height: 16),
-                          Divider(
-                            height: 1,
-                            color: Colors.grey[300],
-                          ),
+                          Divider(height: 1, color: Colors.grey[300]),
                           const SizedBox(height: 16),
                           Row(
                             children: [
@@ -366,7 +395,8 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
                                         Icon(
                                           Icons.place,
                                           size: 18,
-                                          color: Colors.grey[600]),
+                                          color: Colors.grey[600],
+                                        ),
                                         const SizedBox(width: 6),
                                         Expanded(
                                           child: Text(
@@ -386,7 +416,8 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
                                         Icon(
                                           Icons.calendar_today,
                                           size: 18,
-                                          color: Colors.grey[600]),
+                                          color: Colors.grey[600],
+                                        ),
                                         const SizedBox(width: 6),
                                         const Text(
                                           'Buka setiap hari',
@@ -403,7 +434,8 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 12,
-                                  vertical: 8),
+                                  vertical: 8,
+                                ),
                                 decoration: BoxDecoration(
                                   color: accentColor.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(12),
@@ -427,7 +459,10 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
 
                 // Filter Section
                 Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: whiteColor,
                     borderRadius: BorderRadius.circular(12),
@@ -500,62 +535,64 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
 
                 // Vehicle List
                 Expanded(
-                  child: filteredList.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.filter_alt_off,
-                                size: 60,
-                                color: Colors.grey[400],
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Tidak ada kendaraan\ndengan filter "$selectedFilter"',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.grey[600],
+                  child:
+                      filteredList.isEmpty
+                          ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.filter_alt_off,
+                                  size: 60,
+                                  color: Colors.grey[400],
                                 ),
-                              ),
-                              const SizedBox(height: 8),
-                              TextButton(
-                                onPressed: () {
-                                  setState(() {
-                                    selectedFilter = 'Semua';
-                                  });
-                                },
-                                child: const Text(
-                                  'Reset Filter',
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Tidak ada kendaraan\ndengan filter "$selectedFilter"',
+                                  textAlign: TextAlign.center,
                                   style: TextStyle(
-                                    color: primaryBlue,
-                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: Colors.grey[600],
                                   ),
                                 ),
-                              ),
-                            ],
+                                const SizedBox(height: 8),
+                                TextButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      selectedFilter = 'Semua';
+                                    });
+                                  },
+                                  child: const Text(
+                                    'Reset Filter',
+                                    style: TextStyle(
+                                      color: primaryBlue,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                          : ListView.builder(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                            itemCount: filteredList.length,
+                            itemBuilder: (ctx, index) {
+                              final kendaraan = filteredList[index];
+                              return KendaraanCardCustom(
+                                kendaraan: kendaraan,
+                                isSelected:
+                                    selectedKendaraan?.id == kendaraan.id,
+                                onTap: () {
+                                  setState(() {
+                                    selectedKendaraan = kendaraan;
+                                  });
+                                },
+                                onImageTap: () {
+                                  _showVehicleImageDialog(kendaraan);
+                                },
+                              );
+                            },
                           ),
-                        )
-                      : ListView.builder(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                          itemCount: filteredList.length,
-                          itemBuilder: (ctx, index) {
-                            final kendaraan = filteredList[index];
-                            return KendaraanCardCustom(
-                              kendaraan: kendaraan,
-                              isSelected: selectedKendaraan?.id == kendaraan.id,
-                              onTap: () {
-                                setState(() {
-                                  selectedKendaraan = kendaraan;
-                                });
-                              },
-                              onImageTap: () {
-                                _showVehicleImageDialog(kendaraan);
-                              },
-                            );
-                          },
-                        ),
                 ),
 
                 // Continue Button
@@ -580,16 +617,17 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
                         height: 56,
                         child: ElevatedButton(
                           onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (ctx) => PilihKursiScreen(
-                                destinasi: widget.destinasi,
-                                kendaraan: selectedKendaraan!,
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (ctx) => PilihKursiScreen(
+                                      destinasi: widget.destinasi,
+                                      kendaraan: selectedKendaraan!,
+                                    ),
                               ),
-                            ),
-                          );
-                        },
+                            );
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: primaryBlue,
                             foregroundColor: whiteColor,
@@ -662,11 +700,12 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
       } else if (price is double) {
         numericPrice = price;
       } else if (price is String) {
-        String cleanPrice = price
-            .replaceAll('Rp', '')
-            .replaceAll('.', '')
-            .replaceAll(',', '')
-            .trim();
+        String cleanPrice =
+            price
+                .replaceAll('Rp', '')
+                .replaceAll('.', '')
+                .replaceAll(',', '')
+                .trim();
         numericPrice = double.tryParse(cleanPrice) ?? 0.0;
       } else {
         return 'Rp 0';
@@ -708,7 +747,12 @@ class KendaraanCardCustom extends StatelessWidget {
   // Method untuk format rupiah
   String formatRupiah(dynamic price) {
     try {
-      double numericPrice = price is int ? price.toDouble() : price is double ? price : 0.0;
+      double numericPrice =
+          price is int
+              ? price.toDouble()
+              : price is double
+              ? price
+              : 0.0;
       final formatter = NumberFormat.currency(
         locale: 'id_ID',
         symbol: 'Rp',
@@ -725,9 +769,7 @@ class KendaraanCardCustom extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
@@ -735,7 +777,7 @@ class KendaraanCardCustom extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              // Gambar kendaraan
+              // Gambar kendaraan - FIXED
               GestureDetector(
                 onTap: onImageTap,
                 child: Container(
@@ -745,29 +787,33 @@ class KendaraanCardCustom extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                     color: lightBlue,
                   ),
-                  child: kendaraan.gambar.isNotEmpty
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            kendaraan.gambar,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Icon(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child:
+                        kendaraan.gambar.isNotEmpty
+                            ? FadeInImage.assetNetwork(
+                              placeholder:
+                                  'assets/images/loading.gif', // Add a loading placeholder image to your assets
+                              image: kendaraan.gambar,
+                              fit: BoxFit.cover,
+                              imageErrorBuilder:
+                                  (context, error, stackTrace) => Icon(
+                                    Icons.directions_bus,
+                                    size: 40,
+                                    color: primaryBlue,
+                                  ),
+                            )
+                            : Icon(
                               Icons.directions_bus,
                               size: 40,
                               color: primaryBlue,
                             ),
-                          ),
-                        )
-                      : Icon(
-                          Icons.directions_bus,
-                          size: 40,
-                          color: primaryBlue,
-                        ),
+                  ),
                 ),
               ),
-              
+
               const SizedBox(width: 16),
-              
+
               // Detail kendaraan
               Expanded(
                 child: Column(
@@ -804,13 +850,9 @@ class KendaraanCardCustom extends StatelessWidget {
                   ],
                 ),
               ),
-              
+
               // Indikator terpilih
-              if (isSelected)
-                Icon(
-                  Icons.check_circle,
-                  color: primaryBlue,
-                ),
+              if (isSelected) Icon(Icons.check_circle, color: primaryBlue),
             ],
           ),
         ),
@@ -819,33 +861,34 @@ class KendaraanCardCustom extends StatelessWidget {
   }
 }
 
-  String _formatRupiah(dynamic price) {
-    try {
-      double numericPrice;
+String _formatRupiah(dynamic price) {
+  try {
+    double numericPrice;
 
-      if (price is int) {
-        numericPrice = price.toDouble();
-      } else if (price is double) {
-        numericPrice = price;
-      } else if (price is String) {
-        String cleanPrice = price
-            .replaceAll('Rp', '')
-            .replaceAll('.', '')
-            .replaceAll(',', '')
-            .trim();
-        numericPrice = double.tryParse(cleanPrice) ?? 0.0;
-      } else {
-        return 'Rp 0';
-      }
-
-      final formatter = NumberFormat.currency(
-        locale: 'id_ID',
-        symbol: 'Rp',
-        decimalDigits: 0,
-      );
-
-      return formatter.format(numericPrice);
-    } catch (e) {
+    if (price is int) {
+      numericPrice = price.toDouble();
+    } else if (price is double) {
+      numericPrice = price;
+    } else if (price is String) {
+      String cleanPrice =
+          price
+              .replaceAll('Rp', '')
+              .replaceAll('.', '')
+              .replaceAll(',', '')
+              .trim();
+      numericPrice = double.tryParse(cleanPrice) ?? 0.0;
+    } else {
       return 'Rp 0';
     }
+
+    final formatter = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp',
+      decimalDigits: 0,
+    );
+
+    return formatter.format(numericPrice);
+  } catch (e) {
+    return 'Rp 0';
   }
+}

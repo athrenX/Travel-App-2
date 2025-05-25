@@ -6,13 +6,13 @@ import 'package:provider/provider.dart';
 import 'package:travelapp/main.dart';
 import 'package:travelapp/providers/auth_provider.dart';
 import 'package:travelapp/providers/destinasi_provider.dart';
-import 'package:travelapp/providers/wishlist_provider.dart'; // Add this import
+import 'package:travelapp/providers/wishlist_provider.dart';
 import 'package:travelapp/screens/auth/login_screen.dart';
 import 'package:travelapp/screens/user/detail_destinasi_screen.dart';
 import 'package:travelapp/screens/user/profil_screen.dart';
 import 'package:travelapp/screens/user/order_screen.dart';
 import 'package:travelapp/providers/order_provider.dart';
-import 'package:travelapp/screens/user/wishlist_screen.dart'; // Add this import
+import 'package:travelapp/screens/user/wishlist_screen.dart';
 
 void main() {
   runApp(
@@ -20,9 +20,8 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => DestinasiProvider()),
-        ChangeNotifierProvider(
-          create: (_) => WishlistProvider(),
-        ), // Add this line
+        ChangeNotifierProvider(create: (_) => WishlistProvider()),
+        ChangeNotifierProvider(create: (_) => OrderProvider()),
       ],
       child: MyApp(),
     ),
@@ -38,6 +37,74 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
+        // Improved text theme
+        textTheme: TextTheme(
+          headlineLarge: TextStyle(
+            fontSize: 24.0,
+            fontWeight: FontWeight.bold,
+            color: Colors.blue.shade800,
+          ),
+          headlineMedium: TextStyle(
+            fontSize: 20.0,
+            fontWeight: FontWeight.w600,
+            color: Colors.blue.shade800,
+          ),
+          titleMedium: TextStyle(fontSize: 16.0, fontWeight: FontWeight.w500),
+          bodyMedium: TextStyle(fontSize: 14.0, color: Colors.grey.shade800),
+          bodySmall: TextStyle(fontSize: 12.0, color: Colors.grey.shade600),
+        ),
+        // Improved color scheme
+        colorScheme: ColorScheme.light(
+          primary: Colors.blue.shade800,
+          secondary: Colors.amber.shade600,
+          surface: Colors.white,
+          background: Colors.grey.shade50,
+        ),
+        // Card theme
+        cardTheme: CardTheme(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        // App bar theme
+        appBarTheme: AppBarTheme(
+          elevation: 0,
+          centerTitle: true,
+          backgroundColor: Colors.blue.shade800,
+          titleTextStyle: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+          iconTheme: IconThemeData(color: Colors.white),
+        ),
+        // Button theme
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            textStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+          ),
+        ),
+        // Input decoration theme
+        inputDecorationTheme: InputDecorationTheme(
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.blue.shade800, width: 2),
+          ),
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
       ),
       home: HomeScreen(),
     );
@@ -314,7 +381,7 @@ class _HomeScreenState extends State<HomeScreen> {
               });
 
               // Navigasi berdasarkan index
-              if (index == 2) {
+              if (index == 1) {
                 final authProvider = Provider.of<AuthProvider>(
                   context,
                   listen: false,
@@ -356,7 +423,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     _currentNavIndex = 0; // Return to home if not authenticated
                   });
                 }
-              } else if (index == 3) {
+              } else if (index == 2) {
                 // Reset notifikasi pesanan baru ketika diklik
                 orderProvider.resetPesananBaru();
                 Navigator.push(
@@ -370,10 +437,6 @@ class _HomeScreenState extends State<HomeScreen> {
             type: BottomNavigationBarType.fixed,
             items: [
               BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.explore),
-                label: 'Explore',
-              ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.favorite),
                 label: 'Wishlist',
@@ -515,7 +578,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
-                          childAspectRatio: 0.75,
+                          childAspectRatio: 0.8, // Ubah rasio aspek agar sesuai
                           crossAxisSpacing: 10,
                           mainAxisSpacing: 10,
                         ),
@@ -550,247 +613,257 @@ class _HomeScreenState extends State<HomeScreen> {
   // Widget untuk tampilan home utama
   Widget _buildHomeContent() {
     return SingleChildScrollView(
-      child: Column(
-        children: [
-          // Carousel
-          AspectRatio(
-            aspectRatio: 16 / 9,
-            child: Stack(
-              children: [
-                PageView(
-                  controller: _pageController,
-                  onPageChanged: (index) {
-                    setState(() {
-                      _currentCarouselIndex = index;
-                    });
-                  },
-                  children: [
-                    _buildCarouselItem(
-                      'assets/images/gambar_bromo.jpeg',
-                      'Gunung Bromo',
-                    ),
-                    _buildCarouselItem(
-                      'assets/images/gunung_sindoro.jpeg',
-                      'Gunung Sindoro',
-                    ),
-                    _buildCarouselItem(
-                      'assets/images/anyer.jpg',
-                      'Pantai Anyer',
-                    ),
-                    _buildCarouselItem(
-                      'assets/images/PANGANDARAN.webp',
-                      'Pantai Pangandaran',
-                    ),
-                    _buildCarouselItem(
-                      'assets/images/kawahIjen.webp',
-                      'Kawah Ijen',
-                    ),
-                    _buildCarouselItem(
-                      'assets/images/karimun jawa.webp',
-                      'Pantai Karimun Jawa',
-                    ),
-                  ],
-                ),
-                Positioned(
-                  bottom: 10,
-                  left: 0,
-                  right: 0,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(6, (index) {
-                      return Container(
-                        width: 10,
-                        height: 10,
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color:
-                              _currentCarouselIndex == index
-                                  ? Colors.white
-                                  : Colors.white.withOpacity(0.5),
-                        ),
-                      );
-                    }),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Destinations section with card grid
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 16),
-                  child: Text(
-                    'Pilihan Destinasi',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-
-                // Category filters
-                Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children:
-                          ['Semua', 'Gunung', 'Pantai'].map((category) {
-                            final isSelected = _selectedCategory == category;
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                              ),
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  setState(() {
-                                    _selectedCategory = category;
-                                  });
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor:
-                                      isSelected
-                                          ? Colors.blue.shade800
-                                          : Colors.grey.shade200,
-                                  foregroundColor:
-                                      isSelected
-                                          ? Colors.white
-                                          : Colors.black87,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                    vertical: 12,
-                                  ),
-                                  elevation: isSelected ? 4 : 1,
-                                ),
-                                child: Text(
-                                  category,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                    ),
-                  ),
-                ),
-
-                Consumer<DestinasiProvider>(
-                  builder: (ctx, destinasiProvider, child) {
-                    final destinasiList =
-                        destinasiProvider.destinasiList.where((destinasi) {
-                          if (_selectedCategory == 'Semua') return true;
-                          return destinasi.kategori.toLowerCase() ==
-                              _selectedCategory.toLowerCase();
-                        }).toList();
-
-                    if (destinasiList.isEmpty) {
-                      return SizedBox(
-                        height: 200,
-                        child: Center(
-                          child: Text(
-                            'Tidak ada destinasi ${_selectedCategory == "Semua" ? "" : _selectedCategory}',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ),
-                      );
-                    }
-
-                    return GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            childAspectRatio: 0.75,
-                            crossAxisSpacing: 10,
-                            mainAxisSpacing: 10,
-                          ),
-                      itemCount:
-                          destinasiList.length > 8 ? 8 : destinasiList.length,
-                      itemBuilder: (ctx, index) {
-                        final destinasi = destinasiList[index];
-                        return GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder:
-                                    (ctx) => DetailDestinasiScreen(
-                                      destinasi: destinasi,
-                                    ),
-                              ),
-                            );
-                          },
-                          child: _buildDestinationCard(destinasi),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-
-          // Activities section
-          Container(
-            color: Colors.grey.shade100,
-            padding: const EdgeInsets.symmetric(vertical: 24),
-            child: Column(
-              children: [
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 16),
-                  child: Text(
-                    'Aktivitas Populer',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 20),
+        child: Column(
+          children: [
+            // Carousel
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Stack(
+                children: [
+                  PageView(
+                    controller: _pageController,
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentCarouselIndex = index;
+                      });
+                    },
                     children: [
-                      _buildActivityCardHorizontal(
-                        'assets/images/jemur.jpg',
-                        'Berjemur',
+                      _buildCarouselItem(
+                        'assets/images/gambar_bromo.jpeg',
+                        'Gunung Bromo',
                       ),
-                      _buildActivityCardHorizontal(
-                        'assets/images/Snorkling_Pangandaran.jpg',
-                        'Snorkeling',
+                      _buildCarouselItem(
+                        'assets/images/gunung_sindoro.jpeg',
+                        'Gunung Sindoro',
                       ),
-                      _buildActivityCardHorizontal(
-                        'assets/images/jetski.jpg',
-                        'Jetski',
+                      _buildCarouselItem(
+                        'assets/images/anyer.jpg',
+                        'Pantai Anyer',
+                      ),
+                      _buildCarouselItem(
+                        'assets/images/PANGANDARAN.webp',
+                        'Pantai Pangandaran',
+                      ),
+                      _buildCarouselItem(
+                        'assets/images/kawahIjen.webp',
+                        'Kawah Ijen',
+                      ),
+                      _buildCarouselItem(
+                        'assets/images/karimun jawa.webp',
+                        'Pantai Karimun Jawa',
                       ),
                     ],
                   ),
-                ),
-              ],
+                  Positioned(
+                    bottom: 10,
+                    left: 0,
+                    right: 0,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(6, (index) {
+                        return Container(
+                          width: 10,
+                          height: 10,
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color:
+                                _currentCarouselIndex == index
+                                    ? Colors.white
+                                    : Colors.white.withOpacity(0.5),
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
 
-          // Footer with copyright
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 24),
-            width: double.infinity,
-            child: const Text(
-              '© 2025 Destinasi Wisata Indonesia',
-              style: TextStyle(color: Colors.grey),
-              textAlign: TextAlign.center,
+            // Destinations section with card grid
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 16),
+                    child: Text(
+                      'Pilihan Destinasi',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+
+                  // Category filters
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children:
+                            ['Semua', 'Gunung', 'Pantai'].map((category) {
+                              final isSelected = _selectedCategory == category;
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      _selectedCategory = category;
+                                    });
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor:
+                                        isSelected
+                                            ? Colors.blue.shade800
+                                            : Colors.grey.shade200,
+                                    foregroundColor:
+                                        isSelected
+                                            ? Colors.white
+                                            : Colors.black87,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 12,
+                                    ),
+                                    elevation: isSelected ? 4 : 1,
+                                  ),
+                                  child: Text(
+                                    category,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                      ),
+                    ),
+                  ),
+
+                  Consumer<DestinasiProvider>(
+                    builder: (ctx, destinasiProvider, child) {
+                      final destinasiList =
+                          destinasiProvider.destinasiList.where((destinasi) {
+                            if (_selectedCategory == 'Semua') return true;
+                            return destinasi.kategori.toLowerCase() ==
+                                _selectedCategory.toLowerCase();
+                          }).toList();
+
+                      if (destinasiList.isEmpty) {
+                        return SizedBox(
+                          height: 200,
+                          child: Center(
+                            child: Text(
+                              'Tidak ada destinasi ${_selectedCategory == "Semua" ? "" : _selectedCategory}',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+
+                      return GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              childAspectRatio:
+                                  0.85, // Ubah rasio aspek agar sesuai
+                              crossAxisSpacing: 10,
+                              mainAxisSpacing: 15, // Tambah jarak vertikal
+                            ),
+                        itemCount:
+                            destinasiList.length > 8 ? 8 : destinasiList.length,
+                        itemBuilder: (ctx, index) {
+                          final destinasi = destinasiList[index];
+                          return GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (ctx) => DetailDestinasiScreen(
+                                        destinasi: destinasi,
+                                      ),
+                                ),
+                              );
+                            },
+                            child: _buildDestinationCard(destinasi),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+
+            // Activities section
+            Container(
+              color: Colors.grey.shade100,
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Column(
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 16),
+                    child: Text(
+                      'Aktivitas Populer',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        _buildActivityCardHorizontal(
+                          'assets/images/jemur.jpg',
+                          'Berjemur',
+                        ),
+                        _buildActivityCardHorizontal(
+                          'assets/images/Snorkling_Pangandaran.jpg',
+                          'Snorkeling',
+                        ),
+                        _buildActivityCardHorizontal(
+                          'assets/images/jetski.jpg',
+                          'Jetski',
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 20),
+            // Footer with copyright
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              width: double.infinity,
+              child: const Text(
+                '© 2025 Destinasi Wisata Indonesia',
+                style: TextStyle(color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -802,150 +875,165 @@ class _HomeScreenState extends State<HomeScreen> {
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
         return Card(
-          elevation: 5,
+          elevation: 3, // Kurangi elevasi untuk tampilan yang lebih flat
+          margin: EdgeInsets.zero, // Hapus margin default
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Image container dengan tinggi yang tetap
               Stack(
                 children: [
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(15),
+                      top: Radius.circular(12),
                     ),
-                    child: Image.asset(
-                      destinasi.gambar,
-                      height: 130,
+                    child: Container(
+                      height: 110, // Tinggi tetap untuk gambar
                       width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          height: 130,
-                          width: double.infinity,
-                          color: Colors.grey.shade300,
-                          child: Icon(
-                            Icons.landscape,
-                            size: 50,
-                            color: Colors.grey.shade500,
-                          ),
-                        );
-                      },
+                      child: Image.asset(
+                        destinasi.gambar,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.grey.shade300,
+                            child: Icon(
+                              Icons.landscape,
+                              size: 50,
+                              color: Colors.grey.shade500,
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ),
                   Positioned(
-                    top: 8,
-                    right: 8,
-                    child: IconButton(
-                      icon: Icon(
-                        isInWishlist ? Icons.favorite : Icons.favorite_border,
-                        color: isInWishlist ? Colors.red : Colors.white,
-                        size: 24,
+                    top: 5,
+                    right: 5,
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.8),
+                        shape: BoxShape.circle,
                       ),
-                      onPressed: () {
-                        if (authProvider.isAuthenticated) {
-                          if (isInWishlist) {
-                            wishlistProvider.removeFromWishlist(destinasi.id);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  '${destinasi.nama} dihapus dari wishlist',
+                      child: IconButton(
+                        padding: EdgeInsets.zero,
+                        icon: Icon(
+                          isInWishlist ? Icons.favorite : Icons.favorite_border,
+                          color: isInWishlist ? Colors.red : Colors.grey,
+                          size: 20,
+                        ),
+                        onPressed: () {
+                          if (authProvider.isAuthenticated) {
+                            if (isInWishlist) {
+                              wishlistProvider.removeFromWishlist(destinasi.id);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    '${destinasi.nama} dihapus dari wishlist',
+                                  ),
+                                  duration: Duration(seconds: 2),
                                 ),
-                                duration: Duration(seconds: 2),
-                              ),
-                            );
+                              );
+                            } else {
+                              wishlistProvider.addToWishlist(
+                                authProvider.user!.id,
+                                destinasi.id,
+                              );
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    '${destinasi.nama} ditambahkan ke wishlist',
+                                  ),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                            }
                           } else {
-                            wishlistProvider.addToWishlist(
-                              authProvider.user!.id,
-                              destinasi.id,
-                            );
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                  '${destinasi.nama} ditambahkan ke wishlist',
+                                  'Silakan login untuk menambahkan ke wishlist',
                                 ),
                                 duration: Duration(seconds: 2),
+                                action: SnackBarAction(
+                                  label: 'Login',
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => LoginScreen(),
+                                      ),
+                                    );
+                                  },
+                                ),
                               ),
                             );
                           }
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'Silakan login untuk menambahkan ke wishlist',
-                              ),
-                              duration: Duration(seconds: 2),
-                              action: SnackBarAction(
-                                label: 'Login',
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => LoginScreen(),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          );
-                        }
-                      },
+                        },
+                      ),
                     ),
                   ),
                 ],
               ),
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      destinasi.nama,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+              // Content container dengan padding yang lebih kecil
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        destinasi.nama,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.location_on,
-                          size: 14,
-                          color: Colors.grey,
-                        ),
-                        const SizedBox(width: 2),
-                        Expanded(
-                          child: Text(
-                            destinasi.lokasi,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade700,
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.location_on,
+                            size: 12,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(width: 2),
+                          Expanded(
+                            child: Text(
+                              destinasi.lokasi,
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.grey.shade700,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Icon(Icons.star, size: 16, color: Colors.amber),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${destinasi.rating}',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(Icons.star, size: 14, color: Colors.amber),
+                          const SizedBox(width: 2),
+                          Text(
+                            '${destinasi.rating}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
