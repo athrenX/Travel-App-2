@@ -1,121 +1,26 @@
-// Implementasi fitur pencarian untuk Java Wonderland App
+// ignore_for_file: use_key_in_widget_constructors, prefer_const_constructors
 
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:provider/provider.dart';
-import 'package:travelapp/main.dart';
 import 'package:travelapp/providers/auth_provider.dart';
 import 'package:travelapp/providers/destinasi_provider.dart';
+import 'package:travelapp/providers/order_provider.dart';
 import 'package:travelapp/providers/wishlist_provider.dart';
 import 'package:travelapp/screens/auth/login_screen.dart';
 import 'package:travelapp/screens/user/detail_destinasi_screen.dart';
-import 'package:travelapp/screens/user/profil_screen.dart';
 import 'package:travelapp/screens/user/order_screen.dart';
-import 'package:travelapp/providers/order_provider.dart';
+import 'package:travelapp/screens/user/profil_screen.dart';
 import 'package:travelapp/screens/user/wishlist_screen.dart';
-
-void main() {
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => DestinasiProvider()),
-        ChangeNotifierProvider(create: (_) => WishlistProvider()),
-        ChangeNotifierProvider(create: (_) => OrderProvider()),
-      ],
-      child: MyApp(),
-    ),
-  );
-}
-
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Java Wonderland',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-        // Improved text theme
-        textTheme: TextTheme(
-          headlineLarge: TextStyle(
-            fontSize: 24.0,
-            fontWeight: FontWeight.bold,
-            color: Colors.blue.shade800,
-          ),
-          headlineMedium: TextStyle(
-            fontSize: 20.0,
-            fontWeight: FontWeight.w600,
-            color: Colors.blue.shade800,
-          ),
-          titleMedium: TextStyle(fontSize: 16.0, fontWeight: FontWeight.w500),
-          bodyMedium: TextStyle(fontSize: 14.0, color: Colors.grey.shade800),
-          bodySmall: TextStyle(fontSize: 12.0, color: Colors.grey.shade600),
-        ),
-        // Improved color scheme
-        colorScheme: ColorScheme.light(
-          primary: Colors.blue.shade800,
-          secondary: Colors.amber.shade600,
-          surface: Colors.white,
-          background: Colors.grey.shade50,
-        ),
-        // Card theme
-        cardTheme: CardTheme(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        // App bar theme
-        appBarTheme: AppBarTheme(
-          elevation: 0,
-          centerTitle: true,
-          backgroundColor: Colors.blue.shade800,
-          titleTextStyle: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-          iconTheme: IconThemeData(color: Colors.white),
-        ),
-        // Button theme
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            textStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-          ),
-        ),
-        // Input decoration theme
-        inputDecorationTheme: InputDecorationTheme(
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: Colors.grey.shade300),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: Colors.grey.shade300),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: Colors.blue.shade800, width: 2),
-          ),
-          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        ),
-      ),
-      home: HomeScreen(),
-    );
-  }
-}
+import 'package:flutter/services.dart';
+import 'dart:io';
+import 'package:travelapp/providers/auth_provider.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key});
 
   @override
-  _HomeScreenState createState() => _HomeScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
@@ -129,7 +34,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Timer? _popupHideTimer;
   String _selectedCategory = 'Semua';
 
-  // Variabel untuk pencarian
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
@@ -139,42 +43,27 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // Hide loader after 2 seconds
+
+    Future.microtask(() {
+      Provider.of<DestinasiProvider>(context, listen: false).fetchDestinasi();
+    });
+
     Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() {
-          showLoader = false;
-        });
-      }
+      if (mounted) setState(() => showLoader = false);
     });
 
-    // Show popup after 3 seconds
     _popupTimer = Timer(const Duration(seconds: 3), () {
-      if (mounted) {
-        setState(() {
-          showPopup = true;
-        });
-      }
+      if (mounted) setState(() => showPopup = true);
     });
 
-    // Hide popup after 10 seconds
     _popupHideTimer = Timer(const Duration(seconds: 10), () {
-      if (mounted) {
-        setState(() {
-          showPopup = false;
-        });
-      }
+      if (mounted) setState(() => showPopup = false);
     });
 
-    // Auto scroll carousel
     _carouselTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (mounted) {
         setState(() {
-          if (_currentCarouselIndex < 5) {
-            _currentCarouselIndex++;
-          } else {
-            _currentCarouselIndex = 0;
-          }
+          _currentCarouselIndex = (_currentCarouselIndex + 1) % 6;
         });
 
         if (_pageController.hasClients) {
@@ -187,7 +76,6 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     });
 
-    // Menambahkan listener untuk pencarian
     _searchController.addListener(() {
       setState(() {
         _searchQuery = _searchController.text;
@@ -207,46 +95,6 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  // Handle logout function
-  void _handleLogout(BuildContext context) {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Konfirmasi Logout'),
-            content: const Text('Apakah anda yakin ingin keluar?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Batal'),
-              ),
-              TextButton(
-                onPressed: () async {
-                  try {
-                    await Provider.of<AuthProvider>(
-                      context,
-                      listen: false,
-                    ).logout();
-
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (_) => LoginScreen()),
-                      (route) => false,
-                    );
-                  } catch (e) {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text('Error: $e')));
-                  }
-                },
-                child: const Text('Logout'),
-              ),
-            ],
-          ),
-    );
-  }
-
-  // Toggle mode pencarian
   void _toggleSearch() {
     setState(() {
       _isSearching = !_isSearching;
@@ -254,7 +102,6 @@ class _HomeScreenState extends State<HomeScreen> {
         _searchController.clear();
         _searchQuery = '';
       } else {
-        // Fokus ke field pencarian saat mode pencarian aktif
         Future.delayed(const Duration(milliseconds: 100), () {
           FocusScope.of(context).requestFocus(_searchFocusNode);
         });
@@ -262,209 +109,201 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // Build AppBar sesuai dengan mode pencarian
-  PreferredSizeWidget _buildAppBar() {
+  Future<bool> _onWillPop() async {
+    // Jika dalam mode pencarian, keluar dari mode pencarian
     if (_isSearching) {
-      return AppBar(
-        backgroundColor: Colors.blue.shade800,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: _toggleSearch,
-        ),
-        titleSpacing: 0,
-        title: TextField(
-          controller: _searchController,
-          focusNode: _searchFocusNode,
-          autofocus: true,
-          style: const TextStyle(color: Colors.white),
-          cursorColor: Colors.white,
-          decoration: const InputDecoration(
-            hintText: 'Cari destinasi wisata...',
-            hintStyle: TextStyle(color: Colors.white70),
-            border: InputBorder.none,
-            contentPadding: EdgeInsets.symmetric(horizontal: 15, vertical: 15),
-          ),
-        ),
-        actions: [
-          if (_showClearButton)
-            IconButton(
-              icon: const Icon(Icons.clear),
-              onPressed: () {
-                _searchController.clear();
-              },
-            ),
-        ],
-      );
-    } else {
-      return AppBar(
-        backgroundColor: Colors.blue.shade800,
-        title: const Text(
-          'JAVA WONDERLAND',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: _toggleSearch,
-            tooltip: 'Cari',
-          ),
-          IconButton(
-            icon: const Icon(Icons.person),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ProfileScreen()),
-              );
-            },
-            tooltip: 'Akun',
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
-            onPressed: () => _handleLogout(context),
-            tooltip: 'Logout',
-          ),
-        ],
-      );
+      _toggleSearch();
+      return false;
     }
+
+    // Jika sedang di halaman bukan Home, kembali ke tab Home
+    if (_currentNavIndex != 0) {
+      setState(() {
+        _currentNavIndex = 0;
+      });
+      return false;
+    }
+
+    // ❗ Tambahan: Jika tab sekarang Home, tapi navigator bisa pop (misalnya buka detail)
+    if (Navigator.of(context).canPop()) {
+      return true;
+    }
+
+    // Jika sudah di Home dan tidak ada stack lain, tampilkan dialog keluar
+    final shouldExit = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (BuildContext dialogContext) => AlertDialog(
+            title: const Text('Keluar Aplikasi'),
+            content: const Text(
+              'Apakah Anda yakin ingin keluar dari aplikasi?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('Tidak'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: const Text('Ya'),
+              ),
+            ],
+          ),
+    );
+
+    if (shouldExit == true) {
+      try {
+        if (Platform.isAndroid) {
+          SystemNavigator.pop();
+        } else {
+          exit(0);
+        }
+      } catch (e) {
+        SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+      }
+      return true;
+    }
+
+    return false;
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: _buildAppBar(),
-      body: Stack(
-        children: [
-          // Main content
-          FutureBuilder(
-            future:
-                Provider.of<DestinasiProvider>(
-                  context,
-                  listen: false,
-                ).fetchDestinasi(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting &&
-                  showLoader) {
-                return const Center(child: CircularProgressIndicator());
-              } else if (snapshot.hasError) {
-                return Center(child: Text('Error: ${snapshot.error}'));
-              } else {
-                return _isSearching
-                    ? _buildSearchResults()
-                    : _buildHomeContent();
-              }
-            },
-          ),
+    final authProvider = Provider.of<AuthProvider>(context);
 
-          // Loading overlay
-          if (showLoader)
-            Container(
-              color: Colors.black.withOpacity(0.5),
-              child: Center(child: _buildCustomLoader()),
+    return WillPopScope(
+      onWillPop: _onWillPop,
+      child: Scaffold(
+        appBar: _currentNavIndex == 0 ? _buildAppBar() : null,
+        body: Stack(
+          children: [
+            IndexedStack(
+              index: _currentNavIndex,
+              children: [
+                // Home Tab - tanpa Scaffold wrapper
+                _isSearching ? _buildSearchResults() : _buildHomeContent(),
+                // Wishlist Tab
+                WishlistScreen(
+                  resetNavbarToHome: () {
+                    setState(() {
+                      _currentNavIndex = 0; // kembali ke tab home
+                    });
+                  },
+                ),
+                // Order Tab
+                OrderScreen(),
+                // Profile Tab
+                ProfileScreen(),
+              ],
             ),
-
-          // Popup notification (only show if not searching)
-          if (showPopup && !_isSearching)
-            Positioned(
-              left: 20,
-              bottom: 80, // Position above bottom navigation bar
-              child: _buildPopupNotification(),
-            ),
-        ],
-      ),
-      bottomNavigationBar: Consumer<OrderProvider>(
-        builder: (context, orderProvider, child) {
-          return BottomNavigationBar(
-            currentIndex: _currentNavIndex,
-            onTap: (index) {
-              setState(() {
-                _currentNavIndex = index;
-              });
-
-              // Navigasi berdasarkan index
-              if (index == 1) {
-                final authProvider = Provider.of<AuthProvider>(
-                  context,
-                  listen: false,
-                );
-                if (authProvider.isAuthenticated) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (context) => WishlistScreen(
-                            userId: authProvider.user!.id,
-                            resetNavbarToHome: () {
-                              setState(() {
-                                _currentNavIndex = 0;
-                              });
-                            },
-                          ),
-                    ),
-                  );
-                } else {
+            if (showLoader)
+              Container(
+                color: Colors.black.withOpacity(0.5),
+                child: Center(child: _buildCustomLoader()),
+              ),
+            if (showPopup && !_isSearching && _currentNavIndex == 0)
+              Positioned(
+                left: 20,
+                bottom: 80,
+                child: _buildPopupNotification(),
+              ),
+          ],
+        ),
+        bottomNavigationBar: Consumer<OrderProvider>(
+          builder: (context, orderProvider, child) {
+            return BottomNavigationBar(
+              currentIndex: _currentNavIndex,
+              onTap: (index) {
+                if (index == 1 && !authProvider.isAuthenticated) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Silakan login untuk melihat wishlist'),
                       duration: Duration(seconds: 2),
                       action: SnackBarAction(
                         label: 'Login',
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => LoginScreen(),
+                        onPressed:
+                            () => Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => LoginScreen()),
                             ),
-                          );
-                        },
                       ),
                     ),
                   );
-                  setState(() {
-                    _currentNavIndex = 0; // Return to home if not authenticated
-                  });
+                  return;
                 }
-              } else if (index == 2) {
-                // Reset notifikasi pesanan baru ketika diklik
-                orderProvider.resetPesananBaru();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => OrderScreen()),
-                );
-              }
-            },
-            selectedItemColor: Colors.blue.shade800,
-            unselectedItemColor: Colors.grey,
-            type: BottomNavigationBarType.fixed,
-            items: [
-              BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.favorite),
-                label: 'Wishlist',
-              ),
-              BottomNavigationBarItem(
-                icon: Stack(
-                  children: [
-                    Icon(Icons.shopping_cart_rounded),
-                    if (orderProvider.adaPesananBaru)
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: Container(
-                          padding: EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                  ],
+                if (index == 2) {
+                  Provider.of<OrderProvider>(
+                    context,
+                    listen: false,
+                  ).resetPesananBaru();
+                }
+                setState(() {
+                  _currentNavIndex = index;
+                });
+              },
+              selectedItemColor: Colors.blue.shade800,
+              unselectedItemColor: Colors.grey,
+              type: BottomNavigationBarType.fixed,
+              items: const [
+                BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.favorite),
+                  label: 'Wishlist',
                 ),
-                label: 'Pesanan',
-              ),
-            ],
-          );
-        },
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.shopping_cart_rounded),
+                  label: 'Pesanan',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.person),
+                  label: 'Profil',
+                ),
+              ],
+            );
+          },
+        ),
       ),
+    );
+  }
+
+  // AppBar yang sudah disederhanakan - hanya tombol pencarian
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      title:
+          _isSearching
+              ? TextField(
+                controller: _searchController,
+                focusNode: _searchFocusNode,
+                autofocus: true,
+                style: const TextStyle(color: Colors.white),
+                cursorColor: Colors.white,
+                decoration: const InputDecoration(
+                  hintText: 'Cari destinasi wisata...',
+                  hintStyle: TextStyle(color: Colors.white70),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 15,
+                    vertical: 15,
+                  ),
+                ),
+              )
+              : const Text(
+                'JAVA WONDERLAND',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+      backgroundColor: Colors.blue.shade800,
+      leading:
+          _isSearching
+              ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: _toggleSearch,
+              )
+              : null,
+      actions: [
+        if (!_isSearching)
+          IconButton(icon: const Icon(Icons.search), onPressed: _toggleSearch),
+      ],
     );
   }
 
@@ -578,7 +417,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
-                          childAspectRatio: 0.8, // Ubah rasio aspek agar sesuai
+                          childAspectRatio: 0.8,
                           crossAxisSpacing: 10,
                           mainAxisSpacing: 10,
                         ),
@@ -780,10 +619,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 2,
-                              childAspectRatio:
-                                  0.85, // Ubah rasio aspek agar sesuai
+                              childAspectRatio: 0.85,
                               crossAxisSpacing: 10,
-                              mainAxisSpacing: 15, // Tambah jarak vertikal
+                              mainAxisSpacing: 15,
                             ),
                         itemCount:
                             destinasiList.length > 8 ? 8 : destinasiList.length,
@@ -875,8 +713,8 @@ class _HomeScreenState extends State<HomeScreen> {
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
         return Card(
-          elevation: 3, // Kurangi elevasi untuk tampilan yang lebih flat
-          margin: EdgeInsets.zero, // Hapus margin default
+          elevation: 3,
+          margin: EdgeInsets.zero,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -890,8 +728,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(12),
                     ),
-                    child: Container(
-                      height: 110, // Tinggi tetap untuk gambar
+                    child: SizedBox(
+                      height: 110,
                       width: double.infinity,
                       child: Image.asset(
                         destinasi.gambar,
@@ -940,7 +778,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               );
                             } else {
                               wishlistProvider.addToWishlist(
-                                authProvider.user!.id,
+                                '${authProvider.user?.id ?? ''}',
                                 destinasi.id,
                               );
                               ScaffoldMessenger.of(context).showSnackBar(

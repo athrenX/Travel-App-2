@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class KelolaPembayaranScreen extends StatefulWidget {
+  const KelolaPembayaranScreen({super.key});
+
   @override
   _KelolaPembayaranScreenState createState() => _KelolaPembayaranScreenState();
 }

@@ -7,12 +7,12 @@ import 'package:travelapp/screens/auth/login_screen.dart'; // Ensure this import
 import 'package:travelapp/providers/auth_provider.dart'; // Add this import for AuthProvider
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' as latlng2;
+import 'package:share_plus/share_plus.dart';
 
 class DetailDestinasiScreen extends StatefulWidget {
   final Destinasi destinasi;
 
-  const DetailDestinasiScreen({Key? key, required this.destinasi})
-    : super(key: key);
+  const DetailDestinasiScreen({super.key, required this.destinasi});
 
   @override
   State<DetailDestinasiScreen> createState() => _DetailDestinasiScreenState();
@@ -41,6 +41,7 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
     final theme = Theme.of(context);
     final wishlistProvider = Provider.of<WishlistProvider>(context);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
       body: CustomScrollView(
@@ -110,11 +111,17 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                   child: Icon(Icons.share, color: Colors.white),
                 ),
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Share feature coming soon!')),
+                  Share.share(
+                    'Yuk jelajahi ${destinasi.nama} di Java Wonderland! 🌍\n\n'
+                    'Lokasi: ${destinasi.lokasi}\n'
+                    'Kategori: ${destinasi.kategori}\n'
+                    'Harga: Rp ${destinasi.harga}\n\n'
+                    'Deskripsi: ${destinasi.deskripsi}',
+                    subject: 'Rekomendasi Wisata Java Wonderland',
                   );
                 },
               ),
+
               IconButton(
                 icon: CircleAvatar(
                   backgroundColor: Colors.white24,
@@ -131,7 +138,8 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
 
                     if (_isInWishlist) {
                       wishlistProvider.addToWishlist(
-                        authProvider.user!.id,
+                        '${authProvider.user?.id ?? ''}',
+
                         destinasi.id,
                       );
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -195,6 +203,7 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
+                            flex: 3,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -243,29 +252,36 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                               ],
                             ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.shade50,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.star,
-                                  color: Colors.amber,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  destinasi.rating.toString(),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
+                          const SizedBox(width: 8),
+                          Flexible(
+                            flex: 1,
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.shade50,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.star,
+                                    color: Colors.amber,
+                                    size: 20,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(
+                                      destinasi.rating.toString(),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],
@@ -282,63 +298,136 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                     color: Colors.blue.shade50,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Harga per orang',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.black54,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Rp ${destinasi.harga.toString()}',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blue.shade800,
-                            ),
-                          ),
-                        ],
-                      ),
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.directions_car),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder:
-                                  (context) => PemilihanKendaraanScreen(
-                                    destinasi: destinasi,
+                  child:
+                      screenWidth < 400
+                          ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Harga per orang',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.black54,
+                                    ),
                                   ),
-                            ),
-                          );
-                        },
-                        label: const Text('Pilih Kendaraan'),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 12,
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Rp ${destinasi.harga.toString()}',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.blue.shade800,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  icon: const Icon(Icons.directions_car),
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder:
+                                            (context) =>
+                                                PemilihanKendaraanScreen(
+                                                  destinasi: destinasi,
+                                                ),
+                                      ),
+                                    );
+                                  },
+                                  label: const Text('Pilih Kendaraan'),
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 12,
+                                    ),
+                                    backgroundColor: Colors.blue.shade800,
+                                    foregroundColor: Colors.white,
+                                    textStyle: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    elevation: 0,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
+                          : Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Flexible(
+                                flex: 2,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Harga per orang',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.black54,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Rp ${destinasi.harga.toString()}',
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blue.shade800,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                flex: 2,
+                                child: ElevatedButton.icon(
+                                  icon: const Icon(Icons.directions_car),
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder:
+                                            (context) =>
+                                                PemilihanKendaraanScreen(
+                                                  destinasi: destinasi,
+                                                ),
+                                      ),
+                                    );
+                                  },
+                                  label: const Text('Pilih Kendaraan'),
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 12,
+                                    ),
+                                    backgroundColor: Colors.blue.shade800,
+                                    foregroundColor: Colors.white,
+                                    textStyle: TextStyle(
+                                      fontSize: screenWidth < 350 ? 14 : 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    elevation: 0,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          backgroundColor: Colors.blue.shade800,
-                          foregroundColor: Colors.white,
-                          textStyle: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 0,
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
 
                 // Description Section
@@ -426,7 +515,8 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                 child: Hero(
                                   tag: 'gallery-${destinasi.nama}-$index',
                                   child: Container(
-                                    width: 180,
+                                    width:
+                                        screenWidth * 0.45, // Responsive width
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(12),
                                       boxShadow: [
@@ -518,6 +608,9 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             Container(
+                                              constraints: BoxConstraints(
+                                                maxWidth: screenWidth * 0.3,
+                                              ),
                                               padding:
                                                   const EdgeInsets.symmetric(
                                                     horizontal: 8,
@@ -535,6 +628,8 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                                   fontWeight: FontWeight.bold,
                                                   fontSize: 12,
                                                 ),
+                                                overflow: TextOverflow.ellipsis,
+                                                textAlign: TextAlign.center,
                                               ),
                                             ),
                                             const Icon(
@@ -682,12 +777,12 @@ class ReviewCard extends StatelessWidget {
   final String date;
 
   const ReviewCard({
-    Key? key,
+    super.key,
     required this.name,
     required this.rating,
     required this.comment,
     required this.date,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -731,11 +826,14 @@ class ReviewCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          date,
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 12,
+                        Flexible(
+                          child: Text(
+                            date,
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 12,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],

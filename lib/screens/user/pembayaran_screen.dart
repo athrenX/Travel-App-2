@@ -4,12 +4,10 @@ import 'package:intl/intl.dart'; // Untuk format mata uang
 import 'package:travelapp/providers/order_provider.dart';
 import 'package:provider/provider.dart'; // Untuk mengakses Provider
 import 'package:travelapp/screens/user/home_screen.dart';
-import 'package:travelapp/screens/user/order_screen.dart';
-import 'package:travelapp/screens/user/order_screen.dart';
 
 class PembayaranScreen extends StatelessWidget {
   final Pemesanan pemesanan;
-  PembayaranScreen({required this.pemesanan});
+  const PembayaranScreen({super.key, required this.pemesanan});
 
   @override
   Widget build(BuildContext context) {

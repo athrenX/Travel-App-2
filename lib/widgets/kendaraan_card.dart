@@ -7,11 +7,11 @@ class KendaraanCard extends StatelessWidget {
   final VoidCallback onTap;
 
   const KendaraanCard({
-    Key? key,
+    super.key,
     required this.kendaraan,
     required this.isSelected,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

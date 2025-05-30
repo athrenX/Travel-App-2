@@ -4,16 +4,13 @@ import 'package:intl/intl.dart';
 import 'package:travelapp/models/destinasi.dart';
 import 'package:travelapp/models/kendaraan.dart';
 import 'package:travelapp/providers/kendaraan_provider.dart';
-import 'package:travelapp/screens/user/pemesanan_screen.dart';
-import 'package:travelapp/widgets/kendaraan_card.dart';
 // Add this import with your other imports
 import 'package:travelapp/screens/user/pilih_kursi_screen.dart';
 
 class PemilihanKendaraanScreen extends StatefulWidget {
   final Destinasi destinasi;
 
-  const PemilihanKendaraanScreen({Key? key, required this.destinasi})
-    : super(key: key);
+  const PemilihanKendaraanScreen({super.key, required this.destinasi});
 
   @override
   State<PemilihanKendaraanScreen> createState() =>
@@ -737,12 +734,12 @@ class KendaraanCardCustom extends StatelessWidget {
   static const Color whiteColor = Colors.white;
 
   const KendaraanCardCustom({
-    Key? key,
+    super.key,
     required this.kendaraan,
     required this.isSelected,
     required this.onTap,
     required this.onImageTap,
-  }) : super(key: key);
+  });
 
   // Method untuk format rupiah
   String formatRupiah(dynamic price) {

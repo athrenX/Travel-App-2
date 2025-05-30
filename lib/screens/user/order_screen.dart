@@ -6,6 +6,8 @@ import 'package:intl/intl.dart';
 import 'package:travelapp/screens/user/review_screen.dart';
 
 class OrderScreen extends StatelessWidget {
+  const OrderScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     final orderProvider = Provider.of<OrderProvider>(context);
@@ -149,7 +151,6 @@ class OrderScreen extends StatelessWidget {
                 '/home',
               ); // Navigate to home screen or destination list
             },
-            child: Text('Jelajahi Destinasi'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue.shade600,
               padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -157,6 +158,7 @@ class OrderScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(30),
               ),
             ),
+            child: Text('Jelajahi Destinasi'),
           ),
         ],
       ),
@@ -356,7 +358,6 @@ class OrderScreen extends StatelessWidget {
           children: [
             OutlinedButton(
               onPressed: () {},
-              child: Text('Batalkan'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.red,
                 side: BorderSide(color: Colors.red.shade200),
@@ -365,11 +366,11 @@ class OrderScreen extends StatelessWidget {
                 ),
                 padding: EdgeInsets.symmetric(horizontal: 12),
               ),
+              child: Text('Batalkan'),
             ),
             SizedBox(width: 8),
             ElevatedButton(
               onPressed: () {},
-              child: Text('Bayar'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue.shade600,
                 shape: RoundedRectangleBorder(
@@ -377,6 +378,7 @@ class OrderScreen extends StatelessWidget {
                 ),
                 padding: EdgeInsets.symmetric(horizontal: 12),
               ),
+              child: Text('Bayar'),
             ),
             SizedBox(width: 8),
             OutlinedButton(
@@ -392,7 +394,6 @@ class OrderScreen extends StatelessWidget {
                   ),
                 );
               },
-              child: Text('Beri Ulasan'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.blue.shade600,
                 side: BorderSide(color: Colors.blue.shade200),
@@ -401,6 +402,7 @@ class OrderScreen extends StatelessWidget {
                 ),
                 padding: EdgeInsets.symmetric(horizontal: 12),
               ),
+              child: Text('Beri Ulasan'),
             ),
           ],
         );
@@ -421,7 +423,6 @@ class OrderScreen extends StatelessWidget {
               ),
             );
           },
-          child: Text('Beri Ulasan'),
           style: OutlinedButton.styleFrom(
             foregroundColor: Colors.blue.shade600,
             side: BorderSide(color: Colors.blue.shade200),
@@ -430,6 +431,7 @@ class OrderScreen extends StatelessWidget {
             ),
             padding: EdgeInsets.symmetric(horizontal: 12),
           ),
+          child: Text('Beri Ulasan'),
         );
     }
   }
@@ -449,6 +451,8 @@ class OrderScreen extends StatelessWidget {
 }
 
 class FilterBottomSheet extends StatelessWidget {
+  const FilterBottomSheet({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -525,7 +529,6 @@ class FilterBottomSheet extends StatelessWidget {
               Expanded(
                 child: OutlinedButton(
                   onPressed: () {},
-                  child: Text('Reset'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.blue.shade600,
                     side: BorderSide(color: Colors.blue.shade200),
@@ -534,13 +537,13 @@ class FilterBottomSheet extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
+                  child: Text('Reset'),
                 ),
               ),
               SizedBox(width: 16),
               Expanded(
                 child: ElevatedButton(
                   onPressed: () {},
-                  child: Text('Terapkan'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue.shade600,
                     padding: EdgeInsets.symmetric(vertical: 12),
@@ -548,6 +551,7 @@ class FilterBottomSheet extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
+                  child: Text('Terapkan'),
                 ),
               ),
             ],

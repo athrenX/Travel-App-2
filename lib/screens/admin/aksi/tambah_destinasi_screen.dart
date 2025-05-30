@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
 import 'package:travelapp/models/destinasi.dart';
 import 'package:travelapp/services/destinasi_service.dart';
 // Remove image_picker import and use your own image selection method
 
 class TambahDestinasiScreen extends StatefulWidget {
-  const TambahDestinasiScreen({Key? key}) : super(key: key);
+  const TambahDestinasiScreen({super.key});
 
   @override
   _TambahDestinasiScreenState createState() => _TambahDestinasiScreenState();

@@ -4,7 +4,7 @@ import 'package:travelapp/providers/auth_provider.dart';
 import 'package:travelapp/screens/user/home_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({Key? key}) : super(key: key);
+  const RegisterScreen({super.key});
 
   @override
   _RegisterScreenState createState() => _RegisterScreenState();
@@ -37,18 +37,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       try {
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        final user = await authProvider.register(
+        final success = await authProvider.register(
           _namaController.text.trim(),
           _emailController.text.trim(),
           _passwordController.text,
         );
 
-        if (user != null) {
-          // Arahkan ke halaman user setelah pendaftaran
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => HomeScreen()),
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Registrasi berhasil! Silakan login.')),
           );
+
+          Future.delayed(Duration(seconds: 1), () {
+            Navigator.pushReplacementNamed(context, '/login');
+          });
         }
       } catch (e) {
         setState(() {
@@ -70,11 +72,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF1A237E),
-              Color(0xFF3949AB),
-              Color(0xFF3F51B5),
-            ],
+            colors: [Color(0xFF1A237E), Color(0xFF3949AB), Color(0xFF3F51B5)],
           ),
         ),
         child: SafeArea(
@@ -94,7 +92,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         SizedBox(width: 8),
                         Text(
-                          'Daftar Akun Baru',
+                          'Daftar Akun Baru ',
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -127,7 +125,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   SizedBox(height: 16),
                   Text(
-                    'Buat Akun Travel App',
+                    'Buat Akun Travel App ',
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
@@ -174,21 +172,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               fillColor: Colors.grey.shade50,
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.grey.shade200),
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade200,
+                                ),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: theme.primaryColor, width: 2),
+                                borderSide: BorderSide(
+                                  color: theme.primaryColor,
+                                  width: 2,
+                                ),
                               ),
                               errorBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.red.shade300),
+                                borderSide: BorderSide(
+                                  color: Colors.red.shade300,
+                                ),
                               ),
                               focusedErrorBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.red.shade500, width: 2),
+                                borderSide: BorderSide(
+                                  color: Colors.red.shade500,
+                                  width: 2,
+                                ),
                               ),
-                              contentPadding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                              contentPadding: EdgeInsets.symmetric(
+                                vertical: 16,
+                                horizontal: 16,
+                              ),
                             ),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
@@ -209,21 +220,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               fillColor: Colors.grey.shade50,
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.grey.shade200),
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade200,
+                                ),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: theme.primaryColor, width: 2),
+                                borderSide: BorderSide(
+                                  color: theme.primaryColor,
+                                  width: 2,
+                                ),
                               ),
                               errorBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.red.shade300),
+                                borderSide: BorderSide(
+                                  color: Colors.red.shade300,
+                                ),
                               ),
                               focusedErrorBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.red.shade500, width: 2),
+                                borderSide: BorderSide(
+                                  color: Colors.red.shade500,
+                                  width: 2,
+                                ),
                               ),
-                              contentPadding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                              contentPadding: EdgeInsets.symmetric(
+                                vertical: 16,
+                                horizontal: 16,
+                              ),
                             ),
                             keyboardType: TextInputType.emailAddress,
                             validator: (value) {
@@ -261,21 +285,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               fillColor: Colors.grey.shade50,
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.grey.shade200),
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade200,
+                                ),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: theme.primaryColor, width: 2),
+                                borderSide: BorderSide(
+                                  color: theme.primaryColor,
+                                  width: 2,
+                                ),
                               ),
                               errorBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.red.shade300),
+                                borderSide: BorderSide(
+                                  color: Colors.red.shade300,
+                                ),
                               ),
                               focusedErrorBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.red.shade500, width: 2),
+                                borderSide: BorderSide(
+                                  color: Colors.red.shade500,
+                                  width: 2,
+                                ),
                               ),
-                              contentPadding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                              contentPadding: EdgeInsets.symmetric(
+                                vertical: 16,
+                                horizontal: 16,
+                              ),
                             ),
                             obscureText: !_isPasswordVisible,
                             validator: (value) {
@@ -305,7 +342,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 ),
                                 onPressed: () {
                                   setState(() {
-                                    _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                                    _isConfirmPasswordVisible =
+                                        !_isConfirmPasswordVisible;
                                   });
                                 },
                               ),
@@ -313,21 +351,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               fillColor: Colors.grey.shade50,
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.grey.shade200),
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade200,
+                                ),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: theme.primaryColor, width: 2),
+                                borderSide: BorderSide(
+                                  color: theme.primaryColor,
+                                  width: 2,
+                                ),
                               ),
                               errorBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.red.shade300),
+                                borderSide: BorderSide(
+                                  color: Colors.red.shade300,
+                                ),
                               ),
                               focusedErrorBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.red.shade500, width: 2),
+                                borderSide: BorderSide(
+                                  color: Colors.red.shade500,
+                                  width: 2,
+                                ),
                               ),
-                              contentPadding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                              contentPadding: EdgeInsets.symmetric(
+                                vertical: 16,
+                                horizontal: 16,
+                              ),
                             ),
                             obscureText: !_isConfirmPasswordVisible,
                             validator: (value) {
@@ -344,7 +395,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           // Error message
                           if (_errorMessage != null)
                             Container(
-                              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.red.shade50,
                                 borderRadius: BorderRadius.circular(8),
@@ -352,7 +406,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                               child: Text(
                                 _errorMessage!,
-                                style: TextStyle(color: Colors.red.shade700, fontSize: 14),
+                                style: TextStyle(
+                                  color: Colors.red.shade700,
+                                  fontSize: 14,
+                                ),
                               ),
                             ),
                           SizedBox(height: 24),
@@ -369,23 +426,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               elevation: 2,
                               shadowColor: theme.primaryColor.withOpacity(0.5),
                             ),
-                            child: isLoading
-                                ? SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
+                            child:
+                                isLoading
+                                    ? SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                    : Text(
+                                      'DAFTAR SEKARANG',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1.5,
+                                      ),
                                     ),
-                                  )
-                                : Text(
-                                    'DAFTAR SEKARANG',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 1.5,
-                                    ),
-                                  ),
                           ),
                         ],
                       ),
@@ -397,9 +455,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     onPressed: () {
                       Navigator.pop(context);
                     },
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.white,
-                    ),
+                    style: TextButton.styleFrom(foregroundColor: Colors.white),
                     child: RichText(
                       text: TextSpan(
                         text: 'Sudah punya akun? ',

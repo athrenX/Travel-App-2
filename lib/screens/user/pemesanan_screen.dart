@@ -12,12 +12,12 @@ class PemesananScreen extends StatefulWidget {
   final int totalPrice; // This should already be the sum of selected seats only
 
   const PemesananScreen({
-    Key? key,
+    super.key,
     required this.destinasi,
     required this.kendaraan,
     required this.selectedSeats,
     required this.totalPrice,
-  }) : super(key: key);
+  });
 
   @override
   _PemesananScreenState createState() => _PemesananScreenState();

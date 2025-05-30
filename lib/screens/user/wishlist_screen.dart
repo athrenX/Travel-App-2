@@ -1,82 +1,106 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:travelapp/models/destinasi.dart';
+import 'package:travelapp/providers/auth_provider.dart';
 import 'package:travelapp/providers/destinasi_provider.dart';
 import 'package:travelapp/providers/wishlist_provider.dart';
 import 'package:travelapp/screens/user/detail_destinasi_screen.dart';
 import 'package:travelapp/widgets/destinasi_card.dart';
 
-class WishlistScreen extends StatelessWidget {
-  final String userId;
+class WishlistScreen extends StatefulWidget {
   final VoidCallback resetNavbarToHome;
 
-  const WishlistScreen({
-    Key? key,
-    required this.userId,
-    required this.resetNavbarToHome,
-  }) : super(key: key);
+  const WishlistScreen({super.key, required this.resetNavbarToHome});
+
+  @override
+  State<WishlistScreen> createState() => _WishlistScreenState();
+}
+
+class _WishlistScreenState extends State<WishlistScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Cek autentikasi setelah widget selesai di-build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAuthentication();
+    });
+  }
+
+  void _checkAuthentication() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+    if (!authProvider.isAuthenticated) {
+      // Redirect ke halaman login jika belum login
+      Navigator.of(context).pushReplacementNamed('/login');
+    }
+  }
+
+  void _handleBackNavigation(BuildContext context) {
+    widget.resetNavbarToHome(); // cukup ubah index navbar
+    Navigator.pop(context); // kembali ke HomeScreen dengan natural
+  }
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        resetNavbarToHome();
-        return true;
-      },
-      child: Scaffold(
-        extendBodyBehindAppBar: true,
-        appBar: AppBar(
-          elevation: 0,
-          backgroundColor: Colors.transparent,
-          leading: Container(
-            margin: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.9),
-              shape: BoxShape.circle,
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.blue),
-              onPressed: () {
-                resetNavbarToHome();
-                Navigator.pop(context);
-              },
-            ),
-          ),
-          title: const Text(
-            'Wishlist Saya',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 24,
-              color: Colors.white,
-              shadows: [
-                Shadow(
-                  offset: Offset(1, 1),
-                  blurRadius: 3.0,
-                  color: Color.fromARGB(150, 0, 0, 0),
-                ),
-              ],
-            ),
-          ),
-          centerTitle: true,
-          flexibleSpace: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.blue.shade800,
-                  Colors.blue.shade800.withOpacity(0.0),
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, _) {
+        // Jika belum login, tampilkan loading atau kosong
+        if (!authProvider.isAuthenticated) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        // Jika sudah login, ambil userId dari AuthProvider
+        final userId = authProvider.user?.id;
+
+        if (userId == null) {
+          return const Scaffold(
+            body: Center(child: Text('Error: User ID tidak ditemukan')),
+          );
+        }
+
+        return Scaffold(
+          extendBodyBehindAppBar: true,
+          appBar: AppBar(
+            elevation: 0,
+            backgroundColor: Colors.transparent,
+            automaticallyImplyLeading: false, // Menghilangkan tombol back
+            title: const Text(
+              'Wishlist Saya',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 24,
+                color: Colors.white,
+                shadows: [
+                  Shadow(
+                    offset: Offset(1, 1),
+                    blurRadius: 3.0,
+                    color: Color.fromARGB(150, 0, 0, 0),
+                  ),
                 ],
               ),
             ),
+            centerTitle: true,
+            flexibleSpace: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.blue.shade800,
+                    Colors.blue.shade800.withOpacity(0.0),
+                  ],
+                ),
+              ),
+            ),
           ),
-        ),
-        body: _buildWishlistContent(context),
-      ),
+          body: _buildWishlistContent(context, userId),
+        );
+      },
     );
   }
 
-  Widget _buildWishlistContent(BuildContext context) {
+  Widget _buildWishlistContent(BuildContext context, String userId) {
     return Consumer2<WishlistProvider, DestinasiProvider>(
       builder: (context, wishlistProvider, destinasiProvider, _) {
         final userWishlists = wishlistProvider.getWishlistsByUser(userId);
@@ -158,10 +182,7 @@ class WishlistScreen extends StatelessWidget {
                       'Jelajahi Destinasi',
                       style: TextStyle(fontSize: 16),
                     ),
-                    onPressed: () {
-                      resetNavbarToHome();
-                      Navigator.pop(context);
-                    },
+                    onPressed: () => _handleBackNavigation(context),
                   ),
                 ],
               ),
@@ -421,3 +442,4 @@ class WishlistScreen extends StatelessWidget {
     );
   }
 }
+

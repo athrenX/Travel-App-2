@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class KelolaPemesananScreen extends StatefulWidget {
+  const KelolaPemesananScreen({super.key});
+
   @override
   _KelolaPemesananScreenState createState() => _KelolaPemesananScreenState();
 }
 
 class _KelolaPemesananScreenState extends State<KelolaPemesananScreen> {
-  List<Map<String, dynamic>> _pemesananList = [
+  final List<Map<String, dynamic>> _pemesananList = [
     {
       'id': 'P001',
       'nama': 'Asep Kurniawan',
@@ -574,8 +576,8 @@ class _KelolaPemesananScreenState extends State<KelolaPemesananScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _bukaFormPemesanan(),
-        child: Icon(Icons.add),
         backgroundColor: Colors.blue.shade700,
+        child: Icon(Icons.add),
       ),
     );
   }

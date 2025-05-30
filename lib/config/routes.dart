@@ -1,6 +1,10 @@
 class AppRoutes {
+  // Splash & Auth
+  static const String splash = '/';
   static const String login = '/login';
   static const String register = '/register';
+
+  // User
   static const String home = '/home';
   static const String detailDestinasi = '/detail-destinasi';
   static const String pemesanan = '/pemesanan';

@@ -8,12 +8,12 @@ class DestinasiCard extends StatelessWidget {
   final VoidCallback? onWishlistPressed;
 
   const DestinasiCard({
-    Key? key,
+    super.key,
     required this.destinasi,
     this.onTap,
     this.isInWishlist = false,
     this.onWishlistPressed,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -85,7 +85,7 @@ class DestinasiCard extends StatelessWidget {
                 children: [
                   Icon(Icons.star, size: 16, color: Colors.amber),
                   SizedBox(width: 4),
-                  Text(destinasi.rating?.toStringAsFixed(1) ?? '0.0'),
+                  Text(destinasi.rating.toStringAsFixed(1) ?? '0.0'),
                   Spacer(),
                   Text(
                     'Rp ${destinasi.harga.toStringAsFixed(0)}',

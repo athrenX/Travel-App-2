@@ -5,7 +5,7 @@ import 'package:travelapp/screens/admin/aksi/tambah_destinasi_screen.dart';
 import 'package:travelapp/screens/admin/aksi/edit_destinasi_screen.dart';
 
 class KelolaDestinasiScreen extends StatefulWidget {
-  const KelolaDestinasiScreen({Key? key}) : super(key: key);
+  const KelolaDestinasiScreen({super.key});
 
   @override
   _AdminKelolaDestinasiState createState() => _AdminKelolaDestinasiState();
@@ -534,8 +534,8 @@ class _AdminKelolaDestinasiState extends State<KelolaDestinasiScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Batal'),
                 style: TextButton.styleFrom(foregroundColor: Colors.grey[800]),
+                child: const Text('Batal'),
               ),
               ElevatedButton(
                 onPressed: () {

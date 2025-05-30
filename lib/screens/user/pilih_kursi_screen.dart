@@ -9,10 +9,10 @@ class PilihKursiScreen extends StatefulWidget {
   final Kendaraan kendaraan;
 
   const PilihKursiScreen({
-    Key? key,
+    super.key,
     required this.destinasi,
     required this.kendaraan,
-  }) : super(key: key);
+  });
 
   @override
   State<PilihKursiScreen> createState() => _PilihKursiScreenState();

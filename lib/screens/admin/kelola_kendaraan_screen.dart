@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class KelolaKendaraanScreen extends StatefulWidget {
+  const KelolaKendaraanScreen({super.key});
+
   @override
   _KelolaKendaraanScreenState createState() => _KelolaKendaraanScreenState();
 }
 
 class _KelolaKendaraanScreenState extends State<KelolaKendaraanScreen> {
   // Data kendaraan
-  List<Map<String, dynamic>> _kendaraanList = [
+  final List<Map<String, dynamic>> _kendaraanList = [
     {
       'id': 'K001',
       'jenis': 'Toyota Hiace',
@@ -525,7 +527,7 @@ class _KelolaKendaraanScreenState extends State<KelolaKendaraanScreen> {
                   children: [
                     Expanded(
                       child: Text(
-                        'Hasil pencarian: "${_searchQuery}"',
+                        'Hasil pencarian: "$_searchQuery"',
                         style: TextStyle(
                           fontStyle: FontStyle.italic,
                           color: Colors.grey.shade600,
@@ -841,9 +843,9 @@ class _KelolaKendaraanScreenState extends State<KelolaKendaraanScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _openKendaraanForm(),
-        child: Icon(Icons.add, size: 24),
         backgroundColor: _primaryColor,
         elevation: 2,
+        child: Icon(Icons.add, size: 24),
       ),
     );
   }

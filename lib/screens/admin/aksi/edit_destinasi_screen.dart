@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
 import 'package:travelapp/models/destinasi.dart';
 import 'package:travelapp/services/destinasi_service.dart';
 
 class EditDestinasiScreen extends StatefulWidget {
   final Destinasi destinasi;
 
-  const EditDestinasiScreen({Key? key, required this.destinasi})
-    : super(key: key);
+  const EditDestinasiScreen({super.key, required this.destinasi});
 
   @override
   _EditDestinasiScreenState createState() => _EditDestinasiScreenState();

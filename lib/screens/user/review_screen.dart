@@ -11,10 +11,10 @@ class ReviewScreen extends StatefulWidget {
   final Destinasi destinasi;
 
   const ReviewScreen({
-    Key? key,
+    super.key,
     required this.pemesanan,
     required this.destinasi,
-  }) : super(key: key);
+  });
 
   @override
   _ReviewScreenState createState() => _ReviewScreenState();
@@ -465,7 +465,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
       if (authProvider.user != null) {
         userName =
             authProvider.user?.nama ??
-            authProvider.user?.email?.split('@').first ??
+            authProvider.user?.email.split('@').first ??
             'Pengguna';
       }
 
