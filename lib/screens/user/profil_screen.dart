@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../providers/auth_provider.dart';
 import '../../models/user.dart';
+import 'package:travelapp/providers/theme_provider.dart';
 
 String _currentPaymentMethod =
     'Bank Transfer'; // default awal, bisa nanti diganti saat load user
@@ -617,6 +618,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ],
                       ),
                     ),
+                    ListTile(
+                      leading: Icon(Icons.dark_mode, color: Colors.blue[600]),
+                      title: const Text('Mode Gelap'),
+                      trailing: Consumer<ThemeProvider>(
+                        builder: (context, themeProvider, _) {
+                          return Switch(
+                            activeColor: Colors.blue,
+                            value: themeProvider.themeMode == ThemeMode.dark,
+                            onChanged: (bool value) {
+                              themeProvider.toggleTheme(value);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+
                     const SizedBox(height: 30),
                     SizedBox(
                       width: double.infinity,
@@ -638,7 +655,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         icon: const Icon(Icons.logout),
                         label: const Text(
-                          'Keluar',
+                          'Logout',
                           style: TextStyle(fontSize: 16),
                         ),
                       ),

@@ -348,7 +348,10 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                       vertical: 12,
                                     ),
                                     backgroundColor: Colors.blue.shade800,
-                                    foregroundColor: Colors.white,
+                                    foregroundColor:
+                                        Theme.of(
+                                          context,
+                                        ).scaffoldBackgroundColor,
                                     textStyle: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
@@ -414,7 +417,10 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                       vertical: 12,
                                     ),
                                     backgroundColor: Colors.blue.shade800,
-                                    foregroundColor: Colors.white,
+                                    foregroundColor:
+                                        Theme.of(
+                                          context,
+                                        ).scaffoldBackgroundColor,
                                     textStyle: TextStyle(
                                       fontSize: screenWidth < 350 ? 14 : 16,
                                       fontWeight: FontWeight.bold,
@@ -661,7 +667,10 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                           );
                                         });
                                       },
-                                      backgroundColor: Colors.white,
+                                      backgroundColor:
+                                          Theme.of(
+                                            context,
+                                          ).scaffoldBackgroundColor,
                                       foregroundColor: Colors.blue.shade800,
                                       elevation: 2,
                                       child: const Icon(Icons.add),
@@ -679,7 +688,10 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                           );
                                         });
                                       },
-                                      backgroundColor: Colors.white,
+                                      backgroundColor:
+                                          Theme.of(
+                                            context,
+                                          ).scaffoldBackgroundColor,
                                       foregroundColor: Colors.blue.shade800,
                                       elevation: 2,
                                       child: const Icon(Icons.remove),

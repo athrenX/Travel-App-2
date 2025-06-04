@@ -76,18 +76,13 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   void _startAnimations() {
-    
     // Start plane animation
-    _planeController.forward().then((_) {
-      
-    });
+    _planeController.forward().then((_) {});
 
     // Start text animation after delay
     Timer(const Duration(milliseconds: 500), () {
       if (mounted) {
-        _textController.forward().then((_) {
-         
-        });
+        _textController.forward().then((_) {});
       }
     });
 
@@ -95,14 +90,11 @@ class _SplashScreenState extends State<SplashScreen>
     Timer(const Duration(milliseconds: 1000), () {
       if (mounted) {
         _loadingController.repeat();
-        
       }
     });
   }
 
   Future<void> _checkLoginStatus() async {
-    
-
     // Wait for splash display
     await Future.delayed(const Duration(seconds: 3));
 

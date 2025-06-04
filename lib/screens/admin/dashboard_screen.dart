@@ -22,12 +22,17 @@ class DashboardScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text(
           'Admin Dashboard',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
         centerTitle: true,
         backgroundColor: primaryBlue,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(
+          color: Colors.white,
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -192,7 +197,9 @@ class DashboardScreen extends StatelessWidget {
                 },
                 child: const Text(
                   'Logout',
-                  style: TextStyle(color: Colors.white),
+                  style: TextStyle(
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ],

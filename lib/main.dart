@@ -1,23 +1,20 @@
-// main.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:provider/provider.dart';
 
 import 'package:travelapp/providers/auth_provider.dart';
 import 'package:travelapp/providers/destinasi_provider.dart';
 import 'package:travelapp/providers/kendaraan_provider.dart';
 import 'package:travelapp/providers/order_provider.dart';
-import 'package:travelapp/providers/wishlist_provider.dart';
 import 'package:travelapp/providers/review_provider.dart';
+import 'package:travelapp/providers/theme_provider.dart';
+import 'package:travelapp/providers/wishlist_provider.dart';
 
 import 'package:travelapp/screens/auth/login_screen.dart';
 import 'package:travelapp/screens/auth/register_screen.dart';
 import 'package:travelapp/screens/splash_screen.dart';
 import 'package:travelapp/screens/user/home_screen.dart';
 import 'package:travelapp/screens/admin/dashboard_screen.dart';
-import 'package:travelapp/config/routes.dart';
-import 'package:provider/provider.dart';
-
 
 void main() {
   runApp(MyAppWrapper());
@@ -30,18 +27,20 @@ class MyAppWrapper extends StatefulWidget {
 
 class _MyAppWrapperState extends State<MyAppWrapper> {
   final AuthProvider _authProvider = AuthProvider();
+  final ThemeProvider _themeProvider = ThemeProvider();
   bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    _initAuth();
+    _initializeApp();
   }
 
-  Future<void> _initAuth() async {
+  Future<void> _initializeApp() async {
     WidgetsFlutterBinding.ensureInitialized();
     await initializeDateFormatting('id_ID', null);
     await _authProvider.tryAutoLogin();
+    await _themeProvider.loadTheme();
     setState(() => _isInitialized = true);
   }
 
@@ -49,15 +48,14 @@ class _MyAppWrapperState extends State<MyAppWrapper> {
   Widget build(BuildContext context) {
     if (!_isInitialized) {
       return const MaterialApp(
-        home: Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        ),
+        home: Scaffold(body: Center(child: CircularProgressIndicator())),
       );
     }
 
     return MultiProvider(
       providers: [
         ChangeNotifierProvider<AuthProvider>.value(value: _authProvider),
+        ChangeNotifierProvider<ThemeProvider>.value(value: _themeProvider),
         ChangeNotifierProvider(create: (_) => DestinasiProvider()),
         ChangeNotifierProvider(create: (_) => KendaraanProvider()),
         ChangeNotifierProvider(create: (_) => OrderProvider()),
@@ -74,19 +72,46 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Travel App',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
-      home: const SplashScreen(),
-      routes: {
-        '/login': (context) => const LoginScreen(),
-        '/register': (context) => const RegisterScreen(),
-        '/home': (context) => const HomeScreen(),
-        '/dashboard': (context) => const DashboardScreen(),
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, _) {
+        return MaterialApp(
+          title: 'Travel App',
+          debugShowCheckedModeBanner: false,
+          themeMode: themeProvider.themeMode,
+          theme: ThemeData(
+            brightness: Brightness.light,
+            scaffoldBackgroundColor: Colors.white,
+            appBarTheme: const AppBarTheme(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+            ),
+            cardColor: Colors.white,
+            textTheme: const TextTheme(
+              bodyLarge: TextStyle(color: Colors.black87),
+            ),
+          ),
+
+          darkTheme: ThemeData(
+            brightness: Brightness.dark,
+            scaffoldBackgroundColor: Colors.black,
+            appBarTheme: const AppBarTheme(
+              backgroundColor: Colors.black,
+              foregroundColor: Colors.white,
+            ),
+            cardColor: Colors.grey[900],
+            textTheme: const TextTheme(
+              bodyLarge: TextStyle(color: Colors.white70),
+            ),
+          ),
+
+          home: const SplashScreen(),
+          routes: {
+            '/login': (context) => const LoginScreen(),
+            '/register': (context) => const RegisterScreen(),
+            '/home': (context) => const HomeScreen(),
+            '/dashboard': (context) => const DashboardScreen(),
+          },
+        );
       },
     );
   }
