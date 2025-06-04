@@ -6,7 +6,7 @@ import 'package:http_parser/http_parser.dart' as http_parser;
 
 class AuthService {
   // Ganti dengan IP server Laravel Anda
-  final String baseUrl = 'http://192.168.1.10:8000/api';
+  final String baseUrl = 'http://192.168.1.8:8000/api';
 
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
