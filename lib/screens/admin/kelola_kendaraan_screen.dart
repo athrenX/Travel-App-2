@@ -808,7 +808,10 @@ class _KelolaKendaraanScreenState extends State<KelolaKendaraanScreen> {
                                           icon: Icon(
                                             Icons.delete,
                                             size: 16,
-                                            color: Colors.white,
+                                            color:
+                                                Theme.of(
+                                                  context,
+                                                ).scaffoldBackgroundColor,
                                           ),
                                           label: Text(
                                             'Hapus',

@@ -107,7 +107,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   Container(
                     padding: EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
+                      color: Theme.of(
+                        context,
+                      ).scaffoldBackgroundColor.withOpacity(0.15),
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
@@ -138,7 +140,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     'Mulai petualangan tanpa batas',
                     style: TextStyle(
                       fontSize: 16,
-                      color: Colors.white.withOpacity(0.8),
+                      color: Theme.of(
+                        context,
+                      ).scaffoldBackgroundColor.withOpacity(0.8),
                     ),
                   ),
                   SizedBox(height: size.height * 0.04),
@@ -433,7 +437,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       width: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        color: Colors.white,
+                                        color:
+                                            Theme.of(
+                                              context,
+                                            ).scaffoldBackgroundColor,
                                       ),
                                     )
                                     : Text(

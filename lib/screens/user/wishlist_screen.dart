@@ -21,7 +21,9 @@ class _WishlistScreenState extends State<WishlistScreen> {
     super.initState();
     // Cek autentikasi setelah widget selesai di-build
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkAuthentication();
+      if (mounted) {
+        _checkAuthentication();
+      }
     });
   }
 
@@ -44,9 +46,68 @@ class _WishlistScreenState extends State<WishlistScreen> {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, _) {
         // Jika belum login, tampilkan loading atau kosong
+        if (!authProvider.isInitialized || authProvider.isLoading) {
+          return Scaffold(
+            body: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Colors.blue.shade50, Colors.indigo.shade50],
+                ),
+              ),
+              child: const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                      strokeWidth: 3,
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'Memuat...',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.blueGrey,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
         if (!authProvider.isAuthenticated) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+          return Scaffold(
+            body: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Colors.blue.shade50, Colors.indigo.shade50],
+                ),
+              ),
+              child: const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.lock_outline, size: 64, color: Colors.blueGrey),
+                    SizedBox(height: 16),
+                    Text(
+                      'Silakan login terlebih dahulu',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.blueGrey,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           );
         }
 
@@ -54,8 +115,37 @@ class _WishlistScreenState extends State<WishlistScreen> {
         final userId = authProvider.user?.id;
 
         if (userId == null) {
-          return const Scaffold(
-            body: Center(child: Text('Error: User ID tidak ditemukan')),
+          return Scaffold(
+            body: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Colors.red.shade50, Colors.orange.shade50],
+                ),
+              ),
+              child: const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: Colors.redAccent,
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'Error: User ID tidak ditemukan',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.redAccent,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           );
         }
 
@@ -69,13 +159,14 @@ class _WishlistScreenState extends State<WishlistScreen> {
               'Wishlist Saya',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                fontSize: 24,
+                fontSize: 26,
                 color: Colors.white,
+                letterSpacing: 0.5,
                 shadows: [
                   Shadow(
-                    offset: Offset(1, 1),
-                    blurRadius: 3.0,
-                    color: Color.fromARGB(150, 0, 0, 0),
+                    offset: Offset(0, 2),
+                    blurRadius: 8.0,
+                    color: Color.fromARGB(120, 0, 0, 0),
                   ),
                 ],
               ),
@@ -84,12 +175,14 @@ class _WishlistScreenState extends State<WishlistScreen> {
             flexibleSpace: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                   colors: [
-                    Colors.blue.shade800,
-                    Colors.blue.shade800.withOpacity(0.0),
+                    Colors.blue.shade700,
+                    Colors.indigo.shade600,
+                    Colors.transparent,
                   ],
+                  stops: const [0.0, 0.5, 1.0],
                 ),
               ),
             ),
@@ -117,7 +210,11 @@ class _WishlistScreenState extends State<WishlistScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Colors.blue.shade50, Colors.white],
+                colors: [
+                  Colors.blue.shade50.withOpacity(0.8),
+                  Colors.indigo.shade50.withOpacity(0.6),
+                  Colors.white,
+                ],
               ),
             ),
             child: Center(
@@ -125,64 +222,104 @@ class _WishlistScreenState extends State<WishlistScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(32),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.blue.withOpacity(0.2),
-                          blurRadius: 20,
-                          spreadRadius: 5,
+                          color: Colors.blue.withOpacity(0.15),
+                          blurRadius: 30,
+                          spreadRadius: 10,
+                          offset: const Offset(0, 10),
                         ),
                       ],
                     ),
-                    child: Icon(
-                      Icons.favorite_border,
-                      size: 80,
-                      color: Colors.blue.shade300,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Wishlist Anda Kosong',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blueGrey,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 40),
-                    child: Text(
-                      'Jelajahi destinasi dan tambahkan favorit Anda ke wishlist',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.blueGrey.shade400,
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.blue.shade100,
+                            Colors.indigo.shade100,
+                          ],
+                        ),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.favorite_border_rounded,
+                        size: 80,
+                        color: Colors.blue.shade600,
                       ),
                     ),
                   ),
                   const SizedBox(height: 32),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue.shade700,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
+                  const Text(
+                    'Wishlist Anda Kosong',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blueGrey,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 48),
+                    child: Text(
+                      'Jelajahi destinasi menakjubkan dan tambahkan favorit Anda ke wishlist untuk perjalanan impian',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.blueGrey.shade500,
+                        height: 1.5,
+                        letterSpacing: 0.2,
                       ),
                     ),
-                    icon: const Icon(Icons.explore),
-                    label: const Text(
-                      'Jelajahi Destinasi',
-                      style: TextStyle(fontSize: 16),
+                  ),
+                  const SizedBox(height: 40),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Colors.blue.shade600, Colors.indigo.shade600],
+                      ),
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.blue.withOpacity(0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
                     ),
-                    onPressed: () => _handleBackNavigation(context),
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        foregroundColor: Colors.white,
+                        shadowColor: Colors.transparent,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                      icon: const Icon(Icons.explore_rounded, size: 24),
+                      label: const Text(
+                        'Jelajahi Destinasi',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      onPressed: () => _handleBackNavigation(context),
+                    ),
                   ),
                 ],
               ),
@@ -195,49 +332,103 @@ class _WishlistScreenState extends State<WishlistScreen> {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Colors.blue.shade100.withOpacity(0.5), Colors.white],
+              colors: [
+                Colors.blue.shade50.withOpacity(0.3),
+                Colors.indigo.shade50.withOpacity(0.2),
+                Colors.white,
+              ],
             ),
           ),
           child: Padding(
-            padding: const EdgeInsets.only(top: 100), // Give space for AppBar
+            padding: const EdgeInsets.only(top: 120), // Give space for AppBar
             child: Column(
               children: [
-                Padding(
+                Container(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
-                    vertical: 10,
+                    vertical: 12,
                   ),
-                  child: Text(
-                    '${wishlistDestinasi.length} Destinasi Favorit',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.blue.shade800,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Theme.of(
+                          context,
+                        ).scaffoldBackgroundColor.withOpacity(0.9),
+                        Colors.blue.shade50.withOpacity(0.8),
+                      ],
                     ),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.blue.withOpacity(0.1),
+                        blurRadius: 15,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade600,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.favorite,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        '${wishlistDestinasi.length} Destinasi Favorit',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue.shade800,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 Expanded(
                   child: ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
                     itemCount: wishlistDestinasi.length,
                     itemBuilder: (ctx, index) {
                       final destinasi = wishlistDestinasi[index];
                       return Padding(
-                        padding: const EdgeInsets.only(bottom: 20),
+                        padding: const EdgeInsets.only(bottom: 24),
                         child: Container(
-                          height: 200,
+                          height: 220,
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
-                                blurRadius: 10,
-                                offset: const Offset(0, 5),
+                                color: Colors.black.withOpacity(0.15),
+                                blurRadius: 20,
+                                offset: const Offset(0, 8),
+                                spreadRadius: 2,
+                              ),
+                              BoxShadow(
+                                color: Colors.blue.withOpacity(0.1),
+                                blurRadius: 30,
+                                offset: const Offset(0, 15),
+                                spreadRadius: -5,
                               ),
                             ],
                           ),
                           child: ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(20),
                             child: Stack(
                               fit: StackFit.expand,
                               children: [
@@ -261,7 +452,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
                                   ),
                                 ),
 
-                                // Gradient overlay for better text visibility
+                                // Enhanced gradient overlay
                                 Positioned.fill(
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -270,21 +461,32 @@ class _WishlistScreenState extends State<WishlistScreen> {
                                         end: Alignment.bottomCenter,
                                         colors: [
                                           Colors.transparent,
-                                          Colors.black.withOpacity(0.7),
+                                          Colors.black.withOpacity(0.2),
+                                          Colors.black.withOpacity(0.8),
                                         ],
-                                        stops: const [0.6, 1.0],
+                                        stops: const [0.0, 0.5, 1.0],
                                       ),
                                     ),
                                   ),
                                 ),
 
-                                // Content overlay
+                                // Content overlay with enhanced design
                                 Positioned(
                                   bottom: 0,
                                   left: 0,
                                   right: 0,
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(16),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(20),
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: [
+                                          Colors.transparent,
+                                          Colors.black.withOpacity(0.8),
+                                        ],
+                                      ),
+                                    ),
                                     child: Row(
                                       mainAxisAlignment:
                                           MainAxisAlignment.spaceBetween,
@@ -296,55 +498,87 @@ class _WishlistScreenState extends State<WishlistScreen> {
                                                 CrossAxisAlignment.start,
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
-                                              Text(
-                                                destinasi.nama,
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Row(
-                                                children: [
-                                                  const Icon(
-                                                    Icons.location_on,
-                                                    color: Colors.white70,
-                                                    size: 16,
-                                                  ),
-                                                  const SizedBox(width: 4),
-                                                  Expanded(
-                                                    child: Text(
-                                                      destinasi.lokasi,
-                                                      style: const TextStyle(
-                                                        color: Colors.white70,
-                                                        fontSize: 14,
-                                                      ),
-                                                      maxLines: 1,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
+                                              const SizedBox(height: 8),
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 12,
+                                                      vertical: 6,
                                                     ),
+                                                decoration: BoxDecoration(
+                                                  color: Theme.of(context)
+                                                      .scaffoldBackgroundColor
+                                                      .withOpacity(0.2),
+                                                  borderRadius:
+                                                      BorderRadius.circular(20),
+                                                  border: Border.all(
+                                                    color: Theme.of(context)
+                                                        .scaffoldBackgroundColor
+                                                        .withOpacity(0.3),
                                                   ),
-                                                ],
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    const Icon(
+                                                      Icons.location_on_rounded,
+                                                      color: Colors.white,
+                                                      size: 16,
+                                                    ),
+                                                    const SizedBox(width: 6),
+                                                    Flexible(
+                                                      child: Text(
+                                                        destinasi.lokasi,
+                                                        style: const TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 14,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                        ),
+                                                        maxLines: 1,
+                                                        overflow:
+                                                            TextOverflow
+                                                                .ellipsis,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
                                             ],
                                           ),
                                         ),
 
-                                        // Remove from wishlist button
+                                        const SizedBox(width: 16),
+
+                                        // Enhanced remove from wishlist button
                                         Container(
                                           decoration: BoxDecoration(
-                                            color: Colors.white,
+                                            gradient: LinearGradient(
+                                              begin: Alignment.topLeft,
+                                              end: Alignment.bottomRight,
+                                              colors: [
+                                                Theme.of(
+                                                  context,
+                                                ).scaffoldBackgroundColor,
+                                                Colors.grey.shade50,
+                                              ],
+                                            ),
                                             shape: BoxShape.circle,
                                             boxShadow: [
                                               BoxShadow(
                                                 color: Colors.black.withOpacity(
                                                   0.2,
                                                 ),
-                                                blurRadius: 4,
-                                                offset: const Offset(0, 2),
+                                                blurRadius: 8,
+                                                offset: const Offset(0, 4),
+                                              ),
+                                              BoxShadow(
+                                                color: Theme.of(context)
+                                                    .scaffoldBackgroundColor
+                                                    .withOpacity(0.8),
+                                                blurRadius: 8,
+                                                offset: const Offset(-2, -2),
                                               ),
                                             ],
                                           ),
@@ -362,23 +596,50 @@ class _WishlistScreenState extends State<WishlistScreen> {
                                                   context,
                                                 ).showSnackBar(
                                                   SnackBar(
-                                                    content: Text(
-                                                      '${destinasi.nama} dihapus dari wishlist',
+                                                    content: Row(
+                                                      children: [
+                                                        const Icon(
+                                                          Icons.check_circle,
+                                                          color: Colors.white,
+                                                          size: 20,
+                                                        ),
+                                                        const SizedBox(
+                                                          width: 12,
+                                                        ),
+                                                        Expanded(
+                                                          child: Text(
+                                                            '${destinasi.nama} dihapus dari wishlist',
+                                                            style:
+                                                                const TextStyle(
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w500,
+                                                                ),
+                                                          ),
+                                                        ),
+                                                      ],
                                                     ),
                                                     backgroundColor:
-                                                        Colors.blue.shade700,
+                                                        Colors.blue.shade600,
                                                     behavior:
                                                         SnackBarBehavior
                                                             .floating,
                                                     shape: RoundedRectangleBorder(
                                                       borderRadius:
                                                           BorderRadius.circular(
-                                                            10,
+                                                            15,
                                                           ),
                                                     ),
+                                                    margin:
+                                                        const EdgeInsets.all(
+                                                          16,
+                                                        ),
                                                     action: SnackBarAction(
                                                       label: 'OK',
-                                                      textColor: Colors.white,
+                                                      textColor:
+                                                          Theme.of(
+                                                            context,
+                                                          ).scaffoldBackgroundColor,
                                                       onPressed: () {},
                                                     ),
                                                   ),
@@ -386,12 +647,12 @@ class _WishlistScreenState extends State<WishlistScreen> {
                                               },
                                               child: Padding(
                                                 padding: const EdgeInsets.all(
-                                                  10,
+                                                  5,
                                                 ),
                                                 child: Icon(
-                                                  Icons.favorite,
-                                                  color: Colors.red.shade400,
-                                                  size: 26,
+                                                  Icons.favorite_rounded,
+                                                  color: Colors.red.shade500,
+                                                  size: 28,
                                                 ),
                                               ),
                                             ),
@@ -407,10 +668,12 @@ class _WishlistScreenState extends State<WishlistScreen> {
                                   child: Material(
                                     color: Colors.transparent,
                                     child: InkWell(
-                                      splashColor: Colors.white.withOpacity(
-                                        0.1,
-                                      ),
-                                      highlightColor: Colors.transparent,
+                                      splashColor: Theme.of(context)
+                                          .scaffoldBackgroundColor
+                                          .withOpacity(0.1),
+                                      highlightColor: Theme.of(context)
+                                          .scaffoldBackgroundColor
+                                          .withOpacity(0.05),
                                       onTap: () {
                                         Navigator.push(
                                           context,
@@ -442,4 +705,3 @@ class _WishlistScreenState extends State<WishlistScreen> {
     );
   }
 }
-

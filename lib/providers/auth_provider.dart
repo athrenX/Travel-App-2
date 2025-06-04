@@ -101,6 +101,15 @@ class AuthProvider with ChangeNotifier {
       final user = await _authService.getCurrentUser(_token!);
       _user = user;
 
+      // Tambahan penting agar token & user tetap tersimpan di SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('auth_token', _token!);
+      await prefs.setString('user_nama', _user!.nama);
+      await prefs.setString('user_email', _user!.email);
+      if (_user!.paymentMethod != null) {
+        await prefs.setString('user_payment_method', _user!.paymentMethod!);
+      }
+
       return _user;
     } catch (e) {
       print('❌ Gagal mengambil user: $e');
@@ -151,6 +160,9 @@ class AuthProvider with ChangeNotifier {
       }
 
       print('✅ Profil berhasil diupdate: ${_user!.nama}');
+      print('✅ ID user setelah update: ${_user?.id}');
+
+      await refreshUser();
     } catch (e) {
       print('❌ Gagal update profil: $e');
       rethrow;

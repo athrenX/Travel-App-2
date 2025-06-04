@@ -90,32 +90,33 @@ class _KelolaPemesananScreenState extends State<KelolaPemesananScreen> {
   void _hapusPemesanan(String id) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Hapus Pemesanan'),
-        content: Text('Yakin ingin menghapus pemesanan $id?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Batal'),
+      builder:
+          (context) => AlertDialog(
+            title: Text('Hapus Pemesanan'),
+            content: Text('Yakin ingin menghapus pemesanan $id?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Batal'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                onPressed: () {
+                  setState(() {
+                    _pemesananList.removeWhere((p) => p['id'] == id);
+                  });
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Pemesanan berhasil dihapus'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                },
+                child: Text('Hapus', style: TextStyle(color: Colors.white)),
+              ),
+            ],
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () {
-              setState(() {
-                _pemesananList.removeWhere((p) => p['id'] == id);
-              });
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Pemesanan berhasil dihapus'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            },
-            child: Text('Hapus', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
     );
   }
 
@@ -145,95 +146,99 @@ class _KelolaPemesananScreenState extends State<KelolaPemesananScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => SingleChildScrollView(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-          left: 20,
-          right: 20,
-          top: 20,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              _editingId == null ? 'Tambah Pemesanan' : 'Edit Pemesanan',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+      builder:
+          (context) => SingleChildScrollView(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+              left: 20,
+              right: 20,
+              top: 20,
             ),
-            SizedBox(height: 20),
-            TextFormField(
-              controller: _namaController,
-              decoration: InputDecoration(labelText: 'Nama Pemesan'),
-            ),
-            SizedBox(height: 15),
-            TextFormField(
-              controller: _destinasiController,
-              decoration: InputDecoration(labelText: 'Destinasi'),
-            ),
-            SizedBox(height: 15),
-            TextFormField(
-              controller: _kendaraanController,
-              decoration: InputDecoration(labelText: 'Kendaraan'),
-            ),
-            SizedBox(height: 15),
-            TextFormField(
-              controller: _tanggalController,
-              decoration: InputDecoration(labelText: 'Tanggal (YYYY-MM-DD)'),
-            ),
-            SizedBox(height: 15),
-            TextFormField(
-              controller: _jumlahController,
-              decoration: InputDecoration(labelText: 'Jumlah'),
-              keyboardType: TextInputType.number,
-            ),
-            SizedBox(height: 15),
-            TextFormField(
-              controller: _totalController,
-              decoration: InputDecoration(labelText: 'Total'),
-              keyboardType: TextInputType.number,
-            ),
-            SizedBox(height: 15),
-            DropdownButtonFormField<String>(
-              value: _selectedStatus,
-              items: [
-                'Menunggu Pembayaran',
-                'Dikonfirmasi',
-                'Selesai',
-                'Dibatalkan'
-              ].map((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedStatus = value!;
-                });
-              },
-              decoration: InputDecoration(labelText: 'Status'),
-            ),
-            SizedBox(height: 20),
-            Row(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text('Batal'),
+                Text(
+                  _editingId == null ? 'Tambah Pemesanan' : 'Edit Pemesanan',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 20),
+                TextFormField(
+                  controller: _namaController,
+                  decoration: InputDecoration(labelText: 'Nama Pemesan'),
+                ),
+                SizedBox(height: 15),
+                TextFormField(
+                  controller: _destinasiController,
+                  decoration: InputDecoration(labelText: 'Destinasi'),
+                ),
+                SizedBox(height: 15),
+                TextFormField(
+                  controller: _kendaraanController,
+                  decoration: InputDecoration(labelText: 'Kendaraan'),
+                ),
+                SizedBox(height: 15),
+                TextFormField(
+                  controller: _tanggalController,
+                  decoration: InputDecoration(
+                    labelText: 'Tanggal (YYYY-MM-DD)',
                   ),
                 ),
-                SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _simpanPemesanan,
-                    child: Text(_editingId == null ? 'Tambah' : 'Simpan'),
-                  ),
+                SizedBox(height: 15),
+                TextFormField(
+                  controller: _jumlahController,
+                  decoration: InputDecoration(labelText: 'Jumlah'),
+                  keyboardType: TextInputType.number,
                 ),
+                SizedBox(height: 15),
+                TextFormField(
+                  controller: _totalController,
+                  decoration: InputDecoration(labelText: 'Total'),
+                  keyboardType: TextInputType.number,
+                ),
+                SizedBox(height: 15),
+                DropdownButtonFormField<String>(
+                  value: _selectedStatus,
+                  items:
+                      [
+                        'Menunggu Pembayaran',
+                        'Dikonfirmasi',
+                        'Selesai',
+                        'Dibatalkan',
+                      ].map((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedStatus = value!;
+                    });
+                  },
+                  decoration: InputDecoration(labelText: 'Status'),
+                ),
+                SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text('Batal'),
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _simpanPemesanan,
+                        child: Text(_editingId == null ? 'Tambah' : 'Simpan'),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 20),
               ],
             ),
-            SizedBox(height: 20),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
@@ -254,7 +259,9 @@ class _KelolaPemesananScreenState extends State<KelolaPemesananScreen> {
     }
 
     final pemesanan = {
-      'id': _editingId ?? 'P${(_pemesananList.length + 1).toString().padLeft(3, '0')}',
+      'id':
+          _editingId ??
+          'P${(_pemesananList.length + 1).toString().padLeft(3, '0')}',
       'nama': _namaController.text,
       'destinasi': _destinasiController.text,
       'kendaraan': _kendaraanController.text,
@@ -288,14 +295,20 @@ class _KelolaPemesananScreenState extends State<KelolaPemesananScreen> {
 
   List<Map<String, dynamic>> get _filteredPemesananList {
     return _pemesananList.where((pemesanan) {
-      final matchesStatus = _filterStatus == 'Semua Status' || 
+      final matchesStatus =
+          _filterStatus == 'Semua Status' ||
           pemesanan['status'] == _filterStatus;
-      
-      final matchesSearch = _searchQuery.isEmpty ||
-          pemesanan['nama'].toLowerCase().contains(_searchQuery.toLowerCase()) ||
+
+      final matchesSearch =
+          _searchQuery.isEmpty ||
+          pemesanan['nama'].toLowerCase().contains(
+            _searchQuery.toLowerCase(),
+          ) ||
           pemesanan['id'].toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          pemesanan['destinasi'].toLowerCase().contains(_searchQuery.toLowerCase());
-      
+          pemesanan['destinasi'].toLowerCase().contains(
+            _searchQuery.toLowerCase(),
+          );
+
       return matchesStatus && matchesSearch;
     }).toList();
   }
@@ -323,10 +336,7 @@ class _KelolaPemesananScreenState extends State<KelolaPemesananScreen> {
       appBar: AppBar(
         title: Text(
           'Kelola Pemesanan',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         centerTitle: true,
         backgroundColor: Colors.blue.shade700,
@@ -338,38 +348,39 @@ class _KelolaPemesananScreenState extends State<KelolaPemesananScreen> {
             onPressed: () {
               showDialog(
                 context: context,
-                builder: (context) => AlertDialog(
-                  title: Text('Cari Pemesanan'),
-                  content: TextField(
-                    controller: _searchController,
-                    autofocus: true,
-                    decoration: InputDecoration(
-                      hintText: 'Cari berdasarkan nama/ID/destinasi',
-                      prefixIcon: Icon(Icons.search),
+                builder:
+                    (context) => AlertDialog(
+                      title: Text('Cari Pemesanan'),
+                      content: TextField(
+                        controller: _searchController,
+                        autofocus: true,
+                        decoration: InputDecoration(
+                          hintText: 'Cari berdasarkan nama/ID/destinasi',
+                          prefixIcon: Icon(Icons.search),
+                        ),
+                        onChanged: (value) {
+                          setState(() {
+                            _searchQuery = value;
+                          });
+                        },
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            setState(() {
+                              _searchController.clear();
+                              _searchQuery = '';
+                            });
+                          },
+                          child: Text('Reset'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text('Tutup'),
+                        ),
+                      ],
                     ),
-                    onChanged: (value) {
-                      setState(() {
-                        _searchQuery = value;
-                      });
-                    },
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        setState(() {
-                          _searchController.clear();
-                          _searchQuery = '';
-                        });
-                      },
-                      child: Text('Reset'),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text('Tutup'),
-                    ),
-                  ],
-                ),
               );
             },
           ),
@@ -384,18 +395,19 @@ class _KelolaPemesananScreenState extends State<KelolaPemesananScreen> {
               children: [
                 DropdownButtonFormField<String>(
                   value: _filterStatus,
-                  items: [
-                    'Semua Status',
-                    'Menunggu Pembayaran',
-                    'Dikonfirmasi',
-                    'Selesai',
-                    'Dibatalkan'
-                  ].map((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(),
+                  items:
+                      [
+                        'Semua Status',
+                        'Menunggu Pembayaran',
+                        'Dikonfirmasi',
+                        'Selesai',
+                        'Dibatalkan',
+                      ].map((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }).toList(),
                   onChanged: (value) {
                     setState(() {
                       _filterStatus = value!;
@@ -415,17 +427,18 @@ class _KelolaPemesananScreenState extends State<KelolaPemesananScreen> {
                     prefixIcon: Icon(Icons.search),
                     border: OutlineInputBorder(),
                     contentPadding: EdgeInsets.symmetric(horizontal: 12),
-                    suffixIcon: _searchController.text.isNotEmpty
-                        ? IconButton(
-                            icon: Icon(Icons.clear),
-                            onPressed: () {
-                              setState(() {
-                                _searchController.clear();
-                                _searchQuery = '';
-                              });
-                            },
-                          )
-                        : null,
+                    suffixIcon:
+                        _searchController.text.isNotEmpty
+                            ? IconButton(
+                              icon: Icon(Icons.clear),
+                              onPressed: () {
+                                setState(() {
+                                  _searchController.clear();
+                                  _searchQuery = '';
+                                });
+                              },
+                            )
+                            : null,
                   ),
                   onChanged: (value) {
                     setState(() {
@@ -465,112 +478,138 @@ class _KelolaPemesananScreenState extends State<KelolaPemesananScreen> {
           ),
           SizedBox(height: 8),
           Expanded(
-            child: filteredList.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.search_off,
-                          size: 60,
-                          color: Colors.grey.shade400,
-                        ),
-                        SizedBox(height: 16),
-                        Text(
-                          _searchQuery.isEmpty
-                              ? 'Belum ada data pemesanan'
-                              : 'Tidak ada hasil pencarian',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey.shade600,
+            child:
+                filteredList.isEmpty
+                    ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.search_off,
+                            size: 60,
+                            color: Colors.grey.shade400,
                           ),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    padding: EdgeInsets.only(bottom: 16),
-                    itemCount: filteredList.length,
-                    itemBuilder: (context, index) {
-                      final pemesanan = filteredList[index];
-                      return Card(
-                        margin: EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'ID: ${pemesanan['id']}',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.blue.shade700,
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: _getStatusColor(
-                                          pemesanan['status']),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Text(
-                                      pemesanan['status'],
+                          SizedBox(height: 16),
+                          Text(
+                            _searchQuery.isEmpty
+                                ? 'Belum ada data pemesanan'
+                                : 'Tidak ada hasil pencarian',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                    : ListView.builder(
+                      padding: EdgeInsets.only(bottom: 16),
+                      itemCount: filteredList.length,
+                      itemBuilder: (context, index) {
+                        final pemesanan = filteredList[index];
+                        return Card(
+                          margin: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'ID: ${pemesanan['id']}',
                                       style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blue.shade700,
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(height: 12),
-                              _buildInfoRow(Icons.person,
-                                  'Nama: ${pemesanan['nama']}'),
-                              _buildInfoRow(Icons.place,
-                                  'Destinasi: ${pemesanan['destinasi']}'),
-                              _buildInfoRow(Icons.directions_car,
-                                  'Kendaraan: ${pemesanan['kendaraan']}'),
-                              _buildInfoRow(Icons.calendar_today,
-                                  'Tanggal: ${pemesanan['tanggal']}'),
-                              _buildInfoRow(Icons.people,
-                                  'Jumlah: ${pemesanan['jumlah']} orang'),
-                              _buildInfoRow(Icons.attach_money,
-                                  'Total: ${_formatRupiah(pemesanan['total'])}'),
-                              SizedBox(height: 12),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  IconButton(
-                                    icon: Icon(Icons.edit,
-                                        color: Colors.blue.shade700),
-                                    onPressed: () =>
-                                        _bukaFormPemesanan(pemesanan),
-                                  ),
-                                  IconButton(
-                                    icon: Icon(Icons.delete,
-                                        color: Colors.red),
-                                    onPressed: () =>
-                                        _hapusPemesanan(pemesanan['id']),
-                                  ),
-                                ],
-                              ),
-                            ],
+                                    Container(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: _getStatusColor(
+                                          pemesanan['status'],
+                                        ),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        pemesanan['status'],
+                                        style: TextStyle(
+                                          color:
+                                              Theme.of(
+                                                context,
+                                              ).scaffoldBackgroundColor,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 12),
+                                _buildInfoRow(
+                                  Icons.person,
+                                  'Nama: ${pemesanan['nama']}',
+                                ),
+                                _buildInfoRow(
+                                  Icons.place,
+                                  'Destinasi: ${pemesanan['destinasi']}',
+                                ),
+                                _buildInfoRow(
+                                  Icons.directions_car,
+                                  'Kendaraan: ${pemesanan['kendaraan']}',
+                                ),
+                                _buildInfoRow(
+                                  Icons.calendar_today,
+                                  'Tanggal: ${pemesanan['tanggal']}',
+                                ),
+                                _buildInfoRow(
+                                  Icons.people,
+                                  'Jumlah: ${pemesanan['jumlah']} orang',
+                                ),
+                                _buildInfoRow(
+                                  Icons.attach_money,
+                                  'Total: ${_formatRupiah(pemesanan['total'])}',
+                                ),
+                                SizedBox(height: 12),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.edit,
+                                        color: Colors.blue.shade700,
+                                      ),
+                                      onPressed:
+                                          () => _bukaFormPemesanan(pemesanan),
+                                    ),
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.delete,
+                                        color: Colors.red,
+                                      ),
+                                      onPressed:
+                                          () =>
+                                              _hapusPemesanan(pemesanan['id']),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
+                        );
+                      },
+                    ),
           ),
         ],
       ),
@@ -589,12 +628,7 @@ class _KelolaPemesananScreenState extends State<KelolaPemesananScreen> {
         children: [
           Icon(icon, size: 16, color: Colors.grey.shade600),
           SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(fontSize: 14),
-            ),
-          ),
+          Expanded(child: Text(text, style: TextStyle(fontSize: 14))),
         ],
       ),
     );

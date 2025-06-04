@@ -38,7 +38,12 @@ class _PilihKursiScreenState extends State<PilihKursiScreen> {
 
   String formatRupiah(dynamic price) {
     try {
-      double numericPrice = price is int ? price.toDouble() : price is double ? price : 0.0;
+      double numericPrice =
+          price is int
+              ? price.toDouble()
+              : price is double
+              ? price
+              : 0.0;
       final formatter = NumberFormat.currency(
         locale: 'id_ID',
         symbol: 'Rp',
@@ -51,20 +56,26 @@ class _PilihKursiScreenState extends State<PilihKursiScreen> {
   }
 
   void _toggleSeat(int seatNumber) {
-  setState(() {
-    if (selectedSeats.contains(seatNumber)) {
-      selectedSeats.remove(seatNumber);
-      totalPrice -= widget.destinasi.harga; // Kurangi harga saat kursi di-unselect
-    } else {
-      selectedSeats.add(seatNumber);
-      totalPrice += widget.destinasi.harga; // Tambahkan harga saat kursi dipilih
-    }
-  });
-}
+    setState(() {
+      if (selectedSeats.contains(seatNumber)) {
+        selectedSeats.remove(seatNumber);
+        totalPrice -=
+            widget.destinasi.harga; // Kurangi harga saat kursi di-unselect
+      } else {
+        selectedSeats.add(seatNumber);
+        totalPrice +=
+            widget.destinasi.harga; // Tambahkan harga saat kursi dipilih
+      }
+    });
+  }
 
-  Widget _buildSeat(int seatNumber, {bool isDriver = false, bool isAvailable = true}) {
+  Widget _buildSeat(
+    int seatNumber, {
+    bool isDriver = false,
+    bool isAvailable = true,
+  }) {
     bool isSelected = selectedSeats.contains(seatNumber);
-    
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
@@ -72,22 +83,24 @@ class _PilihKursiScreenState extends State<PilihKursiScreen> {
       height: 52,
       margin: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: isDriver
-            ? Colors.grey[200]
-            : isSelected
+        color:
+            isDriver
+                ? Colors.grey[200]
+                : isSelected
                 ? primaryColor
                 : isAvailable
-                    ? lightColor
-                    : unavailableColor.withOpacity(0.2),
+                ? lightColor
+                : unavailableColor.withOpacity(0.2),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isDriver
-              ? Colors.grey
-              : isSelected
+          color:
+              isDriver
+                  ? Colors.grey
+                  : isSelected
                   ? primaryColor
                   : isAvailable
-                      ? Colors.grey[300]!
-                      : unavailableColor,
+                  ? Colors.grey[300]!
+                  : unavailableColor,
           width: 2,
         ),
         boxShadow: [
@@ -102,31 +115,40 @@ class _PilihKursiScreenState extends State<PilihKursiScreen> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: isAvailable && !isDriver ? () => _toggleSeat(seatNumber) : null,
+          onTap:
+              isAvailable && !isDriver ? () => _toggleSeat(seatNumber) : null,
           borderRadius: BorderRadius.circular(10),
           splashColor: primaryColor.withOpacity(0.1),
           highlightColor: primaryColor.withOpacity(0.05),
           child: Center(
-            child: isDriver
-                ? const Icon(Icons.airline_seat_recline_extra, size: 28, color: darkColor)
-                : Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        seatNumber.toString(),
-                        style: TextStyle(
-                          color: isSelected ? Colors.white : darkColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+            child:
+                isDriver
+                    ? const Icon(
+                      Icons.airline_seat_recline_extra,
+                      size: 28,
+                      color: darkColor,
+                    )
+                    : Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          seatNumber.toString(),
+                          style: TextStyle(
+                            color: isSelected ? Colors.white : darkColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
-                      ),
-                      Icon(
-                        Icons.event_seat,
-                        size: 20,
-                        color: isSelected ? Colors.white : darkColor.withOpacity(0.7),
-                      ),
-                    ],
-                  ),
+                        Icon(
+                          Icons.event_seat,
+                          size: 20,
+                          color:
+                              isSelected
+                                  ? Colors.white
+                                  : darkColor.withOpacity(0.7),
+                        ),
+                      ],
+                    ),
           ),
         ),
       ),
@@ -139,9 +161,7 @@ class _PilihKursiScreenState extends State<PilihKursiScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Colors.grey[200]!,
-        ),
+        border: Border.all(color: Colors.grey[200]!),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -152,7 +172,9 @@ class _PilihKursiScreenState extends State<PilihKursiScreen> {
             decoration: BoxDecoration(
               color: color,
               borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: color == lightColor ? Colors.grey[300]! : color),
+              border: Border.all(
+                color: color == lightColor ? Colors.grey[300]! : color,
+              ),
             ),
           ),
           const SizedBox(width: 8),
@@ -176,19 +198,14 @@ class _PilihKursiScreenState extends State<PilihKursiScreen> {
       appBar: AppBar(
         title: const Text(
           'Pilih Kursi',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
         ),
         backgroundColor: primaryColor,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(
-            bottom: Radius.circular(20),
-          ),
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
         ),
       ),
       body: Column(
@@ -288,7 +305,10 @@ class _PilihKursiScreenState extends State<PilihKursiScreen> {
                       ),
                       const Spacer(),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: secondaryColor.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(20),
@@ -384,24 +404,30 @@ class _PilihKursiScreenState extends State<PilihKursiScreen> {
                       ],
                     ),
                   ),
-                  
+
                   // Passenger Seats
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: GridView.builder(
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 2,
-                          mainAxisSpacing: 12,
-                          crossAxisSpacing: 12,
-                        ),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              childAspectRatio: 2,
+                              mainAxisSpacing: 12,
+                              crossAxisSpacing: 12,
+                            ),
                         itemCount: widget.kendaraan.kapasitas,
                         itemBuilder: (context, index) {
                           int seatNumber = index + 1;
                           // Assume some seats are unavailable for demo purpose
                           bool isAvailable = seatNumber % 5 != 0;
-                          return Center(child: _buildSeat(seatNumber, isAvailable: isAvailable));
+                          return Center(
+                            child: _buildSeat(
+                              seatNumber,
+                              isAvailable: isAvailable,
+                            ),
+                          );
                         },
                       ),
                     ),
@@ -460,21 +486,26 @@ class _PilihKursiScreenState extends State<PilihKursiScreen> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: selectedSeats.isNotEmpty
-                        ? () {
-                            Navigator.push(
-  context,
-  MaterialPageRoute(
-    builder: (ctx) => PemesananScreen(
-      destinasi: widget.destinasi,
-      kendaraan: widget.kendaraan,
-      selectedSeats: selectedSeats, // Hanya kursi terpilih
-      totalPrice: totalPrice.toInt(), // Total hanya dari kursi terpilih
-    ),
-  ),
-);
-                          }
-                        : null,
+                    onPressed:
+                        selectedSeats.isNotEmpty
+                            ? () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (ctx) => PemesananScreen(
+                                        destinasi: widget.destinasi,
+                                        kendaraan: widget.kendaraan,
+                                        selectedSeats:
+                                            selectedSeats, // Hanya kursi terpilih
+                                        totalPrice:
+                                            totalPrice
+                                                .toInt(), // Total hanya dari kursi terpilih
+                                      ),
+                                ),
+                              );
+                            }
+                            : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryColor,
                       foregroundColor: Colors.white,
@@ -499,7 +530,10 @@ class _PilihKursiScreenState extends State<PilihKursiScreen> {
                         Icon(
                           Icons.arrow_forward_rounded,
                           size: 20,
-                          color: selectedSeats.isNotEmpty ? Colors.white : Colors.grey[400],
+                          color:
+                              selectedSeats.isNotEmpty
+                                  ? Colors.white
+                                  : Colors.grey[400],
                         ),
                       ],
                     ),

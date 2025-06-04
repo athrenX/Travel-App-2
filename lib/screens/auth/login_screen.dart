@@ -154,7 +154,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       Container(
                         padding: EdgeInsets.all(isTablet ? 24 : 16),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
+                          color: Theme.of(
+                            context,
+                          ).scaffoldBackgroundColor.withOpacity(0.15),
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
@@ -187,7 +189,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         'Jelajahi dunia bersama kami',
                         style: TextStyle(
                           fontSize: isTablet ? 18 : (isSmallScreen ? 14 : 16),
-                          color: Colors.white.withOpacity(0.8),
+                          color: Theme.of(
+                            context,
+                          ).scaffoldBackgroundColor.withOpacity(0.8),
                         ),
                       ),
                       SizedBox(height: isSmallScreen ? 20 : size.height * 0.06),
@@ -398,7 +402,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                           width: isTablet ? 24 : 20,
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2,
-                                            color: Colors.white,
+                                            color:
+                                                Theme.of(
+                                                  context,
+                                                ).scaffoldBackgroundColor,
                                           ),
                                         )
                                         : Text(
@@ -450,7 +457,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                 TextSpan(
                                   text: 'Daftar sekarang',
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color:
+                                        Theme.of(
+                                          context,
+                                        ).scaffoldBackgroundColor,
                                     fontWeight: FontWeight.bold,
                                     fontSize: isTablet ? 18 : 16,
                                     decoration: TextDecoration.underline,

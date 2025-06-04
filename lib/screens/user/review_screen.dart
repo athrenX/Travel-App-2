@@ -155,7 +155,10 @@ class _ReviewScreenState extends State<ReviewScreen> {
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 22,
-                                      color: Colors.white,
+                                      color:
+                                          Theme.of(
+                                            context,
+                                          ).scaffoldBackgroundColor,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -166,7 +169,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                                       Icon(
                                         Icons.location_on,
                                         size: 16,
-                                        color: Colors.white70,
+                                        color: Colors.white,
                                       ),
                                       SizedBox(width: 4),
                                       Flexible(
@@ -174,7 +177,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                                         child: Text(
                                           widget.destinasi.lokasi,
                                           style: TextStyle(
-                                            color: Colors.white70,
+                                            color: Colors.white,
                                             fontSize: 14,
                                           ),
                                           overflow: TextOverflow.ellipsis,

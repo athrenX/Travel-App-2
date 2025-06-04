@@ -6,7 +6,7 @@ import 'package:http_parser/http_parser.dart' as http_parser;
 
 class AuthService {
   // Ganti dengan IP server Laravel Anda
-  final String baseUrl = 'http://192.168.1.10:8000/api';
+  final String baseUrl = 'http://192.168.1.2:8000/api';
 
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
@@ -97,7 +97,7 @@ class AuthService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return User.fromJson(data['user'] ?? data);
+        return User.fromJson(data['data']['user']);
       } else if (response.statusCode == 401) {
         throw Exception('Unauthenticated');
       } else {
@@ -158,6 +158,7 @@ class AuthService {
       print('   ➤ email: $email');
       print('   ➤ foto: ${fotoProfil?.path}');
       print('   ➤ token: ${token.substring(0, 20)}...');
+      print('📦 fotoProfil: ${fotoProfil.runtimeType}');
 
       // Field nama
       if (nama != null && nama.isNotEmpty) {

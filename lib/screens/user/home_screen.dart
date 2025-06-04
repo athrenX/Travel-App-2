@@ -511,7 +511,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             color:
                                 _currentCarouselIndex == index
                                     ? Colors.white
-                                    : Colors.white.withOpacity(0.5),
+                                    : Theme.of(
+                                      context,
+                                    ).scaffoldBackgroundColor.withOpacity(0.5),
                           ),
                         );
                       }),
@@ -565,7 +567,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                             : Colors.grey.shade200,
                                     foregroundColor:
                                         isSelected
-                                            ? Colors.white
+                                            ? Theme.of(
+                                              context,
+                                            ).scaffoldBackgroundColor
                                             : Colors.black87,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(20),
@@ -707,6 +711,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildDestinationCard(dynamic destinasi) {
+    print('URL gambar: ${destinasi.gambar}');
     return Consumer<WishlistProvider>(
       builder: (context, wishlistProvider, child) {
         final isInWishlist = wishlistProvider.isInWishlist(destinasi.id);
@@ -731,7 +736,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: SizedBox(
                       height: 110,
                       width: double.infinity,
-                      child: Image.asset(
+                      child: Image.network(
                         destinasi.gambar,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
@@ -754,7 +759,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.8),
+                        color: Theme.of(
+                          context,
+                        ).scaffoldBackgroundColor.withOpacity(0.8),
                         shape: BoxShape.circle,
                       ),
                       child: IconButton(
@@ -885,7 +892,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        Image.asset(imagePath, fit: BoxFit.cover),
+        Image.network(imagePath, fit: BoxFit.cover),
         Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
