@@ -1,55 +1,44 @@
-// import 'package:flutter/material.dart';
-// import 'package:travelapp/models/destinasi.dart';
-// import 'package:travelapp/services/destinasi_service.dart';
-
-// class DestinasiProvider with ChangeNotifier {
-//   List<Destinasi> _destinasiList = [];
-//   bool _isLoading = false;
-
-//   List<Destinasi> get destinasiList => _destinasiList;
-//   bool get isLoading => _isLoading;
-
-//   Future<void> fetchDestinasi() async {
-//     _isLoading = true;
-//     notifyListeners();
-
-//     try {
-//       _destinasiList = await DestinasiService.getAllDestinasi();
-//     } catch (e) {
-//       print('Error fetch destinasi: $e');
-//     }
-
-//     _isLoading = false;
-//     notifyListeners();
-//   }
-
-//   List<Destinasi> getByKategori(String kategori) {
-//     return _destinasiList.where((d) => d.kategori == kategori).toList();
-//   }
-
-//   Destinasi? getById(String id) {
-//     try {
-//       return _destinasiList.firstWhere((d) => d.id == id);
-//     } catch (e) {
-//       return null;
-//     }
-//   }
-
-//   void addDestinasi(Destinasi destinasi) {
-//     _destinasiList.add(destinasi);
-//     notifyListeners();
-//   }
-
-//   void removeDestinasi(String id) {
-//     _destinasiList.removeWhere((d) => d.id == id);
-//     notifyListeners();
-//   }
-// }
 import 'package:flutter/material.dart';
 import 'package:travelapp/models/destinasi.dart';
 import 'package:travelapp/services/destinasi_service.dart';
+import 'dart:convert'; // penting untuk json.decode
+import 'package:http/http.dart' as http;
+
+final String baseUrl = 'http://192.168.1.22:8000';
 
 class DestinasiProvider with ChangeNotifier {
+  // =================== Carousel =====================
+  List<Destinasi> _carouselDestinasi = [];
+
+  List<Destinasi> get carouselDestinasi => _carouselDestinasi;
+
+  Future<void> fetchCarouselDestinasi(String token) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/destinasis'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        final List<dynamic> data = jsonData['data'];
+        final destinasiList =
+            data.map((json) => Destinasi.fromJson(json)).toList();
+
+        print('✅ Fetched carousel destinasi: ${destinasiList.length}');
+        _carouselDestinasi = destinasiList.take(6).toList();
+        notifyListeners();
+      } else {
+        print('❌ Failed to load carousel destinasi: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ Error fetching carousel destinasi: $e');
+    }
+  }
+
   List<Destinasi> _destinasiList = [];
   bool _isLoading = false;
 

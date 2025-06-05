@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:provider/provider.dart';
+import 'package:travelapp/models/destinasi.dart';
 import 'package:travelapp/providers/auth_provider.dart';
 import 'package:travelapp/providers/destinasi_provider.dart';
 import 'package:travelapp/providers/order_provider.dart';
@@ -14,7 +15,6 @@ import 'package:travelapp/screens/user/profil_screen.dart';
 import 'package:travelapp/screens/user/wishlist_screen.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
-import 'package:travelapp/providers/auth_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -44,10 +44,17 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
 
+    // Ambil data destinasi untuk list/grid
     Future.microtask(() {
-      Provider.of<DestinasiProvider>(context, listen: false).fetchDestinasi();
+      final provider = Provider.of<DestinasiProvider>(context, listen: false);
+      final token = Provider.of<AuthProvider>(context, listen: false).token!;
+      provider.fetchCarouselDestinasi(token);
+
+      provider.fetchDestinasi(); // untuk list destinasi
+      // untuk carousel, kirim token
     });
 
+    // Timer untuk loading dan popup
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) setState(() => showLoader = false);
     });
@@ -60,6 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) setState(() => showPopup = false);
     });
 
+    // Timer untuk auto-slide carousel
     _carouselTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (mounted) {
         setState(() {
@@ -76,6 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     });
 
+    // Listener untuk pencarian
     _searchController.addListener(() {
       setState(() {
         _searchQuery = _searchController.text;
@@ -449,6 +458,51 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildCarouselItem(Destinasi destinasi) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.network(
+          destinasi.gambar,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              color: Colors.grey.shade300,
+              child: Icon(
+                Icons.image_not_supported,
+                size: 50,
+                color: Colors.grey,
+              ),
+            );
+          },
+        ),
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 24,
+          left: 0,
+          right: 0,
+          child: Text(
+            destinasi.nama,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ],
+    );
+  }
+
   // Widget untuk tampilan home utama
   Widget _buildHomeContent() {
     return SingleChildScrollView(
@@ -461,62 +515,58 @@ class _HomeScreenState extends State<HomeScreen> {
               aspectRatio: 16 / 9,
               child: Stack(
                 children: [
-                  PageView(
-                    controller: _pageController,
-                    onPageChanged: (index) {
-                      setState(() {
-                        _currentCarouselIndex = index;
-                      });
+                  Consumer<DestinasiProvider>(
+                    builder: (context, destinasiProvider, _) {
+                      final carouselItems = destinasiProvider.carouselDestinasi;
+                      print(
+                        '🎢 Carousel UI build. Jumlah item: ${carouselItems.length}',
+                      );
+
+                      if (carouselItems.isEmpty) {
+                        return Center(child: CircularProgressIndicator());
+                      }
+
+                      return PageView.builder(
+                        controller: _pageController,
+                        itemCount: carouselItems.length,
+                        onPageChanged: (index) {
+                          setState(() {
+                            _currentCarouselIndex = index;
+                          });
+                        },
+                        itemBuilder: (context, index) {
+                          return _buildCarouselItem(carouselItems[index]);
+                        },
+                      );
                     },
-                    children: [
-                      _buildCarouselItem(
-                        'assets/images/gambar_bromo.jpeg',
-                        'Gunung Bromo',
-                      ),
-                      _buildCarouselItem(
-                        'assets/images/gunung_sindoro.jpeg',
-                        'Gunung Sindoro',
-                      ),
-                      _buildCarouselItem(
-                        'assets/images/anyer.jpg',
-                        'Pantai Anyer',
-                      ),
-                      _buildCarouselItem(
-                        'assets/images/PANGANDARAN.webp',
-                        'Pantai Pangandaran',
-                      ),
-                      _buildCarouselItem(
-                        'assets/images/kawahIjen.webp',
-                        'Kawah Ijen',
-                      ),
-                      _buildCarouselItem(
-                        'assets/images/karimun jawa.webp',
-                        'Pantai Karimun Jawa',
-                      ),
-                    ],
                   ),
                   Positioned(
                     bottom: 10,
                     left: 0,
                     right: 0,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(6, (index) {
-                        return Container(
-                          width: 10,
-                          height: 10,
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color:
-                                _currentCarouselIndex == index
-                                    ? Colors.white
-                                    : Theme.of(
-                                      context,
-                                    ).scaffoldBackgroundColor.withOpacity(0.5),
-                          ),
+                    child: Consumer<DestinasiProvider>(
+                      builder: (context, destinasiProvider, _) {
+                        final total =
+                            destinasiProvider.carouselDestinasi.length;
+
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(total, (index) {
+                            return Container(
+                              width: 10,
+                              height: 10,
+                              margin: const EdgeInsets.symmetric(horizontal: 4),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color:
+                                    _currentCarouselIndex == index
+                                        ? Colors.white
+                                        : Colors.white.withOpacity(0.3),
+                              ),
+                            );
+                          }),
                         );
-                      }),
+                      },
                     ),
                   ),
                 ],
@@ -885,42 +935,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildCarouselItem(String imagePath, String title) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Image.network(imagePath, fit: BoxFit.cover),
-        Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
-            ),
-          ),
-        ),
-        Positioned(
-          bottom: 24,
-          left: 0,
-          right: 0,
-          child: Column(
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 36,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 

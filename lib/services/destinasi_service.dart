@@ -130,7 +130,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travelapp/models/destinasi.dart';
 
 class DestinasiService {
-  static const String _baseUrl = "http://192.168.1.2:8000";
+  static const String _baseUrl = "http://192.168.1.22:8000";
 
   static Future<List<Destinasi>> getAllDestinasi() async {
     final prefs = await SharedPreferences.getInstance();
@@ -143,24 +143,29 @@ class DestinasiService {
       headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
     );
 
+    print('📥 RESPONSE STATUS: ${response.statusCode}');
+    print('📥 RESPONSE BODY: ${response.body}');
+
     if (response.statusCode == 200) {
       final body = jsonDecode(response.body);
       final List data = body['data'];
 
       return data.map((json) {
-        final rawGambar = json['gambar'].toString();
+        // Perbaikan gambar (hindari double base URL)
+        final rawGambar = json['gambar'].toString().trim();
         final gambarUrl =
-            rawGambar.contains('http')
+            rawGambar.startsWith('http')
                 ? rawGambar
                 : '$_baseUrl/storage/$rawGambar';
 
-        if (rawGambar.startsWith('http')) {
-          print('🔍 Gambar sudah URL lengkap: $rawGambar');
-        } else {
-          print('🔍 Gambar ditambah baseUrl: $_baseUrl/storage/$rawGambar');
-        }
-
         print('✅ Final URL gambar: $gambarUrl');
+
+        // Perbaikan galeri
+        final List<String> galeriUrls =
+            List<String>.from(json['galeri'] ?? []).map((g) {
+              final item = g.toString().trim();
+              return item.startsWith('http') ? item : '$_baseUrl/storage/$item';
+            }).toList();
 
         return Destinasi(
           id: json['id'].toString(),
@@ -171,21 +176,20 @@ class DestinasiService {
           gambar: gambarUrl,
           rating:
               json['rating'] != null
-                  ? double.parse(json['rating'].toString())
+                  ? double.tryParse(json['rating'].toString()) ?? 0.0
                   : 0.0,
           lat: double.parse(json['lat'].toString()),
           lng: double.parse(json['lng'].toString()),
           lokasi: json['lokasi'],
-          galeri:
-              List<String>.from(
-                json['galeri'] ?? [],
-              ).map((g) => '$_baseUrl/storage/$g').toList(),
+          galeri: galeriUrls,
         );
       }).toList();
     } else if (response.statusCode == 401) {
-      throw Exception('Token tidak valid.');
+      throw Exception('🔐 Token tidak valid. Silakan login ulang.');
     } else {
-      throw Exception("Gagal memuat destinasi. Status: ${response.statusCode}");
+      throw Exception(
+        "❌ Gagal memuat destinasi. Status: ${response.statusCode}",
+      );
     }
   }
 
