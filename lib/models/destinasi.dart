@@ -56,4 +56,22 @@ class Destinasi {
       lokasi: map['lokasi'],
     );
   }
+  factory Destinasi.fromJson(Map<String, dynamic> json) {
+    return Destinasi(
+      id: json['id'].toString(),
+      nama: json['nama'] ?? '',
+      kategori: json['kategori'] ?? '',
+      deskripsi: json['deskripsi'] ?? '',
+      harga: double.tryParse(json['harga'].toString()) ?? 0.0,
+      gambar: json['gambar'] ?? '',
+      rating:
+          json['rating'] != null
+              ? double.tryParse(json['rating'].toString()) ?? 0.0
+              : 0.0,
+      lat: double.tryParse(json['lat'].toString()) ?? 0.0,
+      lng: double.tryParse(json['lng'].toString()) ?? 0.0,
+      lokasi: json['lokasi'] ?? '',
+      galeri: (json['galeri'] is List) ? List<String>.from(json['galeri']) : [],
+    );
+  }
 }
