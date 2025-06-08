@@ -1,40 +1,73 @@
 import 'package:flutter/material.dart';
 import 'package:travelapp/models/wishlist.dart';
+import 'package:travelapp/services/wishlist_service.dart';
 
-class WishlistProvider with ChangeNotifier {
-  final List<Wishlist> _wishlists = [];
+class WishlistProvider extends ChangeNotifier {
+  WishlistService? _wishlistService;
+  String? _token;
 
-  List<Wishlist> get wishlists => _wishlists;
+  List<Wishlist> _wishlist = [];
+  List<Wishlist> get wishlist => _wishlist;
 
-  // Add to wishlist
-  void addToWishlist(String userId, String destinasiId) {
-    _wishlists.add(
-      Wishlist(
-        id: DateTime.now().toString(),
-        userId: userId,
-        destinasiId: destinasiId,
-        createdAt: DateTime.now(),
-      ),
-    );
+  WishlistProvider();
+
+  // Update token dan buat service baru setiap token berubah
+  void updateToken(String? token) {
+    _token = token;
+    if (_token != null) {
+      _wishlistService = WishlistService(
+        baseUrl: 'http://192.168.1.2:8000/api',
+        token: _token!,
+      );
+      loadWishlist().catchError((e) {
+        print('Gagal load wishlist setelah update token: $e');
+      });
+    } else {
+      _wishlistService = null;
+      _wishlist = [];
+    }
     notifyListeners();
   }
 
-  // Remove from wishlist
-  void removeFromWishlist(String destinasiId) {
-    _wishlists.removeWhere((item) => item.destinasiId == destinasiId);
-    notifyListeners();
+  Future<void> loadWishlist() async {
+    if (_wishlistService == null) throw Exception('Token belum tersedia');
+    try {
+      final fetchedWishlist = await _wishlistService!.fetchWishlist();
+      _wishlist = fetchedWishlist;
+      notifyListeners();
+    } catch (e) {
+      rethrow;
+    }
   }
 
-  // Check if item is in wishlist
-  bool isInWishlist(String destinasiId) {
-    return _wishlists.any((item) => item.destinasiId == destinasiId);
+  Future<void> addWishlist(String destinasisId) async {
+    if (_wishlistService == null) throw Exception('Token belum tersedia');
+    try {
+      final success = await _wishlistService!.addToWishlist(destinasisId);
+      if (success) await loadWishlist();
+    } catch (e) {
+      rethrow;
+    }
   }
 
-  // Get wishlist items count
-  int get wishlistCount => _wishlists.length;
+  Future<void> removeWishlist(String destinasisId) async {
+    if (_wishlistService == null) throw Exception('Token belum tersedia');
+    try {
+      final success = await _wishlistService!.removeFromWishlist(destinasisId);
+      if (success) {
+        _wishlist.removeWhere((item) => item.destinasisId == destinasisId);
+        notifyListeners();
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
 
-  // Get wishlist items by user
+  bool isInWishlist(String destinasisId) {
+    return _wishlist.any((item) => item.destinasisId == destinasisId);
+  }
+
   List<Wishlist> getWishlistsByUser(String userId) {
-    return _wishlists.where((item) => item.userId == userId).toList();
+    return _wishlist.where((item) => item.usersId == userId).toList();
   }
 }

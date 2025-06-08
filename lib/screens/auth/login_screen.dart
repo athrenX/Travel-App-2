@@ -5,6 +5,7 @@ import 'package:travelapp/screens/admin/dashboard_screen.dart';
 import 'package:travelapp/screens/auth/register_screen.dart';
 import 'package:travelapp/screens/user/home_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:travelapp/providers/wishlist_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -77,18 +78,28 @@ class _LoginScreenState extends State<LoginScreen> {
 
       try {
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        final wishlistProvider = Provider.of<WishlistProvider>(
+          context,
+          listen: false,
+        );
+
         final user = await authProvider.login(
           _emailController.text.trim(),
           _passwordController.text,
         );
 
-        if (user != null) {
+        if (user != null && authProvider.token != null) {
+          // Simpan data login di SharedPreferences
           final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('auth_token', authProvider.token ?? '');
+          await prefs.setString('auth_token', authProvider.token!);
           await prefs.setString('user_nama', user.nama);
           await prefs.setString('user_email', user.email);
 
-          // Arahkan ke screen yang sesuai dengan role
+          // Update token ke wishlistProvider dan load wishlist terbaru
+          wishlistProvider.updateToken(authProvider.token);
+          await wishlistProvider.loadWishlist();
+
+          // Navigasi sesuai role user
           if (user.role == 'admin') {
             Navigator.pushReplacement(
               context,
@@ -101,7 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
             );
           }
         } else {
-          // Jika user null tapi tidak ada exception
+          // User null tanpa exception
           setState(() {
             _errorMessage = 'Email atau password tidak valid';
           });

@@ -8,6 +8,8 @@ import 'package:travelapp/providers/auth_provider.dart'; // Add this import for 
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' as latlng2;
 import 'package:share_plus/share_plus.dart';
+import 'package:intl/intl.dart';
+import 'package:flutter/scheduler.dart';
 
 class DetailDestinasiScreen extends StatefulWidget {
   final Destinasi destinasi;
@@ -24,15 +26,29 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
   final ScrollController _scrollController = ScrollController();
   bool _isInWishlist = false;
 
+  String formatRupiah(num nominal) {
+    final formatter = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    );
+    return formatter.format(nominal);
+  }
+
+  @override
   @override
   void initState() {
     super.initState();
     // Check if the destination is in wishlist when screen loads
-    final wishlistProvider = Provider.of<WishlistProvider>(
-      context,
-      listen: false,
-    );
-    _isInWishlist = wishlistProvider.isInWishlist(widget.destinasi.id);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final wishlistProvider = Provider.of<WishlistProvider>(
+        context,
+        listen: false,
+      );
+      setState(() {
+        _isInWishlist = wishlistProvider.isInWishlist(widget.destinasi.id);
+      });
+    });
   }
 
   @override
@@ -65,14 +81,14 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                           context: context,
                           builder:
                               (_) => Dialog(
-                                child: Image.asset(
+                                child: Image.network(
                                   destinasi.gambar,
                                   fit: BoxFit.contain,
                                 ),
                               ),
                         );
                       },
-                      child: Image.asset(destinasi.gambar, fit: BoxFit.cover),
+                      child: Image.network(destinasi.gambar, fit: BoxFit.cover),
                     ),
                   ),
                   Positioned(
@@ -94,14 +110,6 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                     ),
                   ),
                 ],
-              ),
-              title: Text(
-                destinasi.nama,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                  color: Colors.white,
-                ),
               ),
             ),
             actions: [
@@ -130,38 +138,8 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                     color: _isInWishlist ? Colors.red : Colors.white,
                   ),
                 ),
-                onPressed: () {
-                  if (authProvider.isAuthenticated) {
-                    setState(() {
-                      _isInWishlist = !_isInWishlist;
-                    });
-
-                    if (_isInWishlist) {
-                      wishlistProvider.addToWishlist(
-                        '${authProvider.user?.id ?? ''}',
-
-                        destinasi.id,
-                      );
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            '${destinasi.nama} ditambahkan ke wishlist',
-                          ),
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
-                    } else {
-                      wishlistProvider.removeFromWishlist(destinasi.id);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            '${destinasi.nama} dihapus dari wishlist',
-                          ),
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
-                    }
-                  } else {
+                onPressed: () async {
+                  if (!authProvider.isAuthenticated) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: const Text(
@@ -181,9 +159,46 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                         ),
                       ),
                     );
+                    return;
+                  }
+
+                  try {
+                    if (_isInWishlist) {
+                      await wishlistProvider.removeWishlist(destinasi.id);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            '${destinasi.nama} dihapus dari wishlist',
+                          ),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    } else {
+                      await wishlistProvider.addWishlist(destinasi.id);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            '${destinasi.nama} ditambahkan ke wishlist',
+                          ),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                    // Update lokal state setelah operasi provider selesai
+                    setState(() {
+                      _isInWishlist = !_isInWishlist;
+                    });
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Terjadi kesalahan: ${e.toString()}'),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
                   }
                 },
               ),
+
               const SizedBox(width: 8),
             ],
           ),
@@ -315,7 +330,7 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    'Rp ${destinasi.harga.toString()}',
+                                    formatRupiah(destinasi.harga),
                                     style: TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,
@@ -330,16 +345,19 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                 child: ElevatedButton.icon(
                                   icon: const Icon(Icons.directions_car),
                                   onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder:
-                                            (context) =>
-                                                PemilihanKendaraanScreen(
-                                                  destinasi: destinasi,
-                                                ),
-                                      ),
-                                    );
+                                    SchedulerBinding.instance
+                                        .addPostFrameCallback((_) {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder:
+                                                  (context) =>
+                                                      PemilihanKendaraanScreen(
+                                                        destinasi: destinasi,
+                                                      ),
+                                            ),
+                                          );
+                                        });
                                   },
                                   label: const Text('Pilih Kendaraan'),
                                   style: ElevatedButton.styleFrom(
@@ -382,7 +400,7 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      'Rp ${destinasi.harga.toString()}',
+                                      formatRupiah(destinasi.harga),
                                       style: TextStyle(
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold,
@@ -399,16 +417,19 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                 child: ElevatedButton.icon(
                                   icon: const Icon(Icons.directions_car),
                                   onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder:
-                                            (context) =>
-                                                PemilihanKendaraanScreen(
-                                                  destinasi: destinasi,
-                                                ),
-                                      ),
-                                    );
+                                    SchedulerBinding.instance
+                                        .addPostFrameCallback((_) {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder:
+                                                  (context) =>
+                                                      PemilihanKendaraanScreen(
+                                                        destinasi: destinasi,
+                                                      ),
+                                            ),
+                                          );
+                                        });
                                   },
                                   label: const Text('Pilih Kendaraan'),
                                   style: ElevatedButton.styleFrom(
@@ -442,21 +463,51 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Deskripsi',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.description_outlined,
+                            size: 20,
+                            color: Colors.grey[700],
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Deskripsi',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF2C3E50),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        destinasi.deskripsi,
-                        textAlign: TextAlign.justify,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          color: Colors.black87,
-                          height: 1.5,
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[50],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.grey[200]!,
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          destinasi.deskripsi,
+                          textAlign: TextAlign.justify,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            color: Color(0xFF4A5568),
+                            height: 1.6,
+                            letterSpacing: 0.2,
+                          ),
                         ),
                       ),
                     ],
@@ -469,75 +520,253 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Galeri Foto',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.photo_library_outlined,
+                            size: 20,
+                            color: Colors.grey[700],
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Galeri Foto',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF2C3E50),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       SizedBox(
-                        height: 120,
-                        child: ListView.builder(
+                        height: 160,
+                        child: ListView.separated(
                           scrollDirection: Axis.horizontal,
                           itemCount: destinasi.galeri.length,
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          physics: const BouncingScrollPhysics(),
+                          clipBehavior: Clip.none,
+                          separatorBuilder:
+                              (_, __) => const SizedBox(width: 16),
                           itemBuilder: (context, index) {
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 12),
-                              child: GestureDetector(
-                                onTap: () {
-                                  showDialog(
-                                    context: context,
-                                    builder:
-                                        (_) => Dialog(
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              AppBar(
-                                                backgroundColor:
-                                                    Colors.transparent,
-                                                elevation: 0,
-                                                leading: IconButton(
-                                                  icon: const Icon(Icons.close),
+                            final imageUrl = destinasi.galeri[index];
+                            return GestureDetector(
+                              onTap: () {
+                                showDialog(
+                                  context: context,
+                                  barrierColor: Colors.black87,
+                                  builder:
+                                      (_) => Dialog(
+                                        backgroundColor: Colors.transparent,
+                                        insetPadding: const EdgeInsets.all(20),
+                                        child: Stack(
+                                          children: [
+                                            Hero(
+                                              tag:
+                                                  'gallery-${destinasi.nama}-$index',
+                                              child: ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(16),
+                                                child: Container(
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.white,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          16,
+                                                        ),
+                                                    boxShadow: [
+                                                      BoxShadow(
+                                                        color: Colors.black
+                                                            .withOpacity(0.3),
+                                                        blurRadius: 20,
+                                                        spreadRadius: 5,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  child: Image.network(
+                                                    imageUrl,
+                                                    fit: BoxFit.contain,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            Positioned(
+                                              top: 12,
+                                              right: 12,
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  color: Colors.black
+                                                      .withOpacity(0.6),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: IconButton(
+                                                  icon: const Icon(
+                                                    Icons.close,
+                                                    color: Colors.white,
+                                                    size: 24,
+                                                  ),
                                                   onPressed:
                                                       () => Navigator.pop(
                                                         context,
                                                       ),
                                                 ),
-                                                title: Text(
-                                                  'Foto ${index + 1}',
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                );
+                              },
+                              child: Hero(
+                                tag: 'gallery-${destinasi.nama}-$index',
+                                child: Container(
+                                  width: 180,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.15),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 6),
+                                        spreadRadius: 0,
+                                      ),
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.08),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                        spreadRadius: 0,
+                                      ),
+                                    ],
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey[100],
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                          colors: [
+                                            Colors.grey[50]!,
+                                            Colors.grey[100]!,
+                                          ],
+                                        ),
+                                      ),
+                                      child: Stack(
+                                        children: [
+                                          Image.network(
+                                            imageUrl,
+                                            fit: BoxFit.cover,
+                                            width: double.infinity,
+                                            height: double.infinity,
+                                            loadingBuilder: (
+                                              context,
+                                              child,
+                                              loadingProgress,
+                                            ) {
+                                              if (loadingProgress == null)
+                                                return child;
+                                              return Center(
+                                                child: Column(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  children: [
+                                                    SizedBox(
+                                                      width: 32,
+                                                      height: 32,
+                                                      child: CircularProgressIndicator(
+                                                        strokeWidth: 3,
+                                                        valueColor:
+                                                            AlwaysStoppedAnimation<
+                                                              Color
+                                                            >(
+                                                              Theme.of(
+                                                                context,
+                                                              ).primaryColor,
+                                                            ),
+                                                        value:
+                                                            loadingProgress
+                                                                        .expectedTotalBytes !=
+                                                                    null
+                                                                ? loadingProgress
+                                                                        .cumulativeBytesLoaded /
+                                                                    loadingProgress
+                                                                        .expectedTotalBytes!
+                                                                : null,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 8),
+                                                    Text(
+                                                      'Memuat...',
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        color: Colors.grey[600],
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            },
+                                            errorBuilder:
+                                                (
+                                                  context,
+                                                  error,
+                                                  stackTrace,
+                                                ) => Container(
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.grey[100],
+                                                    border: Border.all(
+                                                      color: Colors.grey[300]!,
+                                                      width: 1,
+                                                    ),
+                                                  ),
+                                                  child: Column(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                    children: [
+                                                      Icon(
+                                                        Icons
+                                                            .broken_image_outlined,
+                                                        size: 48,
+                                                        color: Colors.grey[400],
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      Text(
+                                                        'Gagal memuat',
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                          color:
+                                                              Colors.grey[500],
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                          ),
+                                          // Overlay gradient untuk efek visual yang lebih menarik
+                                          Positioned(
+                                            bottom: 0,
+                                            left: 0,
+                                            right: 0,
+                                            child: Container(
+                                              height: 40,
+                                              decoration: BoxDecoration(
+                                                gradient: LinearGradient(
+                                                  begin: Alignment.bottomCenter,
+                                                  end: Alignment.topCenter,
+                                                  colors: [
+                                                    Colors.black.withOpacity(
+                                                      0.3,
+                                                    ),
+                                                    Colors.transparent,
+                                                  ],
                                                 ),
                                               ),
-                                              Image.asset(
-                                                destinasi.galeri[index],
-                                                fit: BoxFit.contain,
-                                              ),
-                                            ],
+                                            ),
                                           ),
-                                        ),
-                                  );
-                                },
-                                child: Hero(
-                                  tag: 'gallery-${destinasi.nama}-$index',
-                                  child: Container(
-                                    width:
-                                        screenWidth * 0.45, // Responsive width
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(12),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.1),
-                                          blurRadius: 4,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: Image.asset(
-                                        destinasi.galeri[index],
-                                        fit: BoxFit.cover,
+                                        ],
                                       ),
                                     ),
                                   ),
@@ -604,8 +833,9 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                   MarkerLayer(
                                     markers: [
                                       Marker(
-                                        width: 80.0,
-                                        height: 80.0,
+                                        width:
+                                            150, // Lebar container label lebih besar
+                                        height: 100,
                                         point: latlng2.LatLng(
                                           destinasi.lat,
                                           destinasi.lng,
@@ -614,9 +844,6 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             Container(
-                                              constraints: BoxConstraints(
-                                                maxWidth: screenWidth * 0.3,
-                                              ),
                                               padding:
                                                   const EdgeInsets.symmetric(
                                                     horizontal: 8,
@@ -626,18 +853,31 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                                 color: Colors.blue.shade800,
                                                 borderRadius:
                                                     BorderRadius.circular(12),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.black
+                                                        .withOpacity(0.25),
+                                                    blurRadius: 4,
+                                                    offset: const Offset(0, 2),
+                                                  ),
+                                                ],
+                                              ),
+                                              constraints: const BoxConstraints(
+                                                maxWidth: 140,
                                               ),
                                               child: Text(
                                                 destinasi.nama,
                                                 style: const TextStyle(
                                                   color: Colors.white,
                                                   fontWeight: FontWeight.bold,
-                                                  fontSize: 12,
+                                                  fontSize: 14,
                                                 ),
-                                                overflow: TextOverflow.ellipsis,
                                                 textAlign: TextAlign.center,
+                                                softWrap: true,
+                                                // maxLines: 3, // opsional kalau mau batasi baris
                                               ),
                                             ),
+                                            const SizedBox(height: 4),
                                             const Icon(
                                               Icons.location_on,
                                               color: Colors.red,

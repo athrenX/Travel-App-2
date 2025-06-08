@@ -4,6 +4,7 @@ import 'package:travelapp/providers/auth_provider.dart';
 import 'package:travelapp/providers/destinasi_provider.dart';
 import 'package:travelapp/providers/wishlist_provider.dart';
 import 'package:travelapp/screens/user/detail_destinasi_screen.dart';
+import 'package:travelapp/screens/user/home_screen.dart';
 import 'package:travelapp/widgets/destinasi_card.dart';
 
 class WishlistScreen extends StatefulWidget {
@@ -19,10 +20,16 @@ class _WishlistScreenState extends State<WishlistScreen> {
   @override
   void initState() {
     super.initState();
-    // Cek autentikasi setelah widget selesai di-build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _checkAuthentication();
+
+        // Load wishlist data dari server
+        final wishlistProvider = Provider.of<WishlistProvider>(
+          context,
+          listen: false,
+        );
+        wishlistProvider.loadWishlist();
       }
     });
   }
@@ -200,7 +207,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
         final wishlistDestinasi =
             destinasiProvider.destinasiList.where((destinasi) {
               return userWishlists.any(
-                (wishlist) => wishlist.destinasiId == destinasi.id,
+                (wishlist) => wishlist.destinasisId == destinasi.id,
               );
             }).toList();
 
@@ -297,6 +304,12 @@ class _WishlistScreenState extends State<WishlistScreen> {
                       ],
                     ),
                     child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => HomeScreen()),
+                        );
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.transparent,
                         foregroundColor: Colors.white,
@@ -318,7 +331,6 @@ class _WishlistScreenState extends State<WishlistScreen> {
                           letterSpacing: 0.5,
                         ),
                       ),
-                      onPressed: () => _handleBackNavigation(context),
                     ),
                   ),
                 ],
@@ -587,64 +599,76 @@ class _WishlistScreenState extends State<WishlistScreen> {
                                             child: InkWell(
                                               customBorder:
                                                   const CircleBorder(),
-                                              onTap: () {
-                                                wishlistProvider
-                                                    .removeFromWishlist(
-                                                      destinasi.id,
-                                                    );
-                                                ScaffoldMessenger.of(
-                                                  context,
-                                                ).showSnackBar(
-                                                  SnackBar(
-                                                    content: Row(
-                                                      children: [
-                                                        const Icon(
-                                                          Icons.check_circle,
-                                                          color: Colors.white,
-                                                          size: 20,
-                                                        ),
-                                                        const SizedBox(
-                                                          width: 12,
-                                                        ),
-                                                        Expanded(
-                                                          child: Text(
-                                                            '${destinasi.nama} dihapus dari wishlist',
-                                                            style:
-                                                                const TextStyle(
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w500,
-                                                                ),
+                                              onTap: () async {
+                                                try {
+                                                  await wishlistProvider
+                                                      .removeWishlist(
+                                                        destinasi.id,
+                                                      );
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
+                                                    SnackBar(
+                                                      content: Row(
+                                                        children: [
+                                                          const Icon(
+                                                            Icons.check_circle,
+                                                            color: Colors.white,
+                                                            size: 20,
                                                           ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    backgroundColor:
-                                                        Colors.blue.shade600,
-                                                    behavior:
-                                                        SnackBarBehavior
-                                                            .floating,
-                                                    shape: RoundedRectangleBorder(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            15,
+                                                          const SizedBox(
+                                                            width: 12,
                                                           ),
+                                                          Expanded(
+                                                            child: Text(
+                                                              '${destinasi.nama} dihapus dari wishlist',
+                                                              style: const TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w500,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      backgroundColor:
+                                                          Colors.blue.shade600,
+                                                      behavior:
+                                                          SnackBarBehavior
+                                                              .floating,
+                                                      shape: RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              15,
+                                                            ),
+                                                      ),
+                                                      margin:
+                                                          const EdgeInsets.all(
+                                                            16,
+                                                          ),
+                                                      action: SnackBarAction(
+                                                        label: 'OK',
+                                                        textColor:
+                                                            Theme.of(
+                                                              context,
+                                                            ).scaffoldBackgroundColor,
+                                                        onPressed: () {},
+                                                      ),
                                                     ),
-                                                    margin:
-                                                        const EdgeInsets.all(
-                                                          16,
-                                                        ),
-                                                    action: SnackBarAction(
-                                                      label: 'OK',
-                                                      textColor:
-                                                          Theme.of(
-                                                            context,
-                                                          ).scaffoldBackgroundColor,
-                                                      onPressed: () {},
+                                                  );
+                                                } catch (e) {
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text(
+                                                        'Gagal menghapus wishlist: $e',
+                                                      ),
                                                     ),
-                                                  ),
-                                                );
+                                                  );
+                                                }
                                               },
+
                                               child: Padding(
                                                 padding: const EdgeInsets.all(
                                                   5,
