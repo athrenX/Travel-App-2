@@ -9,6 +9,8 @@ import 'package:travelapp/providers/order_provider.dart';
 import 'package:travelapp/providers/review_provider.dart';
 import 'package:travelapp/providers/theme_provider.dart';
 import 'package:travelapp/providers/wishlist_provider.dart';
+import 'package:travelapp/providers/activity_provider.dart'; // Pastikan import ini ada
+import 'package:travelapp/services/activity_service.dart'; // Pastikan import ini ada
 
 import 'package:travelapp/screens/auth/login_screen.dart';
 import 'package:travelapp/screens/auth/register_screen.dart';
@@ -17,10 +19,12 @@ import 'package:travelapp/screens/user/home_screen.dart';
 import 'package:travelapp/screens/admin/dashboard_screen.dart';
 
 void main() {
-  runApp(MyAppWrapper());
+  runApp(const MyAppWrapper());
 }
 
 class MyAppWrapper extends StatefulWidget {
+  const MyAppWrapper({Key? key}) : super(key: key);
+
   @override
   State<MyAppWrapper> createState() => _MyAppWrapperState();
 }
@@ -41,7 +45,10 @@ class _MyAppWrapperState extends State<MyAppWrapper> {
     await initializeDateFormatting('id_ID', null);
     await _authProvider.tryAutoLogin();
     await _themeProvider.loadTheme();
-    setState(() => _isInitialized = true);
+
+    setState(() {
+      _isInitialized = true;
+    });
   }
 
   @override
@@ -59,8 +66,18 @@ class _MyAppWrapperState extends State<MyAppWrapper> {
         ChangeNotifierProvider(create: (_) => DestinasiProvider()),
         ChangeNotifierProvider(create: (_) => KendaraanProvider()),
         ChangeNotifierProvider(create: (_) => OrderProvider()),
-        ChangeNotifierProvider(create: (_) => WishlistProvider()),
+        ChangeNotifierProvider<WishlistProvider>(
+          create: (_) => WishlistProvider(),
+        ),
+
         ChangeNotifierProvider(create: (_) => ReviewProvider()),
+        ChangeNotifierProvider(
+          create:
+              (_) => ActivityProvider(
+                activityService:
+                    ActivityService(), // pakai default baseUrl di service
+              ),
+        ),
       ],
       child: const MyApp(),
     );
@@ -68,7 +85,7 @@ class _MyAppWrapperState extends State<MyAppWrapper> {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -90,7 +107,6 @@ class MyApp extends StatelessWidget {
               bodyLarge: TextStyle(color: Colors.black87),
             ),
           ),
-
           darkTheme: ThemeData(
             brightness: Brightness.dark,
             scaffoldBackgroundColor: Colors.black,
@@ -103,7 +119,6 @@ class MyApp extends StatelessWidget {
               bodyLarge: TextStyle(color: Colors.white70),
             ),
           ),
-
           home: const SplashScreen(),
           routes: {
             '/login': (context) => const LoginScreen(),

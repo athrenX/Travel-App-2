@@ -18,7 +18,6 @@ dependencies:
   http: ^1.1.0 # HTTP library untuk API request
   provider: ^6.1.2
   # State management library
-  google_maps_flutter: ^2.5.0
   flutter_map: 8.1.1
   google_fonts: ^6.2.1
   image_picker: ^1.1.2
@@ -33,6 +32,7 @@ dependencies:
   permission_handler: ^12.0.0+1
   http_parser: ^4.0.2
   shared_preferences: ^2.2.2
+  google_maps_flutter: ^2.5.0
 
 dependency_overrides:
   win32: 5.12.0
@@ -61,5 +61,6 @@ flutter:
     - assets/images/bus.jpg
     - assets/images/PANGANDARAN.webp
     - assets/images/karimun jawa.webp
+    - assets/images/minibus.jpg
 
   # Deklarasi folder gambar untuk diakses dalam aplikasi

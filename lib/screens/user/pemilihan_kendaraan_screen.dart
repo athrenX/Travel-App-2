@@ -20,7 +20,7 @@ class PemilihanKendaraanScreen extends StatefulWidget {
 class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
   Kendaraan? selectedKendaraan;
   String selectedFilter = 'Semua';
-  bool isLoading = false;
+  bool _hasInitialized = false; // Add this flag
 
   // Enhanced color scheme
   static const Color primaryBlue = Color(0xFF1A73E8);
@@ -33,13 +33,17 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
   @override
   void initState() {
     super.initState();
-    _loadKendaraan();
+    // Remove the direct call to _loadKendaraan()
+    // Instead, we'll call it after the first build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_hasInitialized) {
+        _loadKendaraan();
+        _hasInitialized = true;
+      }
+    });
   }
 
   Future<void> _loadKendaraan() async {
-    setState(() {
-      isLoading = true;
-    });
     try {
       await Provider.of<KendaraanProvider>(
         context,
@@ -57,12 +61,6 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
             ),
           ),
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          isLoading = false;
-        });
       }
     }
   }
@@ -256,7 +254,8 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
         strokeWidth: 3,
         child: Consumer<KendaraanProvider>(
           builder: (ctx, kendaraanProvider, _) {
-            if (isLoading || kendaraanProvider.isLoading) {
+            // Show loading only when provider is loading and we haven't initialized yet
+            if (kendaraanProvider.isLoading && !_hasInitialized) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -283,7 +282,7 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Image.asset(
-                      'assets/images/no_vehicle.png',
+                      'assets/images/bus.jpg',
                       height: 150,
                       color: primaryBlue.withOpacity(0.5),
                     ),
@@ -790,7 +789,7 @@ class KendaraanCardCustom extends StatelessWidget {
                         kendaraan.gambar.isNotEmpty
                             ? FadeInImage.assetNetwork(
                               placeholder:
-                                  'assets/images/loading.gif', // Add a loading placeholder image to your assets
+                                  'assets/images/minibus.jpg', // Add a loading placeholder image to your assets
                               image: kendaraan.gambar,
                               fit: BoxFit.cover,
                               imageErrorBuilder:

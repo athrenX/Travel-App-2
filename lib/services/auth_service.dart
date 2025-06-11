@@ -6,11 +6,18 @@ import 'package:http_parser/http_parser.dart' as http_parser;
 
 class AuthService {
   // Ganti dengan IP server Laravel Anda
-  final String baseUrl = 'http://192.168.1.8:8000/api';
+  final String baseUrl = 'http://192.168.1.2:8000/api';
+
+  String _timestamp() {
+    return DateTime.now().toIso8601String();
+  }
 
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
-      print('🔐 Attempting login for: $email');
+      print('[${_timestamp()}] 🔐 Attempting login for: $email');
+      print(
+        '[${_timestamp()}] Request Body: ${jsonEncode({'email': email, 'password': password})}',
+      );
 
       final response = await http.post(
         Uri.parse('$baseUrl/login'),
@@ -21,21 +28,31 @@ class AuthService {
         body: jsonEncode({'email': email, 'password': password}),
       );
 
-      print('📥 Login response status: ${response.statusCode}');
-      print('📥 Login response body: ${response.body}');
+      print(
+        '[${_timestamp()}] 📥 Login response status: ${response.statusCode}',
+      );
+      print('[${_timestamp()}] 📥 Login response headers: ${response.headers}');
+      print('[${_timestamp()}] 📥 Login response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        print(
+          '[${_timestamp()}] ✅ Login success for user: ${data['data']?['user']?['email'] ?? data['user']?['email']}',
+        );
         return {
           'user': User.fromJson(data['data']['user'] ?? data['user']),
           'token': data['data']['token'] ?? data['token'],
         };
       } else {
         final error = jsonDecode(response.body);
+        print(
+          '[${_timestamp()}] ⚠️ Login failed: ${error['message'] ?? 'Unknown error'}',
+        );
         throw Exception(error['message'] ?? 'Login gagal');
       }
-    } catch (e) {
-      print('❌ Login error: $e');
+    } catch (e, stackTrace) {
+      print('[${_timestamp()}] ❌ Login error: $e');
+      print('Stacktrace: $stackTrace');
       rethrow;
     }
   }
@@ -47,7 +64,10 @@ class AuthService {
     String password,
   ) async {
     try {
-      print('📝 Attempting register for: $email');
+      print('[$_timestamp] 📝 Attempting register for: $email');
+      print(
+        '[$_timestamp] Request Body: ${jsonEncode({'nama': nama, 'email': email, 'password': password})}',
+      );
 
       final response = await http.post(
         Uri.parse('$baseUrl/register'),
@@ -58,22 +78,31 @@ class AuthService {
         body: jsonEncode({'nama': nama, 'email': email, 'password': password}),
       );
 
-      print('📥 Register response status: ${response.statusCode}');
-      print('📥 Register response body: ${response.body}');
+      print(
+        '[$_timestamp] 📥 Register response status: ${response.statusCode}',
+      );
+      print('[$_timestamp] 📥 Register response headers: ${response.headers}');
+      print('[$_timestamp] 📥 Register response body: ${response.body}');
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         final data = jsonDecode(response.body);
-
+        print(
+          '[$_timestamp] ✅ Register success for user: ${data['data']?['user']?['email'] ?? data['user']?['email']}',
+        );
         return {
           'user': User.fromJson(data['data']['user'] ?? data['user']),
           'token': data['data']['token'] ?? data['token'],
         };
       } else {
         final error = jsonDecode(response.body);
+        print(
+          '[$_timestamp] ⚠️ Register failed: ${error['message'] ?? 'Unknown error'}',
+        );
         throw Exception(error['message'] ?? 'Registrasi gagal');
       }
-    } catch (e) {
-      print('❌ Register error: $e');
+    } catch (e, stackTrace) {
+      print('[$_timestamp] ❌ Register error: $e');
+      print('Stacktrace: $stackTrace');
       rethrow;
     }
   }
