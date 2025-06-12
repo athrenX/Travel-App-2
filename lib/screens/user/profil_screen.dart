@@ -7,6 +7,7 @@ import '../../providers/auth_provider.dart';
 import '../../models/user.dart';
 import 'package:travelapp/providers/wishlist_provider.dart';
 import 'package:travelapp/providers/theme_provider.dart';
+import 'package:http/http.dart' as http;
 
 String _currentPaymentMethod = 'Bank Transfer';
 
@@ -375,6 +376,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildProfileImage() {
+    print('[LOG] FOTO PROFIL URL: ${user?.fotoProfil}');
+
     return Container(
       width: 120,
       height: 120,
@@ -475,7 +478,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   style: TextStyle(
                     color: Colors.blue[800],
                     fontWeight: FontWeight.bold,
-                    fontSize: 18,
+                    fontSize: 15,
                   ),
                 ),
               ],

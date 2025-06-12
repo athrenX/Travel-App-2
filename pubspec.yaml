@@ -33,6 +33,7 @@ dependencies:
   http_parser: ^4.0.2
   shared_preferences: ^2.2.2
   google_maps_flutter: ^2.5.0
+  geolocator: ^14.0.1
 
 dependency_overrides:
   win32: 5.12.0
