@@ -21,6 +21,7 @@ import 'package:travelapp/services/location_service.dart';
 import 'package:travelapp/models/location.dart';
 import 'package:travelapp/providers/activity_provider.dart';
 import 'package:travelapp/models/Activity.dart';
+import 'package:geolocator/geolocator.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -57,19 +58,51 @@ class _MapFromApiState extends State<MapFromApi> {
   Location? _cachedLocation;
   bool _isLoading = true;
   String? _errorMessage;
+  bool _showRecenterButton = false;
+  latlng2.LatLng? _currentPosition;
+  bool _isGettingLocation = false;
 
   @override
   void initState() {
     super.initState();
+
     _mapController = MapController();
     _currentZoom = widget.initialZoom ?? 15.0;
     _loadLocation();
+    _getCurrentLocation();
   }
 
   @override
   void dispose() {
     _mapController.dispose();
     super.dispose();
+  }
+
+  Future<void> _getCurrentLocation() async {
+    setState(() {
+      _isGettingLocation = true;
+    });
+    try {
+      LocationPermission permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        setState(() => _isGettingLocation = false);
+        return;
+      }
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      setState(() {
+        _currentPosition = latlng2.LatLng(
+          position.latitude,
+          position.longitude,
+        );
+        _isGettingLocation = false;
+      });
+    } catch (e) {
+      setState(() => _isGettingLocation = false);
+      debugPrint('Error getting location: $e');
+    }
   }
 
   Future<void> _loadLocation() async {
@@ -344,10 +377,19 @@ class _MapFromApiState extends State<MapFromApi> {
                       interactionOptions: const InteractionOptions(
                         flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
                       ),
-                      onMapEvent: (MapEvent event) {
+                      onMapEvent: (event) {
                         if (event is MapEventMove && mounted) {
                           setState(() {
                             _currentZoom = event.camera.zoom;
+                            final center = event.camera.center;
+                            final isNotAtMarker =
+                                (center.latitude - _cachedLocation!.latitude)
+                                        .abs() >
+                                    0.0002 ||
+                                (center.longitude - _cachedLocation!.longitude)
+                                        .abs() >
+                                    0.0002;
+                            _showRecenterButton = isNotAtMarker;
                           });
                         }
                       },
@@ -359,12 +401,12 @@ class _MapFromApiState extends State<MapFromApi> {
                         userAgentPackageName: 'com.example.app',
                         maxZoom: 19,
                         errorTileCallback: (tile, error, stackTrace) {
-                          // Handle tile loading errors gracefully
                           debugPrint('Tile loading error: $error');
                         },
                       ),
                       MarkerLayer(
                         markers: [
+                          // Marker destinasi utama
                           Marker(
                             key: ValueKey(
                               'marker_${location.latitude}_${location.longitude}',
@@ -378,14 +420,77 @@ class _MapFromApiState extends State<MapFromApi> {
                             alignment: Alignment.bottomCenter,
                             child: _buildCustomMarker(),
                           ),
+                          // Marker posisi user (jika sudah dapat)
+                          if (_currentPosition != null)
+                            Marker(
+                              key: const ValueKey('marker_user_location'),
+                              point: _currentPosition!,
+                              width: 60,
+                              height: 60,
+                              alignment: Alignment.center,
+                              child: Icon(
+                                Icons.my_location,
+                                color: Colors.blue,
+                                size: 38,
+                                shadows: [
+                                  Shadow(color: Colors.black26, blurRadius: 6),
+                                ],
+                              ),
+                            ),
                         ],
                       ),
                     ],
                   ),
                   _buildZoomControls(),
+
+                  // Tombol recenter ke destinasi utama (kanan bawah)
+                  if (_showRecenterButton)
+                    Positioned(
+                      bottom: 16,
+                      right: 16,
+                      child: FloatingActionButton.small(
+                        backgroundColor: Colors.blue.shade800,
+                        foregroundColor: Colors.white,
+                        heroTag: 'btnRecenter',
+                        onPressed: () {
+                          if (_cachedLocation != null) {
+                            _mapController.move(
+                              latlng2.LatLng(
+                                _cachedLocation!.latitude,
+                                _cachedLocation!.longitude,
+                              ),
+                              _currentZoom,
+                            );
+                            setState(() {
+                              _showRecenterButton = false;
+                            });
+                          }
+                        },
+                        child: const Icon(Icons.navigation),
+                        tooltip: "Arahkan ke lokasi utama",
+                      ),
+                    ),
+
+                  // Tombol ke posisi user (kiri bawah)
+                  if (_currentPosition != null)
+                    Positioned(
+                      bottom: 16,
+                      left: 16,
+                      child: FloatingActionButton.small(
+                        backgroundColor: Colors.green.shade700,
+                        foregroundColor: Colors.white,
+                        heroTag: 'btnToCurrentLocation',
+                        onPressed: () {
+                          _mapController.move(_currentPosition!, _currentZoom);
+                        },
+                        child: const Icon(Icons.my_location),
+                        tooltip: "Arahkan ke posisi saya",
+                      ),
+                    ),
                 ],
               ),
             ),
+
             _buildLocationInfo(location),
           ],
         ),
@@ -515,7 +620,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    locationService = LocationService(baseUrl: 'http://127.0.0.1:8000');
+    _isSearching = false;
+    locationService = LocationService(baseUrl: 'http://192.168.1.28:8000');
     // Ambil data destinasi untuk list/grid
     Future.microtask(() {
       final provider = Provider.of<DestinasiProvider>(context, listen: false);

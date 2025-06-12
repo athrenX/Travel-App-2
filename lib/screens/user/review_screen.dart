@@ -455,7 +455,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
     }
   }
 
-  void _submitReview() {
+  void _submitReview() async {
     if (_formKey.currentState!.validate()) {
       final reviewProvider = Provider.of<ReviewProvider>(
         context,
@@ -463,7 +463,6 @@ class _ReviewScreenState extends State<ReviewScreen> {
       );
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-      // Get user display name safely
       String userName = 'Pengguna';
       if (authProvider.user != null) {
         userName =
@@ -473,53 +472,57 @@ class _ReviewScreenState extends State<ReviewScreen> {
       }
 
       final review = Review(
-        id:
-            _existingReview?.id ??
-            DateTime.now().millisecondsSinceEpoch.toString(),
+        id: _existingReview?.id ?? '', // ID dikosongkan saat post baru
         userId: authProvider.user?.id ?? '',
         destinasiId: widget.destinasi.id,
         orderId: widget.pemesanan.id,
         userName: userName,
         rating: _rating,
         comment: _commentController.text,
-        createdAt: _existingReview?.createdAt ?? DateTime.now(),
+        createdAt: DateTime.now(), // Tidak digunakan untuk post
       );
 
-      if (_existingReview != null) {
-        reviewProvider.updateReview(review);
-      } else {
-        reviewProvider.addReview(review);
+      try {
+        final token = authProvider.token ?? '';
+
+        if (_existingReview == null) {
+          // Post review baru
+          await reviewProvider.postReview(review, token);
+        } else {
+          // Jika sudah punya review dan ingin update, tambahkan method updateReview() di ReviewProvider
+          await reviewProvider.updateReview(review, token);
+        }
+
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 10),
+                Text(
+                  _existingReview != null
+                      ? 'Ulasan berhasil diperbarui!'
+                      : 'Ulasan berhasil disimpan!',
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal menyimpan ulasan. Silakan coba lagi.'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
-
-      Navigator.pop(context);
-
-      // Show a better SnackBar
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.white),
-              SizedBox(width: 10),
-              Text(
-                _existingReview != null
-                    ? 'Ulasan berhasil diperbarui!'
-                    : 'Ulasan berhasil disimpan!',
-              ),
-            ],
-          ),
-          backgroundColor: Colors.green.shade600,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          duration: Duration(seconds: 3),
-          action: SnackBarAction(
-            label: 'OK',
-            textColor: Colors.white,
-            onPressed: () {},
-          ),
-        ),
-      );
     }
   }
 
