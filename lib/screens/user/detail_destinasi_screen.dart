@@ -10,6 +10,7 @@ import 'package:latlong2/latlong.dart' as latlng2;
 import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:geolocator/geolocator.dart';
 
 class DetailDestinasiScreen extends StatefulWidget {
   final Destinasi destinasi;
@@ -22,6 +23,7 @@ class DetailDestinasiScreen extends StatefulWidget {
 
 class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
   final MapController _mapController = MapController();
+  latlng2.LatLng? _currentPosition;
   double _currentZoom = 13.0;
   final ScrollController _scrollController = ScrollController();
   bool _isInWishlist = false;
@@ -35,9 +37,38 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
     return formatter.format(nominal);
   }
 
-  @override
+  Future<void> _getCurrentLocation() async {
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        return;
+      }
+
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      setState(() {
+        _currentPosition = latlng2.LatLng(
+          position.latitude,
+          position.longitude,
+        );
+      });
+    } catch (e) {
+      debugPrint('Error getting location: $e');
+    }
+  }
+
   @override
   void initState() {
+    _getCurrentLocation();
     super.initState();
     // Check if the destination is in wishlist when screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -782,171 +813,208 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
 
                 // Location Map
                 Container(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Lokasi',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                  height: 250,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 8,
+                        spreadRadius: 1,
+                        offset: const Offset(0, 2),
                       ),
-                      const SizedBox(height: 12),
-                      Container(
-                        height: 250,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 8,
-                              spreadRadius: 1,
-                              offset: const Offset(0, 2),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Stack(
+                      children: [
+                        FlutterMap(
+                          mapController: _mapController,
+                          options: MapOptions(
+                            initialCenter: latlng2.LatLng(
+                              widget.destinasi.lat,
+                              widget.destinasi.lng,
                             ),
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Stack(
-                            children: [
-                              FlutterMap(
-                                mapController: _mapController,
-                                options: MapOptions(
-                                  initialCenter: latlng2.LatLng(
-                                    destinasi.lat,
-                                    destinasi.lng,
+                            initialZoom: _currentZoom,
+                            maxZoom: 18,
+                            minZoom: 3,
+                          ),
+                          children: [
+                            TileLayer(
+                              urlTemplate:
+                                  'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                              subdomains: const ['a', 'b', 'c'],
+                            ),
+                            MarkerLayer(
+                              markers: [
+                                // Marker destinasi utama
+                                Marker(
+                                  width: 150,
+                                  height: 100,
+                                  point: latlng2.LatLng(
+                                    widget.destinasi.lat,
+                                    widget.destinasi.lng,
                                   ),
-                                  initialZoom: _currentZoom,
-                                  maxZoom: 18,
-                                  minZoom: 3,
-                                  interactionOptions:
-                                      const InteractionOptions(),
-                                ),
-                                children: [
-                                  TileLayer(
-                                    urlTemplate:
-                                        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                                    subdomains: const ['a', 'b', 'c'],
-                                  ),
-                                  MarkerLayer(
-                                    markers: [
-                                      Marker(
-                                        width:
-                                            150, // Lebar container label lebih besar
-                                        height: 100,
-                                        point: latlng2.LatLng(
-                                          destinasi.lat,
-                                          destinasi.lng,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 4,
                                         ),
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 8,
-                                                    vertical: 4,
-                                                  ),
-                                              decoration: BoxDecoration(
-                                                color: Colors.blue.shade800,
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                                boxShadow: [
-                                                  BoxShadow(
-                                                    color: Colors.black
-                                                        .withOpacity(0.25),
-                                                    blurRadius: 4,
-                                                    offset: const Offset(0, 2),
-                                                  ),
-                                                ],
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue.shade800,
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(
+                                                0.25,
                                               ),
-                                              constraints: const BoxConstraints(
-                                                maxWidth: 140,
-                                              ),
-                                              child: Text(
-                                                destinasi.nama,
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 14,
-                                                ),
-                                                textAlign: TextAlign.center,
-                                                softWrap: true,
-                                                // maxLines: 3, // opsional kalau mau batasi baris
-                                              ),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            const Icon(
-                                              Icons.location_on,
-                                              color: Colors.red,
-                                              size: 32,
+                                              blurRadius: 4,
+                                              offset: const Offset(0, 2),
                                             ),
                                           ],
                                         ),
+                                        constraints: const BoxConstraints(
+                                          maxWidth: 140,
+                                        ),
+                                        child: Text(
+                                          widget.destinasi.nama,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      const Icon(
+                                        Icons.location_on,
+                                        color: Colors.red,
+                                        size: 32,
                                       ),
                                     ],
                                   ),
-                                ],
-                              ),
-                              Positioned(
-                                bottom: 16,
-                                right: 16,
-                                child: Column(
-                                  children: [
-                                    FloatingActionButton.small(
-                                      heroTag: 'zoomIn',
-                                      onPressed: () {
-                                        setState(() {
-                                          _currentZoom = (_currentZoom + 1)
-                                              .clamp(3.0, 18.0);
-                                          _mapController.move(
-                                            _mapController.camera.center,
-                                            _currentZoom,
-                                          );
-                                        });
-                                      },
-                                      backgroundColor:
-                                          Theme.of(
-                                            context,
-                                          ).scaffoldBackgroundColor,
-                                      foregroundColor: Colors.blue.shade800,
-                                      elevation: 2,
-                                      child: const Icon(Icons.add),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    FloatingActionButton.small(
-                                      heroTag: 'zoomOut',
-                                      onPressed: () {
-                                        setState(() {
-                                          _currentZoom = (_currentZoom - 1)
-                                              .clamp(3.0, 18.0);
-                                          _mapController.move(
-                                            _mapController.camera.center,
-                                            _currentZoom,
-                                          );
-                                        });
-                                      },
-                                      backgroundColor:
-                                          Theme.of(
-                                            context,
-                                          ).scaffoldBackgroundColor,
-                                      foregroundColor: Colors.blue.shade800,
-                                      elevation: 2,
-                                      child: const Icon(Icons.remove),
-                                    ),
-                                  ],
                                 ),
+                                // Marker posisi user (jika ada)
+                                if (_currentPosition != null)
+                                  Marker(
+                                    width: 60,
+                                    height: 60,
+                                    point: _currentPosition!,
+                                    child: Icon(
+                                      Icons.my_location,
+                                      color: Colors.blue,
+                                      size: 38,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ),
+
+                        // Tombol navigasi ke lokasi destinasi (kanan bawah)
+                        Positioned(
+                          bottom: 16,
+                          right: 16,
+                          child: FloatingActionButton.small(
+                            heroTag: 'btnToDestination',
+                            onPressed: () {
+                              _mapController.move(
+                                latlng2.LatLng(
+                                  widget.destinasi.lat,
+                                  widget.destinasi.lng,
+                                ),
+                                15.0,
+                              );
+                              setState(() {
+                                _currentZoom = 15.0;
+                              });
+                            },
+                            backgroundColor: Colors.blue.shade800,
+                            child: const Icon(Icons.location_on),
+                            tooltip: 'Arahkan ke lokasi destinasi',
+                          ),
+                        ),
+
+                        // Tombol navigasi ke posisi user (kiri bawah)
+                        if (_currentPosition != null)
+                          Positioned(
+                            bottom: 16,
+                            left: 16,
+                            child: FloatingActionButton.small(
+                              heroTag: 'btnToUserLocation',
+                              onPressed: () {
+                                _mapController.move(_currentPosition!, 15.0);
+                                setState(() {
+                                  _currentZoom = 15.0;
+                                });
+                              },
+                              backgroundColor: Colors.green.shade700,
+                              child: const Icon(Icons.my_location),
+                              tooltip: 'Arahkan ke posisi saya',
+                            ),
+                          ),
+
+                        // Tombol Zoom In / Zoom Out (kanan atas)
+                        Positioned(
+                          top: 16,
+                          right: 16,
+                          child: Column(
+                            children: [
+                              FloatingActionButton.small(
+                                heroTag: 'zoomIn',
+                                onPressed: () {
+                                  setState(() {
+                                    _currentZoom = (_currentZoom + 1).clamp(
+                                      3.0,
+                                      18.0,
+                                    );
+                                    _mapController.move(
+                                      _mapController.camera.center,
+                                      _currentZoom,
+                                    );
+                                  });
+                                },
+                                backgroundColor: Colors.white,
+                                foregroundColor: Colors.blue.shade800,
+                                // HAPUS mini: true,
+                                child: const Icon(Icons.add),
+                              ),
+
+                              const SizedBox(height: 8),
+
+                              FloatingActionButton.small(
+                                heroTag: 'zoomOut',
+                                onPressed: () {
+                                  setState(() {
+                                    _currentZoom = (_currentZoom - 1).clamp(
+                                      3.0,
+                                      18.0,
+                                    );
+                                    _mapController.move(
+                                      _mapController.camera.center,
+                                      _currentZoom,
+                                    );
+                                  });
+                                },
+                                backgroundColor: Colors.white,
+                                foregroundColor: Colors.blue.shade800,
+                                // HAPUS mini: true,
+                                child: const Icon(Icons.remove),
                               ),
                             ],
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-
                 // Reviews Section
                 Container(
                   padding: const EdgeInsets.all(16),

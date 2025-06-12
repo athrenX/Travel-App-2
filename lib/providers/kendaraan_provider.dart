@@ -25,11 +25,16 @@ class KendaraanProvider with ChangeNotifier {
     }
   }
 
-  // Tambahkan method ini jika belum ada
   void updateKendaraanInList(Kendaraan updatedKendaraan) {
     final index = _kendaraanList.indexWhere((k) => k.id == updatedKendaraan.id);
     if (index != -1) {
       _kendaraanList[index] = updatedKendaraan;
+      notifyListeners();
+    } else {
+      // Jika kendaraan tidak ditemukan (misal baru ditambahkan), tambahkan saja.
+      // Meskipun untuk kasus ini, harusnya sudah ada di list.
+      print("DEBUG: Kendaraan ${updatedKendaraan.id} tidak ditemukan di list lokal, menambahkan.");
+      _kendaraanList.add(updatedKendaraan);
       notifyListeners();
     }
   }

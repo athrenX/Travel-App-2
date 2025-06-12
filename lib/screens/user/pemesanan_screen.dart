@@ -1,23 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:travelapp/models/kendaraan.dart';
 import 'package:travelapp/models/destinasi.dart';
-import 'package:travelapp/models/pemesanan.dart'; // Pastikan model ini ada
-import 'package:travelapp/screens/user/pembayaran_screen.dart'; // Pastikan layar ini ada
+import 'package:travelapp/models/pemesanan.dart';
+import 'package:travelapp/screens/user/pembayaran_screen.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart'; // Import provider jika Anda ingin menggunakan order_provider di sini
+import 'package:provider/provider.dart';
+import 'package:travelapp/providers/order_provider.dart';
+import 'package:travelapp/providers/auth_provider.dart';
 
 class PemesananScreen extends StatefulWidget {
-  final Destinasi destinasi;
-  final Kendaraan kendaraan;
-  final List<int> selectedSeats;
-  final int totalPrice; // Ini adalah total harga berdasarkan kursi terpilih
+  // PemesananScreen sekarang menerima objek Pemesanan lengkap
+  final Pemesanan pemesanan;
 
   const PemesananScreen({
     super.key,
-    required this.destinasi,
-    required this.kendaraan,
-    required this.selectedSeats,
-    required this.totalPrice, // Ini sudah benar
+    required this.pemesanan,
   });
 
   @override
@@ -25,11 +22,9 @@ class PemesananScreen extends StatefulWidget {
 }
 
 class _PemesananScreenState extends State<PemesananScreen> {
-  final _jumlahPesertaController = TextEditingController();
-  late double calculatedTotalPrice; // Ganti totalHarga menjadi calculatedTotalPrice
+  late double calculatedTotalPrice;
   final _formKey = GlobalKey<FormState>();
 
-  // Color scheme
   static const Color primaryColor = Color(0xFF4361EE);
   static const Color secondaryColor = Color(0xFF3F37C9);
   static const Color accentColor = Color(0xFF4CC9F0);
@@ -39,39 +34,13 @@ class _PemesananScreenState extends State<PemesananScreen> {
   @override
   void initState() {
     super.initState();
-    // Gunakan totalPrice yang sudah dihitung dari PilihKursiScreen
-    calculatedTotalPrice = widget.totalPrice.toDouble();
-    _jumlahPesertaController.text = widget.selectedSeats.length.toString(); // Jumlah peserta sama dengan kursi terpilih
+    calculatedTotalPrice = widget.pemesanan.totalHarga;
   }
 
   @override
   void dispose() {
-    _jumlahPesertaController.dispose();
     super.dispose();
   }
-
-  // Method ini tidak perlu lagi mengubah total harga, karena sudah dihitung dari selectedSeats
-  // Jumlah peserta sekarang adalah JUMLAH KURSI YANG DIPILIH
-  void _updateTotalPriceBasedOnPassengers() {
-    // Karena jumlah peserta harus sama dengan jumlah kursi terpilih,
-    // kita hanya perlu memastikan tampilan textfield _jumlahPesertaController.text sesuai.
-    // calculatedTotalPrice sudah akurat dari widget.totalPrice
-    setState(() {
-      final int numParticipants = int.tryParse(_jumlahPesertaController.text) ?? 0;
-      if (numParticipants != widget.selectedSeats.length) {
-        // Ini seharusnya tidak terjadi jika validasi _processBooking di PilihKursiScreen berjalan baik
-        // Namun, jika ada kasus, bisa ditangani di sini (misal: reset jumlah peserta ke jumlah kursi terpilih)
-        _jumlahPesertaController.text = widget.selectedSeats.length.toString();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Jumlah peserta disesuaikan dengan jumlah kursi yang dipilih.'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
-    });
-  }
-
 
   String _formatRupiah(double number) {
     final formatCurrency = NumberFormat.currency(
@@ -83,13 +52,35 @@ class _PemesananScreenState extends State<PemesananScreen> {
   }
 
   String _formatSeatNumbers() {
-    widget.selectedSeats.sort();
-    return widget.selectedSeats.join(', ');
+    final seats = List<int>.from(widget.pemesanan.selectedSeats); // Buat salinan untuk diurutkan
+    seats.sort();
+    return seats.join(', ');
+  }
+
+  Future<void> _continueToPayment() async {
+    // Pada titik ini, pemesanan sudah dibuat di backend dengan status 'menunggu pembayaran'.
+    // Kita hanya perlu navigasi ke PembayaranScreen.
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PembayaranScreen(
+            pemesanan: widget.pemesanan,
+          ),
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final hargaPerKursi = widget.destinasi.harga;
+    // Gunakan data dari objek pemesanan
+    final destinasi = widget.pemesanan.destinasi;
+    final kendaraan = widget.pemesanan.kendaraan;
+    final selectedSeats = widget.pemesanan.selectedSeats;
+    final jumlahPeserta = widget.pemesanan.jumlahPeserta;
+    final hargaPerKursi = destinasi.harga;
+
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -113,37 +104,33 @@ class _PemesananScreenState extends State<PemesananScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Destination Card
               _buildInfoCard(
                 icon: Icons.location_on,
                 title: 'Destinasi Wisata',
-                content: widget.destinasi.nama,
-                subtitle: widget.destinasi.lokasi,
+                content: destinasi.nama,
+                subtitle: destinasi.lokasi,
               ),
               const SizedBox(height: 16),
 
-              // Vehicle Card
               _buildInfoCard(
                 icon: Icons.directions_bus,
                 title: 'Kendaraan',
-                content: widget.kendaraan.jenis,
+                content: kendaraan.jenis,
                 subtitle:
-                    '${widget.kendaraan.tipe} • ${widget.kendaraan.kapasitas} orang',
+                    '${kendaraan.tipe} • ${kendaraan.kapasitas} orang',
               ),
               const SizedBox(height: 16),
 
-              // Selected Seats Card
               _buildInfoCard(
                 icon: Icons.event_seat,
                 title: 'Kursi Terpilih',
                 content: _formatSeatNumbers(),
-                subtitle: 'Jumlah kursi: ${widget.selectedSeats.length}',
+                subtitle: 'Jumlah kursi: ${selectedSeats.length}',
               ),
               const SizedBox(height: 24),
 
-              // Participants Input
               Text(
-                'Jumlah Peserta (sesuai jumlah kursi yang dipilih)',
+                'Jumlah Peserta',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -151,34 +138,28 @@ class _PemesananScreenState extends State<PemesananScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              TextFormField(
-                controller: _jumlahPesertaController,
-                readOnly: true, // Tidak bisa diubah, karena sudah sesuai kursi terpilih
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-                  suffixIcon: const Icon(Icons.people_alt_outlined),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300),
                 ),
-                keyboardType: TextInputType.number,
-                // onChanged: (_) => _updateTotalPrice(), // Ini tidak lagi diperlukan karena readOnly
-                validator: (value) {
-                  if (value == null || value.isEmpty || int.tryParse(value) == 0) {
-                    return 'Jumlah peserta tidak valid'; // Harusnya tidak terpicu
-                  }
-                  return null;
-                },
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '$jumlahPeserta orang',
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                    ),
+                    const Icon(Icons.people_alt_outlined),
+                  ],
+                ),
               ),
+
               const SizedBox(height: 24),
 
-              // Price Summary
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -201,12 +182,12 @@ class _PemesananScreenState extends State<PemesananScreen> {
                     const Divider(height: 24),
                     _buildPriceRow(
                       'Jumlah Kursi',
-                      widget.selectedSeats.length.toString(),
+                      selectedSeats.length.toString(),
                     ),
                     const Divider(height: 24),
                     _buildPriceRow(
                       'Total Harga',
-                      _formatRupiah(calculatedTotalPrice), // Gunakan calculatedTotalPrice
+                      _formatRupiah(calculatedTotalPrice),
                       isTotal: true,
                     ),
                   ],
@@ -214,36 +195,11 @@ class _PemesananScreenState extends State<PemesananScreen> {
               ),
               const SizedBox(height: 32),
 
-              // Continue Button
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      final pemesanan = Pemesanan(
-                        id: DateTime.now().millisecondsSinceEpoch.toString(), // ID sementara
-                        userId: 'userId_example', // Ganti dengan user ID sebenarnya dari AuthProvider
-                        destinasi: widget.destinasi,
-                        kendaraan: widget.kendaraan,
-                        selectedSeats: widget.selectedSeats,
-                        jumlahPeserta: int.parse(_jumlahPesertaController.text),
-                        tanggal: DateTime.now(), // Sesuaikan dengan tanggal pemesanan sebenarnya
-                        totalHarga: calculatedTotalPrice,
-                      );
-
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => PembayaranScreen(
-                                  pemesanan:
-                                      pemesanan, // Mengirim data pemesanan ke PembayaranScreen
-                              ),
-                        ),
-                      );
-                    }
-                  },
+                  onPressed: _continueToPayment,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryColor,
                     foregroundColor: Colors.white,
@@ -265,7 +221,6 @@ class _PemesananScreenState extends State<PemesananScreen> {
     );
   }
 
-  // Widget _buildInfoCard dan _buildPriceRow tidak berubah
   Widget _buildInfoCard({
     required IconData icon,
     required String title,

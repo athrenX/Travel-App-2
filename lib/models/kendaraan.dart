@@ -1,14 +1,15 @@
-import 'dart:convert'; // Tambahkan ini jika belum ada
+import 'dart:convert';
 
 class Kendaraan {
-  final String id;
+  final String id; // Pastikan ini String
   final String jenis;
   final int kapasitas;
   final double harga;
   final String tipe;
   final String gambar;
   final String fasilitas;
-  final List<int> availableSeats; // Ini akan berisi kursi yang TERSEDIA
+  final List<int> availableSeats;
+  final List<int> heldSeats;
 
   Kendaraan({
     required this.id,
@@ -17,8 +18,9 @@ class Kendaraan {
     required this.harga,
     required this.tipe,
     required this.gambar,
-    this.fasilitas = 'AC, Audio', // Default value jika tidak ada dari API
-    required this.availableSeats, // Pastikan ini required
+    this.fasilitas = 'AC, Audio',
+    required this.availableSeats,
+    required this.heldSeats,
   });
 
   Map<String, dynamic> toMap() {
@@ -30,53 +32,69 @@ class Kendaraan {
       'tipe': tipe,
       'gambar': gambar,
       'fasilitas': fasilitas,
-      'available_seats': availableSeats, // Sesuai dengan nama kolom di DB
+      'available_seats': availableSeats,
+      'held_seats': heldSeats,
     };
   }
 
   factory Kendaraan.fromMap(Map<String, dynamic> map) {
-    // Pastikan ID kendaraan di-cast ke String
-    final String id = map['id'].toString();
-
-    // Pastikan harga di-parse dengan benar
+    final String id = map['id']?.toString() ?? ''; // PENTING: .toString()
     final double harga = map['harga'] is int
         ? map['harga'].toDouble()
         : map['harga'] is String
             ? double.tryParse(map['harga'].toString()) ?? 0.0
             : map['harga']?.toDouble() ?? 0.0;
 
-
-    // Parsing available_seats: data dari Laravel adalah List<int> atau null
     List<int> parsedAvailableSeats = [];
     if (map['available_seats'] != null) {
-      if (map['available_seats'] is List) {
-        // Jika sudah list, langsung konversi ke List<int>
-        parsedAvailableSeats = List<int>.from(map['available_seats']);
-      } else if (map['available_seats'] is String) {
-        // Jika berupa string JSON, decode dulu
+      dynamic rawSeats = map['available_seats'];
+      if (rawSeats is String) {
         try {
-          final decoded = jsonDecode(map['available_seats']);
-          if (decoded is List) {
-            parsedAvailableSeats = List<int>.from(decoded);
-          }
+          rawSeats = jsonDecode(rawSeats);
         } catch (e) {
-          print("Error decoding available_seats string: $e");
-          // Fallback ke list kosong jika gagal decode
-          parsedAvailableSeats = [];
+          print("Error decoding available_seats string in Kendaraan.fromMap: $e");
+          rawSeats = [];
         }
+      }
+      if (rawSeats is List) {
+        parsedAvailableSeats = rawSeats.map((e) {
+          if (e is int) return e;
+          if (e is String) return int.tryParse(e) ?? 0;
+          return 0;
+        }).where((e) => e != 0).toList();
       }
     }
 
+    List<int> parsedHeldSeats = [];
+    if (map['held_seats'] != null) {
+      dynamic rawHeldSeats = map['held_seats'];
+      if (rawHeldSeats is String) {
+        try {
+          rawHeldSeats = jsonDecode(rawHeldSeats);
+        } catch (e) {
+          print("Error decoding held_seats string in Kendaraan.fromMap: $e");
+          rawHeldSeats = [];
+        }
+      }
+      if (rawHeldSeats is List) {
+        parsedHeldSeats = rawHeldSeats.map((e) {
+          if (e is int) return e;
+          if (e is String) return int.tryParse(e) ?? 0;
+          return 0;
+        }).where((e) => e != 0).toList();
+      }
+    }
 
     return Kendaraan(
       id: id,
-      jenis: map['jenis'] ?? '',
+      jenis: map['jenis']?.toString() ?? '',
       kapasitas: map['kapasitas'] ?? 0,
       harga: harga,
-      tipe: map['tipe'] ?? '',
-      gambar: map['gambar'] ?? '',
-      fasilitas: map['fasilitas'] ?? 'AC, Audio',
-      availableSeats: parsedAvailableSeats, // Gunakan yang sudah di-parse
+      tipe: map['tipe']?.toString() ?? '',
+      gambar: map['gambar']?.toString() ?? '',
+      fasilitas: map['fasilitas']?.toString() ?? 'AC, Audio',
+      availableSeats: parsedAvailableSeats,
+      heldSeats: parsedHeldSeats,
     );
   }
 }
