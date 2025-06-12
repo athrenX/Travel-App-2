@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart'; // Import provider
 import 'package:travelapp/models/destinasi.dart';
 import 'package:travelapp/models/kendaraan.dart';
 import 'package:travelapp/screens/user/pemesanan_screen.dart';
+import 'package:travelapp/services/kendaraan_service.dart'; // Import service
+import 'package:travelapp/providers/kendaraan_provider.dart'; // Import KendaraanProvider
 
 class PilihKursiScreen extends StatefulWidget {
   final Destinasi destinasi;
-  final Kendaraan kendaraan;
+  final Kendaraan kendaraan; // Kendaraan yang sudah dipilih
 
   const PilihKursiScreen({
     super.key,
@@ -20,7 +23,9 @@ class PilihKursiScreen extends StatefulWidget {
 
 class _PilihKursiScreenState extends State<PilihKursiScreen> {
   List<int> selectedSeats = [];
-  double totalPrice = 0.0;
+  late double totalPrice;
+  late Kendaraan _currentKendaraan; // State lokal untuk menyimpan data kendaraan terbaru
+  final TextEditingController _passengersController = TextEditingController(text: '1'); // Default 1 penumpang
 
   // Enhanced color scheme
   static const Color primaryColor = Color(0xFF3498DB);
@@ -33,15 +38,29 @@ class _PilihKursiScreenState extends State<PilihKursiScreen> {
   @override
   void initState() {
     super.initState();
-    totalPrice = widget.destinasi.harga.toDouble();
+    _currentKendaraan = widget.kendaraan; // Inisialisasi dengan data dari widget
+    _updateTotalPrice(); // Hitung total harga awal
   }
 
+  @override
+  void dispose() {
+    _passengersController.dispose();
+    super.dispose();
+  }
+
+  // Method untuk menghitung ulang total harga berdasarkan jumlah kursi yang dipilih
+  void _updateTotalPrice() {
+    setState(() {
+      totalPrice = widget.destinasi.harga.toDouble() * selectedSeats.length;
+    });
+  }
+
+  // Format rupiah
   String formatRupiah(dynamic price) {
     try {
-      double numericPrice =
-          price is int
-              ? price.toDouble()
-              : price is double
+      double numericPrice = price is int
+          ? price.toDouble()
+          : price is double
               ? price
               : 0.0;
       final formatter = NumberFormat.currency(
@@ -57,23 +76,37 @@ class _PilihKursiScreenState extends State<PilihKursiScreen> {
 
   void _toggleSeat(int seatNumber) {
     setState(() {
+      final int maxPassengers = int.tryParse(_passengersController.text) ?? 1;
+
       if (selectedSeats.contains(seatNumber)) {
         selectedSeats.remove(seatNumber);
-        totalPrice -=
-            widget.destinasi.harga; // Kurangi harga saat kursi di-unselect
       } else {
-        selectedSeats.add(seatNumber);
-        totalPrice +=
-            widget.destinasi.harga; // Tambahkan harga saat kursi dipilih
+        // Hanya tambahkan kursi jika jumlah kursi terpilih belum mencapai jumlah peserta
+        if (selectedSeats.length < maxPassengers) {
+          selectedSeats.add(seatNumber);
+        } else {
+          // Beri tahu pengguna jika melebihi batas
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Anda hanya bisa memilih $maxPassengers kursi.'),
+              duration: const Duration(seconds: 2),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
       }
+      selectedSeats.sort(); // Urutkan kursi yang dipilih
+      _updateTotalPrice();
     });
   }
 
+  // Method untuk membangun tampilan kursi
   Widget _buildSeat(
     int seatNumber, {
     bool isDriver = false,
-    bool isAvailable = true,
   }) {
+    // Kursi tersedia jika ada di _currentKendaraan.availableSeats
+    bool isAvailable = _currentKendaraan.availableSeats.contains(seatNumber);
     bool isSelected = selectedSeats.contains(seatNumber);
 
     return AnimatedContainer(
@@ -87,20 +120,20 @@ class _PilihKursiScreenState extends State<PilihKursiScreen> {
             isDriver
                 ? Colors.grey[200]
                 : isSelected
-                ? primaryColor
-                : isAvailable
-                ? lightColor
-                : unavailableColor.withOpacity(0.2),
+                    ? primaryColor
+                    : isAvailable
+                        ? lightColor
+                        : unavailableColor.withOpacity(0.2),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color:
               isDriver
                   ? Colors.grey
                   : isSelected
-                  ? primaryColor
-                  : isAvailable
-                  ? Colors.grey[300]!
-                  : unavailableColor,
+                      ? primaryColor
+                      : isAvailable
+                          ? Colors.grey[300]!
+                          : unavailableColor,
           width: 2,
         ),
         boxShadow: [
@@ -115,46 +148,154 @@ class _PilihKursiScreenState extends State<PilihKursiScreen> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap:
-              isAvailable && !isDriver ? () => _toggleSeat(seatNumber) : null,
+          onTap: isAvailable && !isDriver ? () => _toggleSeat(seatNumber) : null,
           borderRadius: BorderRadius.circular(10),
           splashColor: primaryColor.withOpacity(0.1),
           highlightColor: primaryColor.withOpacity(0.05),
           child: Center(
-            child:
-                isDriver
-                    ? const Icon(
-                      Icons.airline_seat_recline_extra,
-                      size: 28,
-                      color: darkColor,
-                    )
-                    : Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          seatNumber.toString(),
-                          style: TextStyle(
-                            color: isSelected ? Colors.white : darkColor,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
+            child: isDriver
+                ? const Icon(
+                    Icons.airline_seat_recline_extra,
+                    size: 28,
+                    color: darkColor,
+                  )
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        seatNumber.toString(),
+                        style: TextStyle(
+                          color: isSelected ? Colors.white : darkColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
                         ),
-                        Icon(
-                          Icons.event_seat,
-                          size: 20,
-                          color:
-                              isSelected
-                                  ? Colors.white
-                                  : darkColor.withOpacity(0.7),
-                        ),
-                      ],
-                    ),
+                      ),
+                      Icon(
+                        Icons.event_seat,
+                        size: 20,
+                        color:
+                            isSelected
+                                ? Colors.white
+                                : darkColor.withOpacity(0.7),
+                      ),
+                    ],
+                  ),
           ),
         ),
       ),
     );
   }
 
+  // Method untuk handle proses pemesanan dan update kursi di backend
+  Future<void> _processBooking() async {
+    if (selectedSeats.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Harap pilih setidaknya satu kursi.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final int numberOfPassengers = int.tryParse(_passengersController.text) ?? 0;
+    if (numberOfPassengers == 0 || selectedSeats.length != numberOfPassengers) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Jumlah kursi yang dipilih harus sama dengan jumlah peserta ($numberOfPassengers kursi).'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Tampilkan loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const Center(
+        child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(primaryColor)),
+      ),
+    );
+
+    try {
+      // Panggil API untuk mengupdate kursi
+      final updatedKendaraan = await KendaraanService.updateKendaraanSeats(
+        _currentKendaraan.id,
+        selectedSeats,
+      );
+
+      // Setelah berhasil update di backend, update state di provider
+      Provider.of<KendaraanProvider>(context, listen: false)
+          .updateKendaraanInList(updatedKendaraan);
+
+      if (mounted) {
+        Navigator.of(context).pop(); // Tutup dialog loading
+
+        // Lanjutkan ke layar pemesanan
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (ctx) => PemesananScreen(
+              destinasi: widget.destinasi,
+              kendaraan: updatedKendaraan, // Kirim data kendaraan terbaru
+              selectedSeats: selectedSeats,
+              totalPrice: totalPrice.toInt(),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context).pop(); // Tutup dialog loading
+        // Tampilkan pesan error kepada pengguna
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memesan kursi: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      // Opsional: Muat ulang data kendaraan jika ada konflik kursi
+      if (e.toString().contains('Kursi') && e.toString().contains('tidak tersedia')) {
+          _reloadKendaraanData(); // Reload untuk menampilkan status kursi terbaru
+      }
+    }
+  }
+
+  // Fungsi untuk memuat ulang data kendaraan jika terjadi konflik kursi
+  Future<void> _reloadKendaraanData() async {
+    try {
+      final updatedList = await KendaraanService.getKendaraanByDestinasi(widget.destinasi.id);
+      final refreshedKendaraan = updatedList.firstWhere((k) => k.id == _currentKendaraan.id, orElse: () => _currentKendaraan);
+
+      setState(() {
+        _currentKendaraan = refreshedKendaraan;
+        selectedSeats.clear(); // Bersihkan pilihan kursi yang mungkin sudah stale
+        _updateTotalPrice();
+      });
+      if(mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Data kursi telah diperbarui. Silakan pilih kembali.'),
+            backgroundColor: Colors.blue,
+          ),
+        );
+      }
+    } catch (e) {
+      if(mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memuat ulang data kendaraan: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+
+  // Method untuk membangun item legenda
   Widget _buildLegendItem(Color color, String text) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -257,7 +398,7 @@ class _PilihKursiScreenState extends State<PilihKursiScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              widget.kendaraan.jenis,
+                              _currentKendaraan.jenis,
                               style: const TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
@@ -266,7 +407,7 @@ class _PilihKursiScreenState extends State<PilihKursiScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '${widget.kendaraan.kapasitas} kursi · ${widget.kendaraan.tipe}',
+                              '${_currentKendaraan.kapasitas} kursi · ${_currentKendaraan.tipe}',
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.grey[600],
@@ -280,57 +421,91 @@ class _PilihKursiScreenState extends State<PilihKursiScreen> {
                 ),
                 Padding(
                   padding: const EdgeInsets.all(16),
-                  child: Row(
+                  child: Column(
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      Row(
                         children: [
-                          Text(
-                            'Harga per kursi',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey[600],
-                            ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Harga per kursi',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                formatRupiah(widget.destinasi.harga),
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: primaryColor,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            formatRupiah(widget.destinasi.harga),
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: primaryColor,
+                          const Spacer(),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: secondaryColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.chair_alt_outlined,
+                                  size: 18,
+                                  color: secondaryColor,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Kursi terpilih: ${selectedSeats.length}',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: secondaryColor,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
+                      const SizedBox(height: 16),
+                      // Input jumlah peserta
+                      TextField(
+                        controller: _passengersController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: 'Jumlah Penumpang (yang akan memesan)',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          filled: true,
+                          fillColor: lightColor,
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.refresh),
+                            onPressed: () {
+                              setState(() {
+                                selectedSeats.clear(); // Clear selected seats when passenger count changes
+                                _updateTotalPrice();
+                              });
+                            },
+                          ),
                         ),
-                        decoration: BoxDecoration(
-                          color: secondaryColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.chair_alt_outlined,
-                              size: 18,
-                              color: secondaryColor,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Kursi terpilih: ${selectedSeats.length}',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: secondaryColor,
-                              ),
-                            ),
-                          ],
-                        ),
+                        onChanged: (text) {
+                          // Clear selected seats when passenger count changes
+                          setState(() {
+                            selectedSeats.clear();
+                            _updateTotalPrice();
+                          });
+                        },
                       ),
                     ],
                   ),
@@ -412,22 +587,15 @@ class _PilihKursiScreenState extends State<PilihKursiScreen> {
                       child: GridView.builder(
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              childAspectRatio: 2,
-                              mainAxisSpacing: 12,
-                              crossAxisSpacing: 12,
-                            ),
-                        itemCount: widget.kendaraan.kapasitas,
+                          crossAxisCount: 4, // Ubah menjadi 4 kolom untuk tampilan kursi lebih baik
+                          childAspectRatio: 1, // Sesuaikan rasio aspek
+                          mainAxisSpacing: 12,
+                          crossAxisSpacing: 12,
+                        ),
+                        itemCount: _currentKendaraan.kapasitas, // Gunakan kapasitas dari data kendaraan
                         itemBuilder: (context, index) {
                           int seatNumber = index + 1;
-                          // Assume some seats are unavailable for demo purpose
-                          bool isAvailable = seatNumber % 5 != 0;
-                          return Center(
-                            child: _buildSeat(
-                              seatNumber,
-                              isAvailable: isAvailable,
-                            ),
-                          );
+                          return _buildSeat(seatNumber); // isAvailable dicek di _buildSeat
                         },
                       ),
                     ),
@@ -486,26 +654,9 @@ class _PilihKursiScreenState extends State<PilihKursiScreen> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed:
-                        selectedSeats.isNotEmpty
-                            ? () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder:
-                                      (ctx) => PemesananScreen(
-                                        destinasi: widget.destinasi,
-                                        kendaraan: widget.kendaraan,
-                                        selectedSeats:
-                                            selectedSeats, // Hanya kursi terpilih
-                                        totalPrice:
-                                            totalPrice
-                                                .toInt(), // Total hanya dari kursi terpilih
-                                      ),
-                                ),
-                              );
-                            }
-                            : null,
+                    onPressed: selectedSeats.length == (int.tryParse(_passengersController.text) ?? 0) && selectedSeats.isNotEmpty
+                        ? _processBooking
+                        : null, // Tombol hanya aktif jika jumlah kursi terpilih sesuai dengan jumlah peserta
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryColor,
                       foregroundColor: Colors.white,
@@ -530,10 +681,9 @@ class _PilihKursiScreenState extends State<PilihKursiScreen> {
                         Icon(
                           Icons.arrow_forward_rounded,
                           size: 20,
-                          color:
-                              selectedSeats.isNotEmpty
-                                  ? Colors.white
-                                  : Colors.grey[400],
+                          color: selectedSeats.length == (int.tryParse(_passengersController.text) ?? 0) && selectedSeats.isNotEmpty
+                              ? Colors.white
+                              : Colors.grey[400],
                         ),
                       ],
                     ),

@@ -9,19 +9,29 @@ class KendaraanProvider with ChangeNotifier {
   List<Kendaraan> get kendaraanList => _kendaraanList;
   bool get isLoading => _isLoading;
 
-  Future<void> fetchKendaraan() async {
+  Future<void> fetchKendaraanByDestinasi(String destinasiId) async {
     _isLoading = true;
     notifyListeners();
 
     try {
-      _kendaraanList = await KendaraanService.getAllKendaraan();
+      _kendaraanList = await KendaraanService.getKendaraanByDestinasi(destinasiId);
     } catch (e) {
-      print('Gagal mengambil data kendaraan: $e');
+      print('Gagal mengambil data kendaraan untuk destinasi $destinasiId: $e');
       _kendaraanList = [];
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
+  }
 
-    _isLoading = false;
-    notifyListeners();
+  // Tambahkan method ini jika belum ada
+  void updateKendaraanInList(Kendaraan updatedKendaraan) {
+    final index = _kendaraanList.indexWhere((k) => k.id == updatedKendaraan.id);
+    if (index != -1) {
+      _kendaraanList[index] = updatedKendaraan;
+      notifyListeners();
+    }
   }
 
   Kendaraan? getKendaraanById(String id) {
