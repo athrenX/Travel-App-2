@@ -4,6 +4,7 @@ import 'package:travelapp/services/destinasi_service.dart';
 import 'dart:convert'; // penting untuk json.decode
 import 'package:http/http.dart' as http;
 
+
 final String baseUrl = 'http://192.168.1.17:8000';
 
 class DestinasiProvider with ChangeNotifier {

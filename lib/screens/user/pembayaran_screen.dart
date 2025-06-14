@@ -3,8 +3,10 @@ import 'package:travelapp/models/pemesanan.dart';
 import 'package:travelapp/services/pemesanan_service.dart';
 import 'package:provider/provider.dart';
 import 'package:travelapp/providers/order_provider.dart';
+import 'package:travelapp/providers/auth_provider.dart';
 import 'package:intl/intl.dart';
 import 'package:travelapp/screens/user/pembayaran_sukses_screen.dart';
+import 'package:travelapp/screens/user/home_screen.dart';
 
 class PembayaranScreen extends StatefulWidget {
   final Pemesanan pemesanan;
@@ -20,6 +22,15 @@ class _PembayaranScreenState extends State<PembayaranScreen> {
   static const Color accentColor = Color(0xFF4CC9F0);
   static const Color backgroundColor = Color(0xFFF8F9FA);
   static const Color textColor = Color(0xFF212529);
+
+  late String _selectedPaymentMethod;
+  @override
+  void initState() {
+    super.initState();
+    final user = Provider.of<AuthProvider>(context, listen: false).user;
+    _selectedPaymentMethod =
+        user?.paymentMethod ?? 'Bank Transfer'; // default jika belum ada
+  }
 
   String _formatRupiah(double number) {
     final formatCurrency = NumberFormat.currency(
@@ -221,30 +232,82 @@ class _PembayaranScreenState extends State<PembayaranScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Anda bisa melakukan transfer ke rekening berikut:',
+                    'Pilih metode pembayaran:',
                     style: TextStyle(
                       fontSize: 15,
                       color: textColor.withOpacity(0.8),
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 10),
-                  _buildBankInfo('BCA', '1234567890', 'An. PT. Wisata Jaya'),
-                  _buildBankInfo(
-                    'Mandiri',
-                    '0987654321',
-                    'An. PT. Wisata Jaya',
+
+                  // --- PILIHAN RADIO ---
+                  RadioListTile<String>(
+                    value: 'Bank Transfer',
+                    groupValue: _selectedPaymentMethod,
+                    onChanged:
+                        (val) => setState(() => _selectedPaymentMethod = val!),
+                    title: const Text('Bank Transfer'),
+                    secondary: const Icon(Icons.account_balance),
+                  ),
+                  RadioListTile<String>(
+                    value: 'E-Wallet',
+                    groupValue: _selectedPaymentMethod,
+                    onChanged:
+                        (val) => setState(() => _selectedPaymentMethod = val!),
+                    title: const Text('E-Wallet'),
+                    secondary: const Icon(Icons.wallet),
+                  ),
+                  RadioListTile<String>(
+                    value: 'Kartu Kredit',
+                    groupValue: _selectedPaymentMethod,
+                    onChanged:
+                        (val) => setState(() => _selectedPaymentMethod = val!),
+                    title: const Text('Kartu Kredit'),
+                    secondary: const Icon(Icons.credit_card),
                   ),
                   const SizedBox(height: 10),
-                  Text(
-                    'Setelah melakukan pembayaran, silakan konfirmasi untuk memverifikasi pemesanan Anda.',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: textColor.withOpacity(0.6),
+                  // Info transfer bisa conditional
+                  if (_selectedPaymentMethod == 'Bank Transfer') ...[
+                    Text(
+                      'Anda bisa melakukan transfer ke rekening berikut:',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: textColor.withOpacity(0.7),
+                      ),
                     ),
-                  ),
+                    _buildBankInfo('BCA', '1234567890', 'An. PT. Wisata Jaya'),
+                    _buildBankInfo(
+                      'Mandiri',
+                      '0987654321',
+                      'An. PT. Wisata Jaya',
+                    ),
+                  ] else if (_selectedPaymentMethod == 'E-Wallet') ...[
+                    Text(
+                      'QRIS/E-Wallet (OVO, DANA, ShopeePay):',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: textColor.withOpacity(0.7),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Image.asset(
+                      'assets/Fake_QR.png',
+                      height: 48,
+                    ), // ganti dengan asset QRIS kamu
+                  ] else if (_selectedPaymentMethod == 'Kartu Kredit') ...[
+                    Text(
+                      'Masukkan detail kartu kredit pada langkah berikutnya setelah konfirmasi pembayaran.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: textColor.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
+
             const SizedBox(height: 32),
 
             if (pemesanan.status == 'menunggu pembayaran')
@@ -315,25 +378,29 @@ class _PembayaranScreenState extends State<PembayaranScreen> {
                       try {
                         await PemesananService.cancelPemesanan(pemesanan.id);
                         if (mounted) {
-                          Navigator.of(context).pop();
+                          Navigator.of(context).pop(); // Close loading
+                          Provider.of<OrderProvider>(
+                            context,
+                            listen: false,
+                          ).fetchOrders();
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Pemesanan berhasil dibatalkan.'),
                               backgroundColor: Colors.green,
                             ),
                           );
-                          Provider.of<OrderProvider>(
+                          // Kembali ke HomeScreen, lalu tab Pesanan
+                          Navigator.pushAndRemoveUntil(
                             context,
-                            listen: false,
-                          ).fetchOrders();
-                          Navigator.popUntil(
-                            context,
-                            ModalRoute.withName('/orders'),
+                            MaterialPageRoute(
+                              builder: (_) => const HomeScreen(initialTab: 2),
+                            ),
+                            (route) => false,
                           );
                         }
                       } catch (e) {
                         if (mounted) {
-                          Navigator.of(context).pop();
+                          Navigator.of(context).pop(); // Close loading
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
@@ -355,6 +422,33 @@ class _PembayaranScreenState extends State<PembayaranScreen> {
                   ),
                   child: const Text(
                     'BATALKAN PEMESANAN',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+
+            SizedBox(height: 10),
+            if (pemesanan.status == 'menunggu pembayaran')
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: OutlinedButton(
+                  onPressed: () {
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      '/home',
+                      (route) => false,
+                    );
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: primaryColor,
+                    side: BorderSide(color: primaryColor),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'KEMBALI KE HOME',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
