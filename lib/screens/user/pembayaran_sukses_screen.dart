@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:travelapp/models/pemesanan.dart';
 import 'package:intl/intl.dart';
+import 'package:travelapp/screens/user/home_screen.dart';
 
 class PembayaranSuksesScreen extends StatelessWidget {
   final Pemesanan pemesanan;
@@ -111,9 +112,13 @@ class PembayaranSuksesScreen extends StatelessWidget {
                     elevation: 2,
                   ),
                   onPressed: () {
-                    Navigator.of(
+                    Navigator.pushAndRemoveUntil(
                       context,
-                    ).pushNamedAndRemoveUntil('/orders', (route) => false);
+                      MaterialPageRoute(
+                        builder: (_) => const HomeScreen(initialTab: 2),
+                      ),
+                      (route) => false,
+                    );
                   },
                 ),
               ),
