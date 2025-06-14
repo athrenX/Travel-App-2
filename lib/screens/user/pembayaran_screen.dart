@@ -4,6 +4,7 @@ import 'package:travelapp/services/pemesanan_service.dart';
 import 'package:provider/provider.dart';
 import 'package:travelapp/providers/order_provider.dart';
 import 'package:intl/intl.dart';
+import 'package:travelapp/screens/user/pembayaran_sukses_screen.dart';
 
 class PembayaranScreen extends StatefulWidget {
   final Pemesanan pemesanan;
@@ -44,20 +45,27 @@ class _PembayaranScreenState extends State<PembayaranScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => const Center(
-        child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(primaryColor)),
-      ),
+      builder:
+          (ctx) => const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+            ),
+          ),
     );
 
     try {
-      final updatedPemesanan = await PemesananService.confirmPayment(widget.pemesanan.id);
+      final updatedPemesanan = await PemesananService.confirmPayment(
+        widget.pemesanan.id,
+      );
 
       if (mounted) {
         Navigator.of(context).pop(); // Tutup dialog loading
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Pembayaran berhasil! Pemesanan Anda telah dikonfirmasi.'),
+            content: Text(
+              'Pembayaran berhasil! Pemesanan Anda telah dikonfirmasi.',
+            ),
             backgroundColor: Colors.green,
           ),
         );
@@ -66,23 +74,27 @@ class _PembayaranScreenState extends State<PembayaranScreen> {
         Provider.of<OrderProvider>(context, listen: false).fetchOrders();
 
         // Navigasi kembali ke layar daftar pesanan atau layar konfirmasi akhir
-        Navigator.popUntil(context, ModalRoute.withName('/orders')); // Kembali ke daftar pesanan
-        // Atau: Navigator.pushReplacement(context, MaterialPageRoute(builder: (ctx) => OrderConfirmationScreen(pemesanan: updatedPemesanan)));
+        // Navigasi ke halaman pembayaran sukses
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder:
+                (ctx) => PembayaranSuksesScreen(pemesanan: updatedPemesanan),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
         Navigator.of(context).pop(); // Tutup dialog loading
         String errorMessage = 'Gagal memproses pembayaran: ${e.toString()}';
         if (e.toString().contains('Expired')) {
-            errorMessage = 'Waktu pembayaran telah habis. Pemesanan Anda dibatalkan.';
+          errorMessage =
+              'Waktu pembayaran telah habis. Pemesanan Anda dibatalkan.';
         } else if (e.toString().contains('Conflict')) {
-            errorMessage = 'Pembayaran gagal karena status pemesanan tidak valid atau kursi sudah dilepas.';
+          errorMessage =
+              'Pembayaran gagal karena status pemesanan tidak valid atau kursi sudah dilepas.';
         }
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
         );
       }
     }
@@ -138,7 +150,8 @@ class _PembayaranScreenState extends State<PembayaranScreen> {
               icon: Icons.directions_bus,
               title: 'Kendaraan',
               content: kendaraan.jenis,
-              subtitle: '${kendaraan.tipe} - Kapasitas: ${kendaraan.kapasitas} orang',
+              subtitle:
+                  '${kendaraan.tipe} - Kapasitas: ${kendaraan.kapasitas} orang',
             ),
             const SizedBox(height: 12),
             _buildInfoCard(
@@ -176,7 +189,8 @@ class _PembayaranScreenState extends State<PembayaranScreen> {
                     pemesanan.status.toUpperCase(),
                     valueColor: Colors.orange,
                   ),
-                  if (pemesanan.expiredAt != null && pemesanan.status == 'menunggu pembayaran') ...[
+                  if (pemesanan.expiredAt != null &&
+                      pemesanan.status == 'menunggu pembayaran') ...[
                     const Divider(height: 24),
                     _buildPriceRow(
                       'Batas Waktu Pembayaran',
@@ -208,15 +222,25 @@ class _PembayaranScreenState extends State<PembayaranScreen> {
                 children: [
                   Text(
                     'Anda bisa melakukan transfer ke rekening berikut:',
-                    style: TextStyle(fontSize: 15, color: textColor.withOpacity(0.8)),
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: textColor.withOpacity(0.8),
+                    ),
                   ),
                   const SizedBox(height: 10),
                   _buildBankInfo('BCA', '1234567890', 'An. PT. Wisata Jaya'),
-                  _buildBankInfo('Mandiri', '0987654321', 'An. PT. Wisata Jaya'),
+                  _buildBankInfo(
+                    'Mandiri',
+                    '0987654321',
+                    'An. PT. Wisata Jaya',
+                  ),
                   const SizedBox(height: 10),
                   Text(
                     'Setelah melakukan pembayaran, silakan konfirmasi untuk memverifikasi pemesanan Anda.',
-                    style: TextStyle(fontSize: 13, color: textColor.withOpacity(0.6)),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: textColor.withOpacity(0.6),
+                    ),
                   ),
                 ],
               ),
@@ -250,31 +274,43 @@ class _PembayaranScreenState extends State<PembayaranScreen> {
                 height: 50,
                 child: OutlinedButton(
                   onPressed: () async {
-                    final confirmCancel = await showDialog<bool>(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        title: const Text('Batalkan Pemesanan?'),
-                        content: const Text('Apakah Anda yakin ingin membatalkan pemesanan ini? Kursi akan dikembalikan ke tersedia.'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(ctx).pop(false),
-                            child: const Text('Tidak'),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.of(ctx).pop(true),
-                            child: const Text('Ya'),
-                          ),
-                        ],
-                      ),
-                    ) ?? false;
+                    final confirmCancel =
+                        await showDialog<bool>(
+                          context: context,
+                          builder:
+                              (ctx) => AlertDialog(
+                                title: const Text('Batalkan Pemesanan?'),
+                                content: const Text(
+                                  'Apakah Anda yakin ingin membatalkan pemesanan ini? Kursi akan dikembalikan ke tersedia.',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed:
+                                        () => Navigator.of(ctx).pop(false),
+                                    child: const Text('Tidak'),
+                                  ),
+                                  TextButton(
+                                    onPressed:
+                                        () => Navigator.of(ctx).pop(true),
+                                    child: const Text('Ya'),
+                                  ),
+                                ],
+                              ),
+                        ) ??
+                        false;
 
                     if (confirmCancel) {
                       showDialog(
                         context: context,
                         barrierDismissible: false,
-                        builder: (ctx) => const Center(
-                          child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.red)),
-                        ),
+                        builder:
+                            (ctx) => const Center(
+                              child: CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.red,
+                                ),
+                              ),
+                            ),
                       );
                       try {
                         await PemesananService.cancelPemesanan(pemesanan.id);
@@ -286,15 +322,23 @@ class _PembayaranScreenState extends State<PembayaranScreen> {
                               backgroundColor: Colors.green,
                             ),
                           );
-                          Provider.of<OrderProvider>(context, listen: false).fetchOrders();
-                          Navigator.popUntil(context, ModalRoute.withName('/orders'));
+                          Provider.of<OrderProvider>(
+                            context,
+                            listen: false,
+                          ).fetchOrders();
+                          Navigator.popUntil(
+                            context,
+                            ModalRoute.withName('/orders'),
+                          );
                         }
                       } catch (e) {
                         if (mounted) {
                           Navigator.of(context).pop();
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('Gagal membatalkan pemesanan: ${e.toString()}'),
+                              content: Text(
+                                'Gagal membatalkan pemesanan: ${e.toString()}',
+                              ),
                               backgroundColor: Colors.red,
                             ),
                           );
@@ -402,7 +446,12 @@ class _PembayaranScreenState extends State<PembayaranScreen> {
     );
   }
 
-  Widget _buildPriceRow(String label, String value, {bool isTotal = false, Color? valueColor}) {
+  Widget _buildPriceRow(
+    String label,
+    String value, {
+    bool isTotal = false,
+    Color? valueColor,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -426,7 +475,11 @@ class _PembayaranScreenState extends State<PembayaranScreen> {
     );
   }
 
-  Widget _buildBankInfo(String bankName, String accountNumber, String accountName) {
+  Widget _buildBankInfo(
+    String bankName,
+    String accountNumber,
+    String accountName,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
@@ -439,7 +492,10 @@ class _PembayaranScreenState extends State<PembayaranScreen> {
             children: [
               Text(
                 '$bankName: $accountNumber',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
               ),
               Text(
                 'A/n: $accountName',
