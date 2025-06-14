@@ -6,7 +6,7 @@ import 'package:http_parser/http_parser.dart' as http_parser;
 
 class AuthService {
   // Ganti dengan IP server Laravel Anda
-  final String baseUrl = 'http://192.168.1.2:8000/api';
+  final String baseUrl = 'http://192.168.1.18:8000/api';
 
   String _timestamp() {
     return DateTime.now().toIso8601String();

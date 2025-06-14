@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travelapp/models/destinasi.dart';
 
 class DestinasiService {
-  static const String _baseUrl = "http://192.168.1.2:8000";
+  static const String _baseUrl = "http://192.168.1.18:8000";
 
   static Future<List<Destinasi>> getAllDestinasi() async {
     final prefs = await SharedPreferences.getInstance();
