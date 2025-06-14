@@ -12,6 +12,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:geolocator/geolocator.dart';
 
+
 class DetailDestinasiScreen extends StatefulWidget {
   final Destinasi destinasi;
 
