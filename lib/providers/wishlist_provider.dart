@@ -16,7 +16,7 @@ class WishlistProvider extends ChangeNotifier {
     _token = token;
     if (_token != null) {
       _wishlistService = WishlistService(
-        baseUrl: 'http://192.168.1.4:8000/api',
+        baseUrl: 'http://192.168.1.14:8000/api',
         token: _token!,
       );
       loadWishlist().catchError((e) {

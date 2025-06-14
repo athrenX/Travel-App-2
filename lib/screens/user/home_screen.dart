@@ -24,7 +24,10 @@ import 'package:travelapp/models/Activity.dart';
 import 'package:geolocator/geolocator.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final int initialTab;
+  final Function(int)? onTabChange;
+  const HomeScreen({Key? key, this.initialTab = 0, this.onTabChange})
+    : super(key: key);
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -603,7 +606,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool showLoader = true;
   bool showPopup = false;
   int _currentCarouselIndex = 0;
-  int _currentNavIndex = 0;
+  late int _currentNavIndex = widget.initialTab;
   final PageController _pageController = PageController();
   Timer? _carouselTimer;
   Timer? _popupTimer;
@@ -620,7 +623,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    locationService = LocationService(baseUrl: 'http://192.168.1.4:8000');
+    _currentNavIndex = widget.initialTab;
+    locationService = LocationService(baseUrl: 'http://192.168.1.14:8000');
     // Ambil data destinasi untuk list/grid
     Future.microtask(() {
       final provider = Provider.of<DestinasiProvider>(context, listen: false);
@@ -673,6 +677,15 @@ class _HomeScreenState extends State<HomeScreen> {
         _showClearButton = _searchController.text.isNotEmpty;
       });
     });
+  }
+
+  void setTabIndex(int index) {
+    setState(() {
+      _currentNavIndex = index;
+    });
+    if (widget.onTabChange != null) {
+      widget.onTabChange!(index);
+    }
   }
 
   @override
@@ -1961,4 +1974,23 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  // void setTabIndex(int index) {
+  //   setState(() {
+  //     _currentNavIndex = index;
+  //   });
+  // }
+
+  // void goToOrderTab(BuildContext context) {
+  //   // Pop sampai kembali ke root (HomeScreen)
+  //   Navigator.of(context).popUntil((route) => route.isFirst);
+
+  //   // Tunggu 1 frame supaya context HomeScreen sudah aktif, baru set tab
+  //   Future.delayed(Duration(milliseconds: 100), () {
+  //     final homeState = context.findAncestorStateOfType<_HomeScreenState>();
+  //     if (homeState != null) {
+  //       homeState.setTabIndex(2); // Index 2 = Pesanan/Orders
+  //     }
+  //   });
+  // }
 }
