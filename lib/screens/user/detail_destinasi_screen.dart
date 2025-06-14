@@ -12,7 +12,6 @@ import 'package:intl/intl.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:geolocator/geolocator.dart';
 
-
 class DetailDestinasiScreen extends StatefulWidget {
   final Destinasi destinasi;
 
@@ -391,7 +390,7 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                           );
                                         });
                                   },
-                                  label: const Text('Pilih Kendaraan'),
+                                  label: const Text('Pesan'),
                                   style: ElevatedButton.styleFrom(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 20,
@@ -463,7 +462,7 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                           );
                                         });
                                   },
-                                  label: const Text('Pilih Kendaraan'),
+                                  label: const Text('Pesan'),
                                   style: ElevatedButton.styleFrom(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 16,
