@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:travelapp/models/destinasi.dart';
 import 'package:travelapp/providers/wishlist_provider.dart';
-import 'package:travelapp/screens/user/pemilihan_kendaraan_screen.dart';
-import 'package:travelapp/screens/auth/login_screen.dart'; // Ensure this import points to the correct path
-import 'package:travelapp/providers/auth_provider.dart'; // Add this import for AuthProvider
+import 'package:travelapp/screens/user/pilih_waktu_keberangkatan_screen.dart'; // Import the new screen
+import 'package:travelapp/screens/auth/login_screen.dart';
+import 'package:travelapp/providers/auth_provider.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' as latlng2;
 import 'package:share_plus/share_plus.dart';
@@ -160,7 +160,6 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                   );
                 },
               ),
-
               IconButton(
                 icon: CircleAvatar(
                   backgroundColor: Colors.white24,
@@ -229,11 +228,9 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                   }
                 },
               ),
-
               const SizedBox(width: 8),
             ],
           ),
-
           // Content
           SliverToBoxAdapter(
             child: Column(
@@ -376,19 +373,17 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                 child: ElevatedButton.icon(
                                   icon: const Icon(Icons.directions_car),
                                   onPressed: () {
-                                    SchedulerBinding.instance
-                                        .addPostFrameCallback((_) {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder:
-                                                  (context) =>
-                                                      PemilihanKendaraanScreen(
-                                                        destinasi: destinasi,
-                                                      ),
-                                            ),
-                                          );
-                                        });
+                                    // NAVIGATE TO NEW SCREEN HERE
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder:
+                                            (context) =>
+                                                PilihWaktuKeberangkatanScreen(
+                                                  destinasi: destinasi,
+                                                ),
+                                      ),
+                                    );
                                   },
                                   label: const Text('Pesan'),
                                   style: ElevatedButton.styleFrom(
@@ -448,19 +443,17 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                 child: ElevatedButton.icon(
                                   icon: const Icon(Icons.directions_car),
                                   onPressed: () {
-                                    SchedulerBinding.instance
-                                        .addPostFrameCallback((_) {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder:
-                                                  (context) =>
-                                                      PemilihanKendaraanScreen(
-                                                        destinasi: destinasi,
-                                                      ),
-                                            ),
-                                          );
-                                        });
+                                    // NAVIGATE TO NEW SCREEN HERE
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder:
+                                            (context) =>
+                                                PilihWaktuKeberangkatanScreen(
+                                                  destinasi: destinasi,
+                                                ),
+                                      ),
+                                    );
                                   },
                                   label: const Text('Pesan'),
                                   style: ElevatedButton.styleFrom(
@@ -618,29 +611,127 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                                   child: Image.network(
                                                     imageUrl,
                                                     fit: BoxFit.contain,
+                                                    width: double.infinity,
+                                                    height: double.infinity,
+                                                    loadingBuilder: (
+                                                      context,
+                                                      child,
+                                                      loadingProgress,
+                                                    ) {
+                                                      if (loadingProgress ==
+                                                          null)
+                                                        return child;
+                                                      return Center(
+                                                        child: Column(
+                                                          mainAxisAlignment:
+                                                              MainAxisAlignment
+                                                                  .center,
+                                                          children: [
+                                                            SizedBox(
+                                                              width: 32,
+                                                              height: 32,
+                                                              child: CircularProgressIndicator(
+                                                                strokeWidth: 3,
+                                                                valueColor:
+                                                                    AlwaysStoppedAnimation<
+                                                                      Color
+                                                                    >(
+                                                                      Theme.of(
+                                                                        context,
+                                                                      ).primaryColor,
+                                                                    ),
+                                                                value:
+                                                                    loadingProgress.expectedTotalBytes !=
+                                                                            null
+                                                                        ? loadingProgress.cumulativeBytesLoaded /
+                                                                            loadingProgress.expectedTotalBytes!
+                                                                        : null,
+                                                              ),
+                                                            ),
+                                                            const SizedBox(
+                                                              height: 8,
+                                                            ),
+                                                            Text(
+                                                              'Memuat...',
+                                                              style: TextStyle(
+                                                                fontSize: 12,
+                                                                color:
+                                                                    Colors
+                                                                        .grey[600],
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      );
+                                                    },
+                                                    errorBuilder:
+                                                        (
+                                                          context,
+                                                          error,
+                                                          stackTrace,
+                                                        ) => Container(
+                                                          decoration: BoxDecoration(
+                                                            color:
+                                                                Colors
+                                                                    .grey[100],
+                                                            border: Border.all(
+                                                              color:
+                                                                  Colors
+                                                                      .grey[300]!,
+                                                              width: 1,
+                                                            ),
+                                                          ),
+                                                          child: Column(
+                                                            mainAxisAlignment:
+                                                                MainAxisAlignment
+                                                                    .center,
+                                                            children: [
+                                                              Icon(
+                                                                Icons
+                                                                    .broken_image_outlined,
+                                                                size: 48,
+                                                                color:
+                                                                    Colors
+                                                                        .grey[400],
+                                                              ),
+                                                              const SizedBox(
+                                                                height: 8,
+                                                              ),
+                                                              Text(
+                                                                'Gagal memuat',
+                                                                style: TextStyle(
+                                                                  fontSize: 12,
+                                                                  color:
+                                                                      Colors
+                                                                          .grey[500],
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
                                                   ),
                                                 ),
                                               ),
                                             ),
+                                            // Overlay gradient untuk efek visual yang lebih menarik
                                             Positioned(
-                                              top: 12,
-                                              right: 12,
+                                              bottom: 0,
+                                              left: 0,
+                                              right: 0,
                                               child: Container(
+                                                height: 40,
                                                 decoration: BoxDecoration(
-                                                  color: Colors.black
-                                                      .withOpacity(0.6),
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: IconButton(
-                                                  icon: const Icon(
-                                                    Icons.close,
-                                                    color: Colors.white,
-                                                    size: 24,
-                                                  ),
-                                                  onPressed:
-                                                      () => Navigator.pop(
-                                                        context,
+                                                  gradient: LinearGradient(
+                                                    begin:
+                                                        Alignment.bottomCenter,
+                                                    end: Alignment.topCenter,
+                                                    colors: [
+                                                      Colors.black.withOpacity(
+                                                        0.3,
                                                       ),
+                                                      Colors.transparent,
+                                                    ],
+                                                  ),
                                                 ),
                                               ),
                                             ),
@@ -813,6 +904,12 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
 
                 // Location Map
                 Container(
+                  padding: const EdgeInsets.fromLTRB(
+                    16,
+                    0,
+                    16,
+                    16,
+                  ), // Added padding for map
                   height: 250,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
@@ -983,12 +1080,9 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                 },
                                 backgroundColor: Colors.white,
                                 foregroundColor: Colors.blue.shade800,
-                                // HAPUS mini: true,
                                 child: const Icon(Icons.add),
                               ),
-
                               const SizedBox(height: 8),
-
                               FloatingActionButton.small(
                                 heroTag: 'zoomOut',
                                 onPressed: () {
@@ -1005,7 +1099,6 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                 },
                                 backgroundColor: Colors.white,
                                 foregroundColor: Colors.blue.shade800,
-                                // HAPUS mini: true,
                                 child: const Icon(Icons.remove),
                               ),
                             ],
