@@ -18,7 +18,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  String? _errorMessage;
+  String? _displayErrorMessage; // Variabel lokal untuk pesan error yang ditampilkan
   bool _isPasswordVisible = false;
 
   @override
@@ -28,111 +28,94 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  String _getErrorMessage(String error) {
-    // Normalisasi error message
-    String normalizedError = error.toLowerCase().trim();
+  String _getDisplayErrorMessage(String rawError) {
+    String normalizedError = rawError.toLowerCase().trim();
 
-    // Mapping error messages ke bahasa Indonesia yang user-friendly
-    if (normalizedError.contains('invalid email') ||
-        normalizedError.contains('email not valid') ||
-        normalizedError.contains('format email')) {
+    if (normalizedError.contains('format email') || normalizedError.contains('email tidak valid')) {
       return 'Format email tidak valid';
-    } else if (normalizedError.contains('user not found') ||
-        normalizedError.contains('akun tidak ditemukan') ||
-        normalizedError.contains('email tidak terdaftar')) {
+    } else if (normalizedError.contains('invalid credentials') || // Pesan dari Laravel
+               normalizedError.contains('unauthorized') ||
+               normalizedError.contains('these credentials do not match our records') ||
+               normalizedError.contains('email atau password salah') ||
+               normalizedError.contains('user not found') || // Dari manual check di backend
+               normalizedError.contains('wrong password')) { // Dari manual check di backend
+      return 'Email atau password salah';
+    } else if (normalizedError.contains('email belum terdaftar')) { // Jika ada pesan spesifik ini
       return 'Email belum terdaftar. Silakan daftar terlebih dahulu';
-    } else if (normalizedError.contains('wrong password') ||
-        normalizedError.contains('password salah') ||
-        normalizedError.contains('incorrect password') ||
-        normalizedError.contains('invalid password')) {
-      return 'Password yang Anda masukkan salah';
-    } else if (normalizedError.contains('account disabled') ||
-        normalizedError.contains('akun dinonaktifkan')) {
+    } else if (normalizedError.contains('akun dinonaktifkan')) {
       return 'Akun Anda telah dinonaktifkan. Hubungi administrator';
-    } else if (normalizedError.contains('too many attempts') ||
-        normalizedError.contains('terlalu banyak percobaan')) {
+    } else if (normalizedError.contains('terlalu banyak percobaan')) {
       return 'Terlalu banyak percobaan login. Coba lagi dalam beberapa menit';
-    } else if (normalizedError.contains('network') ||
-        normalizedError.contains('connection') ||
-        normalizedError.contains('koneksi')) {
+    } else if (normalizedError.contains('koneksi') || normalizedError.contains('network') || normalizedError.contains('timeout')) {
       return 'Periksa koneksi internet Anda dan coba lagi';
-    } else if (normalizedError.contains('server') ||
-        normalizedError.contains('internal error')) {
+    } else if (normalizedError.contains('server') || normalizedError.contains('internal error') || normalizedError.contains('500')) { // Tambahkan 500
       return 'Terjadi gangguan pada server. Coba lagi nanti';
-    } else if (normalizedError.contains('timeout')) {
-      return 'Koneksi timeout. Periksa jaringan Anda';
-    } else if (normalizedError.contains('unauthorized') ||
-        normalizedError.contains('tidak diizinkan')) {
-      return 'Email atau password tidak valid';
     } else {
-      // Jika error tidak dikenali, tampilkan pesan generic
-      return 'Login gagal. Periksa email dan password Anda';
+      return 'Login gagal. Periksa email dan password Anda.';
     }
   }
 
   Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
-        _errorMessage = null;
+        _displayErrorMessage = null; // Reset pesan error sebelum mencoba login
       });
 
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
       try {
-        final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        final wishlistProvider = Provider.of<WishlistProvider>(
-          context,
-          listen: false,
-        );
-
-        final user = await authProvider.login(
+        final success = await authProvider.login(
           _emailController.text.trim(),
           _passwordController.text,
         );
 
-        if (user != null && authProvider.token != null) {
-          // Simpan data login di SharedPreferences
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('auth_token', authProvider.token!);
-          await prefs.setString('user_nama', user.nama);
-          await prefs.setString('user_email', user.email);
+        if (success) {
+          final user = authProvider.user;
+          if (user != null && authProvider.token != null) {
+            final wishlistProvider = Provider.of<WishlistProvider>(context, listen: false,);
+            wishlistProvider.updateToken(authProvider.token);
+            await wishlistProvider.loadWishlist();
 
-          // Update token ke wishlistProvider dan load wishlist terbaru
-          wishlistProvider.updateToken(authProvider.token);
-          await wishlistProvider.loadWishlist();
-
-          // Navigasi sesuai role user
-          if (user.role == 'admin') {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const DashboardScreen()),
-            );
+            if (mounted) {
+              if (user.role == 'admin') {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const DashboardScreen()),
+                );
+              } else {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const HomeScreen()),
+                );
+              }
+            }
           } else {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const HomeScreen()),
-            );
+            setState(() {
+              _displayErrorMessage = 'Gagal mengambil data user setelah login.';
+            });
           }
         } else {
-          // User null tanpa exception
+          // Jika login gagal (return false dari authProvider.login)
           setState(() {
-            _errorMessage = 'Email atau password tidak valid';
+            _displayErrorMessage = _getDisplayErrorMessage(authProvider.loginErrorMessage ?? 'Login gagal. Error tidak diketahui.');
           });
         }
       } catch (e) {
-        setState(() {
-          String rawError = e.toString().replaceAll('Exception: ', '');
-          _errorMessage = _getErrorMessage(rawError);
-        });
+        if (mounted) {
+          setState(() {
+            _displayErrorMessage = _getDisplayErrorMessage(e.toString().replaceAll('Exception: ', ''));
+          });
+        }
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = Provider.of<AuthProvider>(context).isLoading;
+    final authProvider = Provider.of<AuthProvider>(context);
+    final isLoading = authProvider.isLoading;
     final size = MediaQuery.of(context).size;
     final theme = Theme.of(context);
 
-    // Responsive breakpoints
     final isTablet = size.width > 600;
     final isDesktop = size.width > 1024;
     final isSmallScreen = size.height < 700;
@@ -158,10 +141,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Top spacing - responsive
                       SizedBox(height: isSmallScreen ? 20 : size.height * 0.08),
-
-                      // Logo dan Judul - responsive sizing
                       Container(
                         padding: EdgeInsets.all(isTablet ? 24 : 16),
                         decoration: BoxDecoration(
@@ -184,7 +164,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       SizedBox(height: isSmallScreen ? 12 : 20),
-
                       Text(
                         'Travel App',
                         style: TextStyle(
@@ -195,7 +174,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       SizedBox(height: isSmallScreen ? 4 : 8),
-
                       Text(
                         'Jelajahi dunia bersama kami',
                         style: TextStyle(
@@ -206,8 +184,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       SizedBox(height: isSmallScreen ? 20 : size.height * 0.06),
-
-                      // Form login - responsive width
                       Container(
                         width:
                             isDesktop
@@ -239,8 +215,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                               SizedBox(height: isTablet ? 32 : 24),
-
-                              // Email field
                               TextFormField(
                                 controller: _emailController,
                                 decoration: InputDecoration(
@@ -286,7 +260,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                   if (value == null || value.isEmpty) {
                                     return 'Email tidak boleh kosong';
                                   }
-                                  // Validasi format email
                                   final emailRegex = RegExp(
                                     r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
                                   );
@@ -297,8 +270,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                 },
                               ),
                               SizedBox(height: isTablet ? 24 : 20),
-
-                              // Password field
                               TextFormField(
                                 controller: _passwordController,
                                 decoration: InputDecoration(
@@ -361,9 +332,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                   return null;
                                 },
                               ),
-
-                              // Error message
-                              if (_errorMessage != null) ...[
+                              // Error message (menggunakan _displayErrorMessage)
+                              if (_displayErrorMessage != null) ...[
                                 const SizedBox(height: 16),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
@@ -378,7 +348,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                   ),
                                   child: Text(
-                                    _errorMessage!,
+                                    _displayErrorMessage!, // Tampilkan pesan error lokal
                                     style: TextStyle(
                                       color: Colors.red.shade700,
                                       fontSize: isTablet ? 15 : 14,
@@ -386,9 +356,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 ),
                               ],
-
                               SizedBox(height: isTablet ? 32 : 24),
-
                               // Login button
                               ElevatedButton(
                                 onPressed: isLoading ? null : _login,
@@ -409,33 +377,28 @@ class _LoginScreenState extends State<LoginScreen> {
                                 child:
                                     isLoading
                                         ? SizedBox(
-                                          height: isTablet ? 24 : 20,
-                                          width: isTablet ? 24 : 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color:
-                                                Theme.of(
-                                                  context,
-                                                ).scaffoldBackgroundColor,
-                                          ),
-                                        )
+                                            height: isTablet ? 24 : 20,
+                                            width: isTablet ? 24 : 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color:
+                                                  Theme.of(context).scaffoldBackgroundColor,
+                                            ),
+                                          )
                                         : Text(
-                                          'LOGIN',
-                                          style: TextStyle(
-                                            fontSize: isTablet ? 18 : 16,
-                                            fontWeight: FontWeight.bold,
-                                            letterSpacing: 1.5,
+                                            'LOGIN',
+                                            style: TextStyle(
+                                              fontSize: isTablet ? 18 : 16,
+                                              fontWeight: FontWeight.bold,
+                                              letterSpacing: 1.5,
+                                            ),
                                           ),
-                                        ),
                               ),
                             ],
                           ),
                         ),
                       ),
-
                       SizedBox(height: isSmallScreen ? 16 : 20),
-
-                      // Register button - responsive
                       Container(
                         width:
                             isDesktop
@@ -469,9 +432,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   text: 'Daftar sekarang',
                                   style: TextStyle(
                                     color:
-                                        Theme.of(
-                                          context,
-                                        ).scaffoldBackgroundColor,
+                                        Theme.of(context).scaffoldBackgroundColor,
                                     fontWeight: FontWeight.bold,
                                     fontSize: isTablet ? 18 : 16,
                                     decoration: TextDecoration.underline,
@@ -482,8 +443,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
-
-                      // Bottom spacing
                       SizedBox(height: isSmallScreen ? 20 : 40),
                     ],
                   ),

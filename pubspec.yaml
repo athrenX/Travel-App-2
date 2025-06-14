@@ -64,5 +64,8 @@ flutter:
     - assets/images/PANGANDARAN.webp
     - assets/images/karimun jawa.webp
     - assets/images/minibus.jpg
+    - assets/images/arvind.jpg
+
+
 
   # Deklarasi folder gambar untuk diakses dalam aplikasi

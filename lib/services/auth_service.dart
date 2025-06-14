@@ -1,318 +1,305 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
-import '../models/user.dart';
-import 'package:http_parser/http_parser.dart' as http_parser;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:travelapp/models/user.dart';
+import 'package:travelapp/config.dart';
 
 class AuthService {
   // Ganti dengan IP server Laravel Anda
-  final String baseUrl = 'http://192.168.1.18:8000/api';
+  final String baseUrl = 'http://192.168.1.28:8000/api';
 
   String _timestamp() {
     return DateTime.now().toIso8601String();
   }
 
-  Future<Map<String, dynamic>> login(String email, String password) async {
+  static Future<User?> getUserAndToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+    final userDataString = prefs.getString('user_data');
+
+    if (token != null && userDataString != null && token.isNotEmpty && userDataString.isNotEmpty) {
+      try {
+        final userMap = json.decode(userDataString) as Map<String, dynamic>;
+        return User.fromJson(userMap).copyWith(token: token);
+      } catch (e) {
+        print('Error decoding user data from SharedPreferences: $e');
+        await clearUserAndToken();
+        return null;
+      }
+    }
+    return null;
+  }
+
+  static Future<void> clearUserAndToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('auth_token');
+    await prefs.remove('user_data');
+    print('User dan token dihapus dari SharedPreferences.');
+  }
+
+  // --- Metode API Autentikasi ---
+
+  static Future<User> register(String nama, String email, String password, String passwordConfirmation) async {
+    final url = Uri.parse('$_baseUrl/api/register');
     try {
-      print('[${_timestamp()}] 🔐 Attempting login for: $email');
-      print(
-        '[${_timestamp()}] Request Body: ${jsonEncode({'email': email, 'password': password})}',
-      );
-
       final response = await http.post(
-        Uri.parse('$baseUrl/login'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: jsonEncode({'email': email, 'password': password}),
+        url,
+        headers: await _getHeaders(),
+        body: json.encode({
+          'nama': nama, // PENTING: Kirim sebagai 'nama' sesuai validasi Laravel Anda
+          'email': email,
+          'password': password,
+          'password_confirmation': passwordConfirmation,
+        }),
       );
 
-      print(
-        '[${_timestamp()}] 📥 Login response status: ${response.statusCode}',
+      final Map<String, dynamic> responseData = json.decode(response.body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (responseData['success'] == true) {
+          // PENTING: Akses 'data' terlebih dahulu, lalu 'user' dan 'token'
+          final userMap = responseData['data']['user'] as Map<String, dynamic>;
+          final token = responseData['data']['token'] as String;
+          final user = User.fromJson(userMap).copyWith(token: token);
+          await saveUserAndToken(user);
+          return user;
+        } else {
+          throw Exception('Failed to register: ${responseData['message'] ?? 'Unknown error.'}');
+        }
+      } else {
+        if (response.statusCode == 422) {
+          final errors = responseData['errors'] as Map<String, dynamic>;
+          String validationMessage = 'Validation failed: ';
+          errors.forEach((key, value) {
+            validationMessage += '${key}: ${(value as List).join(', ')}. ';
+          });
+          throw Exception(validationMessage);
+        } else {
+          throw Exception('Failed to register. Status code: ${response.statusCode}. Message: ${responseData['message'] ?? response.body}');
+        }
+      }
+    } catch (e) {
+      print('Error during registration in AuthService: $e');
+      rethrow;
+    }
+  }
+
+  static Future<User> login(String email, String password) async {
+    final url = Uri.parse('$_baseUrl/api/login');
+    try {
+      final response = await http.post(
+        url,
+        headers: await _getHeaders(),
+        body: json.encode({
+          'email': email,
+          'password': password,
+        }),
       );
-      print('[${_timestamp()}] 📥 Login response headers: ${response.headers}');
-      print('[${_timestamp()}] 📥 Login response body: ${response.body}');
+
+      final Map<String, dynamic> responseData = json.decode(response.body);
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        print(
-          '[${_timestamp()}] ✅ Login success for user: ${data['data']?['user']?['email'] ?? data['user']?['email']}',
-        );
-        return {
-          'user': User.fromJson(data['data']['user'] ?? data['user']),
-          'token': data['data']['token'] ?? data['token'],
-        };
+        if (responseData['success'] == true) { // PENTING: Backend Anda menggunakan 'success' bukan 'status' untuk login
+          // PENTING: Akses 'data' terlebih dahulu, lalu 'user' dan 'token'
+          final userMap = responseData['data']['user'] as Map<String, dynamic>;
+          final token = responseData['data']['token'] as String;
+          final user = User.fromJson(userMap).copyWith(token: token);
+          await saveUserAndToken(user);
+          return user; // Langsung return user jika sukses
+        } else {
+          // Jika status code 200 tapi 'success' bukan true
+          throw Exception('Failed to login: ${responseData['message'] ?? 'Unknown response status.'}');
+        }
       } else {
-        final error = jsonDecode(response.body);
-        print(
-          '[${_timestamp()}] ⚠️ Login failed: ${error['message'] ?? 'Unknown error'}',
-        );
-        throw Exception(error['message'] ?? 'Login gagal');
+        // Tangani error berdasarkan status code
+        if (response.statusCode == 401) {
+          throw Exception('Unauthorized: ${responseData['message'] ?? 'Invalid credentials.'}');
+        } else if (response.statusCode == 422) { // Tambahkan penanganan 422 untuk login jika ada
+            final errors = responseData['errors'] as Map<String, dynamic>;
+            String validationMessage = 'Validation failed: ';
+            errors.forEach((key, value) {
+                validationMessage += '${key}: ${(value as List).join(', ')}. ';
+            });
+            throw Exception(validationMessage);
+        }
+        else {
+          throw Exception('Failed to login. Status code: ${response.statusCode}. Message: ${responseData['message'] ?? response.body}');
+        }
       }
-    } catch (e, stackTrace) {
-      print('[${_timestamp()}] ❌ Login error: $e');
-      print('Stacktrace: $stackTrace');
+    } catch (e) {
+      print('Error during login in AuthService: $e');
       rethrow;
     }
   }
 
-  // Register method yang mengembalikan user dan token
-  Future<Map<String, dynamic>> register(
-    String nama,
-    String email,
-    String password,
-  ) async {
+  static Future<void> logout(String token) async {
+    final url = Uri.parse('$_baseUrl/api/logout');
     try {
-      print('[$_timestamp] 📝 Attempting register for: $email');
-      print(
-        '[$_timestamp] Request Body: ${jsonEncode({'nama': nama, 'email': email, 'password': password})}',
+      await http.post(
+        url,
+        headers: await _getHeaders(token: token),
       );
-
-      final response = await http.post(
-        Uri.parse('$baseUrl/register'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: jsonEncode({'nama': nama, 'email': email, 'password': password}),
-      );
-
-      print(
-        '[$_timestamp] 📥 Register response status: ${response.statusCode}',
-      );
-      print('[$_timestamp] 📥 Register response headers: ${response.headers}');
-      print('[$_timestamp] 📥 Register response body: ${response.body}');
-
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        print(
-          '[$_timestamp] ✅ Register success for user: ${data['data']?['user']?['email'] ?? data['user']?['email']}',
-        );
-        return {
-          'user': User.fromJson(data['data']['user'] ?? data['user']),
-          'token': data['data']['token'] ?? data['token'],
-        };
-      } else {
-        final error = jsonDecode(response.body);
-        print(
-          '[$_timestamp] ⚠️ Register failed: ${error['message'] ?? 'Unknown error'}',
-        );
-        throw Exception(error['message'] ?? 'Registrasi gagal');
-      }
-    } catch (e, stackTrace) {
-      print('[$_timestamp] ❌ Register error: $e');
-      print('Stacktrace: $stackTrace');
-      rethrow;
+    } catch (e) {
+      print('Error during logout API call: $e');
+    } finally {
+      await clearUserAndToken();
     }
   }
 
-  // Get current user
-  Future<User> getCurrentUser(String token) async {
+  static Future<User> getCurrentUser(String token) async {
+    final url = Uri.parse('$_baseUrl/api/user');
     try {
-      print('👤 Getting current user with token: ${token.substring(0, 20)}...');
-
       final response = await http.get(
-        Uri.parse('$baseUrl/user'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        url,
+        headers: await _getHeaders(token: token),
       );
 
-      print('📥 getCurrentUser response status: ${response.statusCode}');
-      print('📥 getCurrentUser response body: ${response.body}');
+      final Map<String, dynamic> responseData = json.decode(response.body);
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return User.fromJson(data['data']['user']);
+        if (responseData['success'] == true) { // PENTING: 'success'
+            final userMap = responseData['data']['user'] as Map<String, dynamic>; // PENTING: 'data' lalu 'user'
+            return User.fromJson(userMap).copyWith(token: token);
+        } else {
+            throw Exception('Failed to fetch user data: ${responseData['message'] ?? 'Unknown status.'}');
+        }
       } else if (response.statusCode == 401) {
-        throw Exception('Unauthenticated');
+        await clearUserAndToken();
+        throw Exception('Unauthenticated: Token is invalid or expired.');
       } else {
-        throw Exception('Failed to get current user');
+        throw Exception('Failed to fetch user data. Status code: ${response.statusCode}, Message: ${responseData['message'] ?? response.body}');
       }
     } catch (e) {
-      print('❌ Get current user error: $e');
+      print('Error fetching current user data in AuthService: $e');
       rethrow;
     }
   }
 
-  // Logout
-  Future<void> logout(String token) async {
-    try {
-      print('🚪 Attempting logout...');
-
-      final response = await http.post(
-        Uri.parse('$baseUrl/logout'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      print('📥 Logout response status: ${response.statusCode}');
-
-      if (response.statusCode != 200) {
-        print('⚠️ Logout warning: ${response.body}');
-      }
-    } catch (e) {
-      print('❌ Logout error: $e');
-      // Don't rethrow logout errors - allow logout to proceed
-    }
-  }
-
-  // Update profile dengan authentication header
-  Future<User> updateProfile({
+  static Future<User> updateProfile({
     required String token,
-    String? nama,
+    required String nama, // PENTING: Menerima 'nama'
     String? email,
     File? fotoProfil,
     String? paymentMethod,
   }) async {
-    try {
-      final uri = Uri.parse('$baseUrl/update-profile');
-      final request = http.MultipartRequest('POST', uri);
+    final url = Uri.parse('$_baseUrl/api/update-profile');
 
-      // Headers dengan authentication
+    if (fotoProfil != null) {
+      var request = http.MultipartRequest('POST', url);
       request.headers.addAll({
         'Accept': 'application/json',
         'Authorization': 'Bearer $token',
       });
+      request.fields['nama'] = nama; // PENTING: Kirim sebagai 'nama'
+      if (email != null) request.fields['email'] = email;
+      if (paymentMethod != null) request.fields['payment_method'] = paymentMethod;
 
-      // Log data yang dikirim
-      print('🔄 Sending updateProfile request =>');
-      print('   ➤ nama: $nama');
-      print('   ➤ email: $email');
-      print('   ➤ foto: ${fotoProfil?.path}');
-      print('   ➤ token: ${token.substring(0, 20)}...');
-      print('📦 fotoProfil: ${fotoProfil.runtimeType}');
+      request.files.add(await http.MultipartFile.fromPath(
+        'foto_profil',
+        fotoProfil.path,
+      ));
 
-      // Field nama
-      if (nama != null && nama.isNotEmpty) {
-        request.fields['nama'] = nama;
-      }
+      try {
+        var streamedResponse = await request.send();
+        var response = await http.Response.fromStream(streamedResponse);
+        final Map<String, dynamic> responseData = json.decode(response.body);
 
-      // Field email
-      if (email != null && email.isNotEmpty) {
-        request.fields['email'] = email;
-      }
-      // Field payment_method
-      if (paymentMethod != null && paymentMethod.isNotEmpty) {
-        request.fields['payment_method'] = paymentMethod;
-      }
-
-      // Upload file foto_profil
-      if (fotoProfil != null && await fotoProfil.exists()) {
-        try {
-          final fileName = fotoProfil.path.split(Platform.pathSeparator).last;
-          final fileBytes = await fotoProfil.readAsBytes();
-
-          // Validasi file
-          if (fileBytes.isEmpty) {
-            print('⚠️ File foto kosong');
+        if (response.statusCode == 200) {
+          if (responseData['success'] == true) { // PENTING: 'success'
+            final updatedUserMap = responseData['data']['user'] as Map<String, dynamic>; // PENTING: 'data' lalu 'user'
+            final updatedUser = User.fromJson(updatedUserMap).copyWith(token: token);
+            await saveUserAndToken(updatedUser);
+            return updatedUser;
           } else {
-            print('📁 File size: ${fileBytes.length} bytes');
-
-            // Determine content type based on file extension
-            String contentType = 'image/jpeg';
-            if (fileName.toLowerCase().endsWith('.png')) {
-              contentType = 'image/png';
-            } else if (fileName.toLowerCase().endsWith('.jpg') ||
-                fileName.toLowerCase().endsWith('.jpeg')) {
-              contentType = 'image/jpeg';
-            }
-
-            final file = http.MultipartFile.fromBytes(
-              'foto_profil',
-              fileBytes,
-              filename: fileName,
-              contentType: http_parser.MediaType.parse(contentType),
-            );
-            request.files.add(file);
+            throw Exception('Failed to update profile (multipart): ${responseData['message']}');
           }
-        } catch (e) {
-          print('❌ Error reading file: $e');
-        }
-      }
-
-      // Kirim request
-      print('📤 Sending request to: $uri');
-      final response = await request.send();
-      final responseBody = await response.stream.bytesToString();
-
-      print('📥 Response status: ${response.statusCode}');
-      print('📥 Response body: $responseBody');
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(responseBody);
-
-        // Handle different response formats
-        if (data.containsKey('user')) {
-          return User.fromJson(data['user']);
-        } else if (data.containsKey('data')) {
-          return User.fromJson(data['data']);
         } else {
-          return User.fromJson(data);
-        }
-      } else {
-        try {
-          final error = jsonDecode(responseBody);
-          String errorMessage = error['message'] ?? 'Gagal memperbarui profil';
-
-          // Handle validation errors
-          if (error.containsKey('errors')) {
-            final errors = error['errors'] as Map<String, dynamic>;
-            final errorList = <String>[];
-            errors.forEach((key, value) {
-              if (value is List) {
-                errorList.addAll(value.cast<String>());
-              } else {
-                errorList.add(value.toString());
-              }
-            });
-            errorMessage = errorList.join(', ');
-          }
-
+          final errors = responseData['errors'] ?? {};
+          String errorMessage = 'Failed to update profile (multipart). Status: ${response.statusCode}. ';
+          errors.forEach((key, value) {
+            errorMessage += '${key}: ${value.join(', ')}. ';
+          });
           throw Exception(errorMessage);
-        } catch (e) {
-          if (e is Exception) rethrow;
-          throw Exception(
-            'Gagal update profil. Status: ${response.statusCode}',
-          );
         }
+      } catch (e) {
+        print('Error updating profile (multipart) in AuthService: $e');
+        rethrow;
       }
-    } catch (e) {
-      print('❌ Update profile error: $e');
-      rethrow;
+    } else {
+      try {
+        final response = await http.post(
+          url,
+          headers: await _getHeaders(token: token),
+          body: json.encode({
+            'nama': nama, // PENTING: Kirim sebagai 'nama'
+            'email': email,
+            'payment_method': paymentMethod,
+          }),
+        );
+
+        final Map<String, dynamic> responseData = json.decode(response.body);
+
+        if (response.statusCode == 200) {
+          if (responseData['success'] == true) { // PENTING: 'success'
+            final updatedUserMap = responseData['data']['user'] as Map<String, dynamic>; // PENTING: 'data' lalu 'user'
+            final updatedUser = User.fromJson(updatedUserMap).copyWith(token: token);
+            await saveUserAndToken(updatedUser);
+            return updatedUser;
+          } else {
+            throw Exception('Failed to update profile: ${responseData['message']}');
+          }
+        } else {
+          final errors = responseData['errors'] ?? {};
+          String errorMessage = 'Failed to update profile. Status: ${response.statusCode}. ';
+          errors.forEach((key, value) {
+            errorMessage += '${key}: ${value.join(', ')}. ';
+          });
+          throw Exception(errorMessage);
+        }
+      } catch (e) {
+        print('Error updating profile in AuthService: $e');
+        rethrow;
+      }
     }
   }
 
-  // Change password
-  // Change password
-  Future<bool> changePassword({
+  static Future<bool> changePassword({
     required String token,
     required String oldPassword,
     required String newPassword,
   }) async {
-    final response = await http.post(
-      Uri.parse(
-        '$baseUrl/change-password',
-      ), // ini sudah benar (tanpa /api lagi)
-      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
-      body: {
-        'old_password': oldPassword,
-        'new_password': newPassword,
-        'new_password_confirmation': newPassword, // 🔥 Tambahkan ini!
-      },
-    );
+    final url = Uri.parse('$_baseUrl/api/change-password');
+    try {
+      final response = await http.post(
+        url,
+        headers: await _getHeaders(token: token),
+        body: json.encode({
+          'old_password': oldPassword,
+          'new_password': newPassword,
+          'new_password_confirmation': newPassword,
+        }),
+      );
 
-    if (response.statusCode == 200) {
-      return true;
-    } else {
-      print('❌ Change Password Response: ${response.body}');
-      return false;
+      final Map<String, dynamic> responseData = json.decode(response.body);
+
+      if (response.statusCode == 200) {
+        if (responseData['success'] == true) { // PENTING: 'success'
+          return true;
+        } else {
+          throw Exception('Failed to change password: ${responseData['message']}');
+        }
+      } else {
+        final errors = responseData['errors'] ?? {};
+        String errorMessage = 'Failed to change password. Status: ${response.statusCode}. ';
+        errors.forEach((key, value) {
+          errorMessage += '${key}: ${value.join(', ')}. ';
+        });
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      print('Error changing password in AuthService: $e');
+      rethrow;
     }
   }
 }

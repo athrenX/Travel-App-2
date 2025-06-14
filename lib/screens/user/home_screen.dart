@@ -620,8 +620,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _isSearching = false;
-    locationService = LocationService(baseUrl: 'http://192.168.1.28:8000');
+    locationService = LocationService(baseUrl: 'http://192.168.1.20:8000');
     // Ambil data destinasi untuk list/grid
     Future.microtask(() {
       final provider = Provider.of<DestinasiProvider>(context, listen: false);

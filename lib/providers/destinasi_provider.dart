@@ -4,7 +4,11 @@ import 'package:travelapp/services/destinasi_service.dart';
 import 'dart:convert'; // penting untuk json.decode
 import 'package:http/http.dart' as http;
 
+<<<<<<< HEAD
 final String baseUrl = 'http://192.168.1.18:8000';
+=======
+final String baseUrl = 'http://192.168.1.20:8000';
+>>>>>>> 860abeca9cad081104696b03a457e0d29076c9bb
 
 class DestinasiProvider with ChangeNotifier {
   // =================== Carousel =====================

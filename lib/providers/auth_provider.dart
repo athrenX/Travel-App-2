@@ -1,44 +1,62 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travelapp/models/user.dart';
 import 'package:travelapp/services/auth_service.dart';
 
 class AuthProvider with ChangeNotifier {
-  final AuthService _authService = AuthService();
   User? _user;
   String? _token;
   bool _isLoading = false;
   bool _isInitialized = false;
-  bool get isInitialized => _isInitialized;
+  bool _isAuthenticated = false;
+  String? _loginErrorMessage; // Untuk pesan error di UI login/register
 
+  // Getters
+  bool get isInitialized => _isInitialized;
   User? get user => _user;
   bool get isLoading => _isLoading;
   String? get token => _token;
-  bool get isAuthenticated =>
-      _user != null && _token != null && _user!.id != null;
-
+  bool get isAuthenticated => _isAuthenticated;
   String? get paymentMethod => _user?.paymentMethod;
+  String? get loginErrorMessage => _loginErrorMessage;
+
+  AuthProvider() {
+    _tryAutoLoginOnLaunch();
+  }
+
+  Future<void> _tryAutoLoginOnLaunch() async {
+    _isLoading = true;
+    _loginErrorMessage = null;
+    notifyListeners();
+
+    await tryAutoLogin();
+
+    _isInitialized = true;
+    _isLoading = false;
+    notifyListeners();
+  }
+
   // Login
-  Future<User?> login(String email, String password) async {
+  Future<bool> login(String email, String password) async {
+    _isLoading = true;
+    _loginErrorMessage = null; // Reset pesan error
+    notifyListeners();
     try {
-      _isLoading = true;
-      notifyListeners();
+      final loggedInUser = await AuthService.login(email, password);
+      _user = loggedInUser;
+      _token = loggedInUser.token;
 
-      final result = await _authService.login(email, password);
-      _user = result['user'];
-      _token = result['token'];
-
-      // Simpan ke SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('auth_token', _token!);
-      await prefs.setString('user_nama', _user!.nama);
-      await prefs.setString('user_email', _user!.email);
-      await prefs.setString('user_payment_method', _user!.paymentMethod ?? '');
-
-      return _user;
+      _isAuthenticated = true;
+      return true;
     } catch (e) {
-      rethrow;
+      print('Error di AuthProvider login: $e');
+      _user = null;
+      _token = null;
+      _isAuthenticated = false;
+      _loginErrorMessage = e.toString().replaceAll('Exception: ', '');
+      return false; // Kembali false jika ada error
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -46,24 +64,34 @@ class AuthProvider with ChangeNotifier {
   }
 
   // Register
-  Future<bool> register(String nama, String email, String password) async {
+  Future<bool> register(
+    String nama,
+    String email,
+    String password,
+    String passwordConfirmation,
+  ) async {
+    _isLoading = true;
+    _loginErrorMessage = null; // Reset pesan error
+    notifyListeners();
     try {
-      _isLoading = true;
-      notifyListeners();
+      final registeredUser = await AuthService.register(
+        nama,
+        email,
+        password,
+        passwordConfirmation,
+      );
+      _user = registeredUser;
+      _token = registeredUser.token;
 
-      final result = await _authService.register(nama, email, password);
-      _user = result['user'];
-      _token = result['token'];
-
-      // Simpan ke SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('auth_token', _token!);
-      await prefs.setString('user_nama', _user!.nama);
-      await prefs.setString('user_email', _user!.email);
-
+      _isAuthenticated = true;
       return true;
     } catch (e) {
-      rethrow;
+      print('Error di AuthProvider register: $e');
+      _user = null;
+      _token = null;
+      _isAuthenticated = false;
+      _loginErrorMessage = e.toString().replaceAll('Exception: ', '');
+      return false; // Kembali false jika ada error
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -72,51 +100,51 @@ class AuthProvider with ChangeNotifier {
 
   // Logout
   Future<void> logout() async {
+    _isLoading = true;
+    _loginErrorMessage = null; // Reset pesan error
+    notifyListeners();
     try {
       if (_token != null) {
-        await _authService.logout(_token!);
+        await AuthService.logout(_token!);
       }
     } catch (e) {
-      print('❌ Error saat logout: $e');
+      print('Error di AuthProvider logout: $e');
     } finally {
       _user = null;
       _token = null;
-
-      // Hapus data dari SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.clear();
-
+      _isAuthenticated = false;
+      _isLoading = false;
       notifyListeners();
     }
   }
 
-  // Get current user dari token
+  // Get current user data (jika token masih valid)
   Future<User?> getCurrentUser() async {
-    if (_token == null) return null;
-
-    try {
-      _isLoading = true;
+    if (_token == null || _token!.isEmpty) {
+      _isAuthenticated = false;
+      _loginErrorMessage = null;
       notifyListeners();
+      return null;
+    }
 
-      final user = await _authService.getCurrentUser(_token!);
-      _user = user;
-
-      // Tambahan penting agar token & user tetap tersimpan di SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('auth_token', _token!);
-      await prefs.setString('user_nama', _user!.nama);
-      await prefs.setString('user_email', _user!.email);
-      if (_user!.paymentMethod != null) {
-        await prefs.setString('user_payment_method', _user!.paymentMethod!);
-      }
-
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final fetchedUser = await AuthService.getCurrentUser(_token!);
+      _user = fetchedUser;
+      _token = fetchedUser.token;
+      _isAuthenticated = true;
       return _user;
     } catch (e) {
-      print('❌ Gagal mengambil user: $e');
+      print('Error di AuthProvider getCurrentUser: $e');
       if (e.toString().contains('401') ||
           e.toString().contains('Unauthenticated')) {
-        await logout();
+        await AuthService.clearUserAndToken();
       }
+      _user = null;
+      _token = null;
+      _isAuthenticated = false;
+      _loginErrorMessage = e.toString().replaceAll('Exception: ', '');
       rethrow;
     } finally {
       _isLoading = false;
@@ -125,21 +153,23 @@ class AuthProvider with ChangeNotifier {
   }
 
   // Update profil
-  Future<void> updateUserProfile({
+  Future<bool> updateUserProfile({
     required String nama,
     String? email,
     File? fotoProfil,
     String? paymentMethod,
   }) async {
-    if (_user == null || _token == null) {
-      throw Exception('User tidak terautentikasi');
+    if (_user == null || _token == null || _token!.isEmpty) {
+      print('User atau token tidak tersedia untuk update profil.');
+      _loginErrorMessage = 'User tidak terautentikasi.';
+      return false;
     }
 
+    _isLoading = true;
+    _loginErrorMessage = null;
+    notifyListeners();
     try {
-      _isLoading = true;
-      notifyListeners();
-
-      final updatedUser = await _authService.updateProfile(
+      final updatedUser = await AuthService.updateProfile(
         token: _token!,
         nama: nama,
         email: email,
@@ -148,23 +178,11 @@ class AuthProvider with ChangeNotifier {
       );
 
       _user = updatedUser;
-
-      // Update SharedPreferences juga
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('user_nama', _user!.nama);
-      if (_user!.email.isNotEmpty) {
-        await prefs.setString('user_email', _user!.email);
-      }
-      if (_user!.paymentMethod != null) {
-        await prefs.setString('user_payment_method', _user!.paymentMethod!);
-      }
-
-      print('✅ Profil berhasil diupdate: ${_user!.nama}');
-      print('✅ ID user setelah update: ${_user?.id}');
-
-      await refreshUser();
+      print('✅ Profil berhasil diupdate di AuthProvider: ${_user!.nama}');
+      return true;
     } catch (e) {
-      print('❌ Gagal update profil: $e');
+      print('❌ Gagal update profil di AuthProvider: $e');
+      _loginErrorMessage = e.toString().replaceAll('Exception: ', '');
       rethrow;
     } finally {
       _isLoading = false;
@@ -177,53 +195,71 @@ class AuthProvider with ChangeNotifier {
     required String oldPassword,
     required String newPassword,
   }) async {
-    if (_token == null) {
-      throw Exception('Token tidak tersedia');
+    if (_token == null || _token!.isEmpty) {
+      throw Exception('Token tidak tersedia untuk ganti password');
     }
 
+    _isLoading = true;
+    _loginErrorMessage = null;
+    notifyListeners();
     try {
-      return await _authService.changePassword(
+      final success = await AuthService.changePassword(
         token: _token!,
         oldPassword: oldPassword,
         newPassword: newPassword,
       );
+      return success;
     } catch (e) {
-      print('❌ Gagal ganti password: $e');
-      return false;
+      print('❌ Gagal ganti password di AuthProvider: $e');
+      _loginErrorMessage = e.toString().replaceAll('Exception: ', '');
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
-  }
-
-  // Refresh user (optional)
-  Future<void> refreshUser() async {
-    if (_token != null) {
-      await getCurrentUser();
-    }
-  }
-
-  // Set user dan token (berguna untuk login persistent jika pakai SharedPreferences)
-  void setUser(User user, String token) {
-    _user = user;
-    _token = token;
-    notifyListeners();
   }
 
   // Restore session dari SharedPreferences
-  Future<void> tryAutoLogin() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedToken = prefs.getString('auth_token');
+  Future<bool> tryAutoLogin() async {
+    _isLoading = true;
+    _loginErrorMessage = null;
+    notifyListeners();
 
-    if (savedToken != null) {
-      _token = savedToken;
-      try {
-        final fetchedUser = await _authService.getCurrentUser(_token!);
-        _user = fetchedUser;
-      } catch (e) {
-        print("Auto login gagal: $e");
-        await logout();
+    try {
+      final savedUser = await AuthService.getUserAndToken();
+
+      if (savedUser != null &&
+          savedUser.token != null &&
+          savedUser.token!.isNotEmpty) {
+        _user = savedUser;
+        _token = savedUser.token;
+        _isAuthenticated = true;
+        print('✅ Auto login berhasil untuk user: ${_user!.email}');
+        return true;
+      } else {
+        await AuthService.clearUserAndToken();
+        _isAuthenticated = false;
+        print('❌ Auto login gagal: Tidak ada user atau token yang valid.');
+        return false;
       }
+    } catch (e) {
+      print("❌ Auto login gagal karena kesalahan: $e");
+      await AuthService.clearUserAndToken();
+      _isAuthenticated = false;
+      _loginErrorMessage = e.toString().replaceAll('Exception: ', '');
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
+  }
 
-    _isInitialized = true;
+  // Metode setUser
+  void setUser(User user, String token) {
+    _user = user;
+    _token = token;
+    _isAuthenticated = true;
+    _loginErrorMessage = null;
     notifyListeners();
   }
 }

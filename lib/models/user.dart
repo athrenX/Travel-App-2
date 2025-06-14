@@ -1,5 +1,7 @@
+import 'dart:convert';
+
 class User {
-  final String? id;
+  final String? id; // Pastikan ini String?
   final String nama;
   final String email;
   final String? role;
@@ -7,6 +9,7 @@ class User {
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final String? paymentMethod;
+  final String? token;
 
   User({
     this.id,
@@ -17,11 +20,12 @@ class User {
     this.createdAt,
     this.updatedAt,
     this.paymentMethod,
+    this.token,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id']?.toString(), // Fixed: Convert to string, not trying to parse as int
+      id: json['id']?.toString(), // PENTING: .toString() untuk memastikan String
       nama: json['nama']?.toString() ?? '',
       email: json['email']?.toString() ?? '',
       role: json['role']?.toString(),
@@ -33,6 +37,7 @@ class User {
           ? DateTime.tryParse(json['updated_at'].toString())
           : null,
       paymentMethod: json['payment_method']?.toString(),
+      token: json['token']?.toString(),
     );
   }
 
@@ -57,6 +62,8 @@ class User {
     String? fotoProfil,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? paymentMethod,
+    String? token,
   }) {
     return User(
       id: id ?? this.id,
@@ -66,15 +73,16 @@ class User {
       fotoProfil: fotoProfil ?? this.fotoProfil,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      token: token ?? this.token,
     );
   }
 
-  // Helper method to check if user has valid ID
   bool get hasValidId => id != null && id!.isNotEmpty;
 
   @override
   String toString() {
-    return 'User{id: $id, nama: $nama, email: $email, role: $role, fotoProfil: $fotoProfil}';
+    return 'User{id: $id, nama: $nama, email: $email, role: $role, fotoProfil: $fotoProfil, paymentMethod: $paymentMethod, token: ${token != null ? '***' : 'null'}}';
   }
 
   @override
@@ -85,11 +93,13 @@ class User {
         other.nama == nama &&
         other.email == email &&
         other.role == role &&
-        other.fotoProfil == fotoProfil;
+        other.fotoProfil == fotoProfil &&
+        other.paymentMethod == paymentMethod &&
+        other.token == token;
   }
 
   @override
   int get hashCode {
-    return Object.hash(id, nama, email, role, fotoProfil);
+    return Object.hash(id, nama, email, role, fotoProfil, paymentMethod, token);
   }
 }

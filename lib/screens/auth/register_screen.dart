@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:travelapp/providers/auth_provider.dart';
-import 'package:travelapp/screens/user/home_screen.dart';
+import 'package:travelapp/screens/user/home_screen.dart'; // Import HomeScreen
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -16,7 +16,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  String? _errorMessage;
+  String? _displayErrorMessage; // Variabel lokal untuk pesan error yang ditampilkan
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
 
@@ -29,18 +29,42 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
+  String _getDisplayErrorMessage(String rawError) {
+    String normalizedError = rawError.toLowerCase().trim();
+
+    if (normalizedError.contains('validation failed: nama: the nama field is required')) {
+      return 'Nama lengkap tidak boleh kosong.';
+    } else if (normalizedError.contains('validation failed: email: the email field is required')) { // Tambahkan validasi ini
+      return 'Email tidak boleh kosong.';
+    } else if (normalizedError.contains('validation failed: password: the password field is required')) { // Tambahkan validasi ini
+      return 'Password tidak boleh kosong.';
+    }
+    else if (normalizedError.contains('email has already been taken') || normalizedError.contains('users_email_unique')) { // Tambahkan pengecekan unique constraint
+      return 'Email sudah terdaftar. Silakan gunakan email lain.';
+    } else if (normalizedError.contains('password confirmation does not match')) {
+      return 'Konfirmasi password tidak cocok.';
+    } else if (normalizedError.contains('koneksi') || normalizedError.contains('network') || normalizedError.contains('timeout')) {
+      return 'Periksa koneksi internet Anda dan coba lagi';
+    } else if (normalizedError.contains('server') || normalizedError.contains('internal error') || normalizedError.contains('500')) {
+      return 'Terjadi gangguan pada server. Coba lagi nanti';
+    } else {
+      return 'Registrasi gagal: ${rawError}.';
+    }
+  }
+
   Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
-        _errorMessage = null;
+        _displayErrorMessage = null; // Reset pesan error sebelum mencoba register
       });
 
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
       try {
-        final authProvider = Provider.of<AuthProvider>(context, listen: false);
         final success = await authProvider.register(
-          _namaController.text.trim(),
+          _namaController.text.trim(), // Pastikan ini dikirim
           _emailController.text.trim(),
           _passwordController.text,
+          _confirmPasswordController.text, // Parameter keempat untuk passwordConfirmation
         );
 
         if (success) {
@@ -49,20 +73,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
           );
 
           Future.delayed(Duration(seconds: 1), () {
-            Navigator.pushReplacementNamed(context, '/login');
+            Navigator.pushReplacementNamed(context, '/login'); // Redirect ke halaman login
+          });
+        } else {
+          // Jika register gagal (return false dari authProvider.register)
+          setState(() {
+            _displayErrorMessage = _getDisplayErrorMessage(authProvider.loginErrorMessage ?? 'Registrasi gagal. Error tidak diketahui.');
           });
         }
       } catch (e) {
-        setState(() {
-          _errorMessage = e.toString().replaceAll('Exception: ', '');
-        });
+        if (mounted) {
+          setState(() {
+            _displayErrorMessage = _getDisplayErrorMessage(e.toString().replaceAll('Exception: ', ''));
+          });
+        }
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = Provider.of<AuthProvider>(context).isLoading;
+    final authProvider = Provider.of<AuthProvider>(context);
+    final isLoading = authProvider.isLoading;
     final size = MediaQuery.of(context).size;
     final theme = Theme.of(context);
 
@@ -396,8 +428,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             },
                           ),
                           SizedBox(height: 16),
-                          // Error message
-                          if (_errorMessage != null)
+                          // Error message (menggunakan _displayErrorMessage)
+                          if (_displayErrorMessage != null)
                             Container(
                               padding: EdgeInsets.symmetric(
                                 horizontal: 12,
@@ -409,7 +441,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 border: Border.all(color: Colors.red.shade200),
                               ),
                               child: Text(
-                                _errorMessage!,
+                                _displayErrorMessage!, // Tampilkan pesan error lokal
                                 style: TextStyle(
                                   color: Colors.red.shade700,
                                   fontSize: 14,
@@ -430,27 +462,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               elevation: 2,
                               shadowColor: theme.primaryColor.withOpacity(0.5),
                             ),
-                            child:
-                                isLoading
-                                    ? SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color:
-                                            Theme.of(
-                                              context,
-                                            ).scaffoldBackgroundColor,
-                                      ),
-                                    )
-                                    : Text(
-                                      'DAFTAR SEKARANG',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 1.5,
-                                      ),
+                            child: isLoading
+                                ? SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color:
+                                          Theme.of(context).scaffoldBackgroundColor,
                                     ),
+                                  )
+                                : Text(
+                                    'DAFTAR SEKARANG',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 1.5,
+                                    ),
+                                  ),
                           ),
                         ],
                       ),
@@ -471,7 +500,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           TextSpan(
                             text: 'Login disini',
                             style: TextStyle(
-                              color: Colors.white,
+                              color:
+                                  Theme.of(context).scaffoldBackgroundColor,
                               fontWeight: FontWeight.bold,
                               decoration: TextDecoration.underline,
                             ),
