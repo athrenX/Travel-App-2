@@ -17,6 +17,7 @@ import 'package:travelapp/screens/auth/register_screen.dart';
 import 'package:travelapp/screens/splash_screen.dart';
 import 'package:travelapp/screens/user/home_screen.dart';
 import 'package:travelapp/screens/admin/dashboard_screen.dart';
+import 'package:travelapp/screens/user/order_screen.dart';
 
 void main() {
   runApp(const MyAppWrapper());
@@ -125,6 +126,7 @@ class MyApp extends StatelessWidget {
             '/register': (context) => const RegisterScreen(),
             '/home': (context) => const HomeScreen(),
             '/dashboard': (context) => const DashboardScreen(),
+            '/orders': (context) => const OrderScreen(),
           },
         );
       },
