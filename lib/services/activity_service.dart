@@ -6,7 +6,7 @@ class ActivityService {
   final String baseUrl;
 
   // Constructor dengan default value baseUrl
-  ActivityService({this.baseUrl = 'http://192.168.1.17:8000/api'});
+  ActivityService({this.baseUrl = 'http://192.168.1.4:8000/api'});
 
   Future<List<Activity>> fetchActivities() async {
     final response = await http.get(

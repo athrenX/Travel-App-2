@@ -292,7 +292,7 @@ class _PembayaranScreenState extends State<PembayaranScreen> {
                     ),
                     const SizedBox(height: 4),
                     Image.asset(
-                      'assets/Fake_QR.png',
+                      'assets/Fake_QR.jpg',
                       height: 48,
                     ), // ganti dengan asset QRIS kamu
                   ] else if (_selectedPaymentMethod == 'Kartu Kredit') ...[

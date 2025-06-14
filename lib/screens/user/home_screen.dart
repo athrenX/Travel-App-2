@@ -624,7 +624,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
 
-    locationService = LocationService(baseUrl: 'http://192.168.1.17:8000');
+    locationService = LocationService(baseUrl: 'http://192.168.1.4:8000');
     _currentNavIndex = widget.initialTab;
     // Ambil data destinasi untuk list/grid
     Future.microtask(() {
