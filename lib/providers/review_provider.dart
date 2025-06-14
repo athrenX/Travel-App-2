@@ -10,7 +10,7 @@ class ReviewProvider with ChangeNotifier {
 
   Future<void> fetchReviewsByDestinasi(String destinasiId, String token) async {
     final url = Uri.parse(
-      'http://127.0.0.1:8000/api/reviews/destinasi/$destinasiId',
+      'http://192.168.1.17:8000/api/reviews/destinasi/$destinasiId',
     );
     final response = await http.get(
       url,

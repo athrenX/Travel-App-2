@@ -1,28 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import 'package:travelapp/models/pemesanan.dart';
 import 'package:travelapp/providers/order_provider.dart';
-import 'package:intl/intl.dart';
-import 'package:travelapp/screens/user/review_screen.dart';
-import 'package:travelapp/screens/user/pembayaran_screen.dart';
-import 'package:travelapp/services/pemesanan_service.dart';
 
-class OrderScreen extends StatefulWidget {
-  const OrderScreen({super.key});
+class AdminOrderListScreen extends StatefulWidget {
+  const AdminOrderListScreen({super.key});
 
   @override
-  State<OrderScreen> createState() => _OrderScreenState();
+  State<AdminOrderListScreen> createState() => _AdminOrderListScreenState();
 }
 
-class _OrderScreenState extends State<OrderScreen> {
-  String _selectedFilterStatus = 'all';
+class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
+  String _selectedFilterStatus = 'all'; // Default filter status
   final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+    // Memuat pesanan saat halaman pertama kali dibuka
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchOrders();
+      _fetchOrdersForAdmin();
     });
   }
 
@@ -32,14 +30,19 @@ class _OrderScreenState extends State<OrderScreen> {
     super.dispose();
   }
 
-  Future<void> _fetchOrders() async {
+  // Mengambil data pesanan khusus untuk admin
+  Future<void> _fetchOrdersForAdmin() async {
     final orderProvider = Provider.of<OrderProvider>(context, listen: false);
-    await orderProvider.fetchOrders();
+    await orderProvider.fetchOrders(
+      isAdmin: true,
+    ); // Memanggil fetchOrders dengan isAdmin: true
   }
 
+  // Logika filter pesanan berdasarkan status dan pencarian
   List<Pemesanan> _filterOrders(List<Pemesanan> allOrders) {
     List<Pemesanan> filtered = allOrders;
 
+    // Filter berdasarkan status
     if (_selectedFilterStatus != 'all') {
       filtered =
           filtered
@@ -51,26 +54,78 @@ class _OrderScreenState extends State<OrderScreen> {
               .toList();
     }
 
+    // Filter berdasarkan teks pencarian
     final searchText = _searchController.text.toLowerCase();
     if (searchText.isNotEmpty) {
       filtered =
           filtered.where((order) {
             final destinasiName = order.destinasi.nama.toLowerCase();
             final userName = order.user?.nama?.toLowerCase() ?? '';
-
+            final orderId = order.id.toLowerCase();
             return destinasiName.contains(searchText) ||
-                userName.contains(searchText);
+                userName.contains(searchText) ||
+                orderId.contains(searchText);
           }).toList();
     }
+
+    // Urutkan berdasarkan tanggal pemesanan, terbaru di atas
+    filtered.sort((a, b) => b.tanggal.compareTo(a.tanggal));
 
     return filtered;
   }
 
+  // Fungsi untuk mengubah status pesanan melalui provider
+  Future<void> _updateOrderStatus(Pemesanan pemesanan, String newStatus) async {
+    final orderProvider = Provider.of<OrderProvider>(context, listen: false);
+
+    // Tampilkan dialog loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (ctx) => const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+            ),
+          ),
+    );
+
+    try {
+      // Panggil provider untuk update status
+      await orderProvider.updateOrderStatus(
+        pemesanan.id,
+        newStatus,
+        isAdminUpdate: true, // Beri tahu provider bahwa ini update dari admin
+      );
+      if (mounted) {
+        Navigator.of(context).pop(); // Tutup dialog loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Status pemesanan berhasil diubah menjadi "$newStatus".',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context).pop(); // Tutup dialog loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal mengubah status pemesanan: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    print("Building OrderScreen");
     return Consumer<OrderProvider>(
       builder: (context, orderProvider, child) {
+        // Daftar pesanan yang sudah difilter
         final List<Pemesanan> daftarPesanan = _filterOrders(
           orderProvider.orders,
         );
@@ -78,18 +133,23 @@ class _OrderScreenState extends State<OrderScreen> {
         return Scaffold(
           appBar: AppBar(
             title: const Text(
-              'Pesanan Saya',
+              'Kelola Pemesanan',
               style: TextStyle(
                 fontWeight: FontWeight.w600,
                 color: Colors.white,
               ),
             ),
-            backgroundColor: Colors.blue.shade600,
+            backgroundColor: Colors.blue.shade800, // Warna AppBar khusus admin
             elevation: 0,
             actions: [
               IconButton(
+                icon: const Icon(Icons.refresh, color: Colors.white),
+                onPressed: _fetchOrdersForAdmin, // Refresh data
+              ),
+              IconButton(
                 icon: const Icon(Icons.filter_list, color: Colors.white),
                 onPressed: () {
+                  // Tampilkan bottom sheet untuk filter status
                   showModalBottomSheet(
                     context: context,
                     builder:
@@ -109,13 +169,14 @@ class _OrderScreenState extends State<OrderScreen> {
           ),
           body: Column(
             children: [
+              // Bagian pencarian dan filter status
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
+                  color: Colors.blue.shade100,
                   borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(20),
                     bottomRight: Radius.circular(20),
@@ -126,10 +187,10 @@ class _OrderScreenState extends State<OrderScreen> {
                     TextField(
                       controller: _searchController,
                       decoration: InputDecoration(
-                        hintText: 'Cari pesanan...',
+                        hintText: 'Cari pemesanan (ID, destinasi, user)...',
                         prefixIcon: Icon(
                           Icons.search,
-                          color: Colors.blue.shade600,
+                          color: Colors.blue.shade800,
                         ),
                         suffixIcon:
                             _searchController.text.isNotEmpty
@@ -150,7 +211,9 @@ class _OrderScreenState extends State<OrderScreen> {
                         contentPadding: const EdgeInsets.symmetric(vertical: 0),
                       ),
                       onChanged: (value) {
-                        setState(() {});
+                        setState(
+                          () {},
+                        ); // Memperbarui UI saat teks pencarian berubah
                       },
                     ),
                     const SizedBox(height: 8),
@@ -161,11 +224,13 @@ class _OrderScreenState extends State<OrderScreen> {
                         scrollDirection: Axis.horizontal,
                         children:
                             [
+                                  _buildStatusChip('all', 'Semua'),
                                   _buildStatusChip(
                                     'menunggu pembayaran',
                                     'Menunggu Pembayaran',
                                   ),
                                   _buildStatusChip('dibayar', 'Dibayar'),
+                                  _buildStatusChip('diproses', 'Diproses'),
                                   _buildStatusChip('selesai', 'Selesai'),
                                   _buildStatusChip('dibatalkan', 'Dibatalkan'),
                                 ]
@@ -183,6 +248,7 @@ class _OrderScreenState extends State<OrderScreen> {
               ),
               const SizedBox(height: 8),
 
+              // Tampilan kondisi (loading, error, empty, atau list pesanan)
               orderProvider.isLoading
                   ? const Expanded(
                     child: Center(
@@ -213,9 +279,10 @@ class _OrderScreenState extends State<OrderScreen> {
                           ),
                           const SizedBox(height: 16),
                           ElevatedButton(
-                            onPressed: _fetchOrders,
+                            onPressed: _fetchOrdersForAdmin,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.blue.shade600,
+                              foregroundColor: Colors.white,
                             ),
                             child: const Text('Coba Lagi'),
                           ),
@@ -227,7 +294,7 @@ class _OrderScreenState extends State<OrderScreen> {
                   ? _buildEmptyState(context)
                   : Expanded(
                     child: RefreshIndicator(
-                      onRefresh: _fetchOrders,
+                      onRefresh: _fetchOrdersForAdmin,
                       child: ListView.builder(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -248,6 +315,7 @@ class _OrderScreenState extends State<OrderScreen> {
     );
   }
 
+  // Widget untuk chip filter status
   Widget _buildStatusChip(String value, String label) {
     return ChoiceChip(
       label: Text(
@@ -256,7 +324,7 @@ class _OrderScreenState extends State<OrderScreen> {
           color:
               _selectedFilterStatus == value
                   ? Colors.white
-                  : Colors.blue.shade600,
+                  : Colors.blue.shade800,
           fontSize: 12,
         ),
       ),
@@ -266,7 +334,7 @@ class _OrderScreenState extends State<OrderScreen> {
           _selectedFilterStatus = selected ? value : 'all';
         });
       },
-      selectedColor: Colors.blue.shade600,
+      selectedColor: Colors.blue.shade800,
       backgroundColor: Colors.white,
       side: BorderSide(color: Colors.blue.shade200),
       padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -274,6 +342,7 @@ class _OrderScreenState extends State<OrderScreen> {
     );
   }
 
+  // Tampilan ketika tidak ada pesanan
   Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Column(
@@ -282,7 +351,7 @@ class _OrderScreenState extends State<OrderScreen> {
           Icon(Icons.article_outlined, size: 80, color: Colors.blue.shade200),
           const SizedBox(height: 16),
           Text(
-            'Belum ada pesanan',
+            'Tidak ada pemesanan yang ditemukan.',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w500,
@@ -291,28 +360,15 @@ class _OrderScreenState extends State<OrderScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Jelajahi destinasi impianmu sekarang!',
+            'Coba ubah filter atau cari dengan kata kunci lain.',
             style: TextStyle(color: Colors.grey.shade600),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pushNamed(context, '/home');
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue.shade600,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
-              ),
-            ),
-            child: const Text('Jelajahi Destinasi'),
           ),
         ],
       ),
     );
   }
 
+  // Widget untuk menampilkan setiap detail pesanan dalam bentuk kartu
   Widget _buildOrderCard(Pemesanan pesanan, BuildContext context) {
     Color statusColor;
     switch (pesanan.status.toLowerCase()) {
@@ -328,6 +384,9 @@ class _OrderScreenState extends State<OrderScreen> {
       case 'menunggu pembayaran':
         statusColor = Colors.orange;
         break;
+      case 'diproses':
+        statusColor = Colors.blue.shade700;
+        break;
       default:
         statusColor = Colors.grey;
     }
@@ -341,20 +400,14 @@ class _OrderScreenState extends State<OrderScreen> {
       ),
       child: InkWell(
         onTap: () {
-          // Navigasi ke detail pemesanan
-          if (pesanan.status == 'menunggu pembayaran') {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => PembayaranScreen(pemesanan: pesanan),
-              ),
-            );
-          }
+          // Admin bisa menambahkan navigasi ke detail pesanan yang lebih rinci di sini
+          // Misalnya: Navigator.push(context, MaterialPageRoute(builder: (context) => AdminOrderDetailScreen(pemesanan: pesanan)));
         },
         borderRadius: BorderRadius.circular(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header kartu dengan status dan tanggal
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
@@ -381,7 +434,7 @@ class _OrderScreenState extends State<OrderScreen> {
                 ],
               ),
             ),
-
+            // Detail utama pesanan
             Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
@@ -395,9 +448,6 @@ class _OrderScreenState extends State<OrderScreen> {
                       height: 80,
                       fit: BoxFit.cover,
                       loadingBuilder: (context, child, loadingProgress) {
-                        print(
-                          '[LOG] Memuat gambar dari: ${pesanan.destinasi.gambar}',
-                        );
                         if (loadingProgress == null) return child;
                         return Center(
                           child: CircularProgressIndicator(
@@ -410,10 +460,6 @@ class _OrderScreenState extends State<OrderScreen> {
                         );
                       },
                       errorBuilder: (context, error, stackTrace) {
-                        print(
-                          '[ERROR] Gagal memuat gambar: ${pesanan.destinasi.gambar}',
-                        );
-                        print('[DETAIL ERROR] $error');
                         return Container(
                           width: 80,
                           height: 80,
@@ -426,18 +472,35 @@ class _OrderScreenState extends State<OrderScreen> {
                       },
                     ),
                   ),
-
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
+                          'ID Pesanan: ${pesanan.id}', // Tampilkan ID Pemesanan
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
                           pesanan.destinasi.nama,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Colors.blue.shade800,
                             fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Pemesan: ${pesanan.user?.nama ?? 'N/A'}', // Tampilkan nama user
+                          style: TextStyle(
+                            color: Colors.grey.shade700,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -462,7 +525,7 @@ class _OrderScreenState extends State<OrderScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 4),
                         Row(
                           children: [
                             Icon(
@@ -523,6 +586,7 @@ class _OrderScreenState extends State<OrderScreen> {
               ),
             ),
             const Divider(height: 1),
+            // Bagian total pembayaran dan tombol aksi
             Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
@@ -548,7 +612,7 @@ class _OrderScreenState extends State<OrderScreen> {
                       ),
                     ],
                   ),
-                  _buildActionButtons(pesanan.status, context, pesanan),
+                  _buildAdminActionButtons(pesanan, context),
                 ],
               ),
             ),
@@ -558,157 +622,127 @@ class _OrderScreenState extends State<OrderScreen> {
     );
   }
 
-  Widget _buildActionButtons(
-    String status,
-    BuildContext context,
-    Pemesanan pesanan,
-  ) {
-    Widget reviewButton = OutlinedButton(
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder:
-                (context) => ReviewScreen(
-                  pemesanan: pesanan,
-                  destinasi: pesanan.destinasi,
-                ),
+  // Widget untuk tombol aksi admin berdasarkan status pesanan
+  Widget _buildAdminActionButtons(Pemesanan pesanan, BuildContext context) {
+    if (pesanan.status == 'dibayar') {
+      return ElevatedButton.icon(
+        onPressed: () {
+          _showChangeStatusDialog(context, pesanan, 'selesai');
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.blue.shade700,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
           ),
-        );
-      },
-      style: OutlinedButton.styleFrom(
-        foregroundColor: Colors.blue.shade600,
-        side: BorderSide(color: Colors.blue.shade200),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-      ),
-      child: const Text('Beri Ulasan'),
-    );
-
-    switch (status.toLowerCase()) {
-      case 'menunggu pembayaran':
-        return Row(
-          children: [
-            OutlinedButton(
-              onPressed: () async {
-                final confirmCancel =
-                    await showDialog<bool>(
-                      context: context,
-                      builder:
-                          (ctx) => AlertDialog(
-                            title: const Text('Batalkan Pemesanan?'),
-                            content: const Text(
-                              'Apakah Anda yakin ingin membatalkan pemesanan ini? Kursi akan dikembalikan ke tersedia.',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.of(ctx).pop(false),
-                                child: const Text('Tidak'),
-                              ),
-                              TextButton(
-                                onPressed: () => Navigator.of(ctx).pop(true),
-                                child: const Text('Ya'),
-                              ),
-                            ],
-                          ),
-                    ) ??
-                    false;
-
-                if (confirmCancel) {
-                  showDialog(
-                    context: context,
-                    barrierDismissible: false,
-                    builder:
-                        (ctx) => const Center(
-                          child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.red,
-                            ),
-                          ),
-                        ),
-                  );
-                  try {
-                    await PemesananService.cancelPemesanan(pesanan.id);
-                    if (mounted) {
-                      Navigator.of(context).pop();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Pemesanan berhasil dibatalkan.'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                      _fetchOrders(); // Refresh daftar pesanan
-                    }
-                  } catch (e) {
-                    if (mounted) {
-                      Navigator.of(context).pop();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Gagal membatalkan pemesanan: ${e.toString()}',
-                          ),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  }
-                }
-              },
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.red,
-                side: BorderSide(color: Colors.red.shade200),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+        ),
+        icon: const Icon(Icons.check_circle_outline, size: 18),
+        label: const Text('Tandai Selesai'),
+      );
+    } else if (pesanan.status == 'menunggu pembayaran') {
+      return Row(
+        children: [
+          OutlinedButton(
+            onPressed:
+                () => _showChangeStatusDialog(context, pesanan, 'dibatalkan'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.red,
+              side: BorderSide(color: Colors.red.shade200),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
               ),
-              child: const Text('Batalkan'),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
             ),
-            const SizedBox(width: 8),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => PembayaranScreen(pemesanan: pesanan),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue.shade600,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: const Text('Batalkan'),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton(
+            onPressed: () {
+              _showChangeStatusDialog(
+                context,
+                pesanan,
+                'dibayar',
+              ); // Admin bisa langsung tandai dibayar
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green.shade700,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
               ),
-              child: const Text('Bayar Sekarang'),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
             ),
-          ],
-        );
-      case 'selesai':
-        return reviewButton;
-      case 'dibayar':
-      case 'diproses':
-        return const Text(
-          'Sedang diproses',
-          style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
-        );
-      case 'dibatalkan':
-        return const Text(
-          'Dibatalkan',
-          style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-        );
-      case 'pending':
-        return const Text(
-          'Pending',
-          style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
-        );
-      default:
-        return const SizedBox.shrink();
+            child: const Text('Tandai Dibayar'),
+          ),
+        ],
+      );
+    } else if (pesanan.status == 'dibatalkan') {
+      return const Text(
+        'Dibatalkan',
+        style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+      );
+    } else if (pesanan.status == 'selesai') {
+      return const Text(
+        'Selesai',
+        style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+      );
+    } else if (pesanan.status == 'diproses') {
+      return const Text(
+        'Sedang diproses',
+        style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+      );
+    } else {
+      return const SizedBox.shrink(); // Widget kosong jika status tidak dikenali
     }
   }
 
+  // Dialog konfirmasi perubahan status
+  void _showChangeStatusDialog(
+    BuildContext context,
+    Pemesanan pesanan,
+    String newStatus,
+  ) {
+    String actionText;
+    if (newStatus == 'selesai') {
+      actionText = 'mengubah status pemesanan ${pesanan.id} menjadi "Selesai"?';
+    } else if (newStatus == 'dibayar') {
+      actionText = 'mengubah status pemesanan ${pesanan.id} menjadi "Dibayar"?';
+    } else if (newStatus == 'dibatalkan') {
+      actionText =
+          'membatalkan pemesanan ${pesanan.id} dan mengembalikan kursinya?';
+    } else {
+      actionText =
+          'mengubah status pemesanan ${pesanan.id} menjadi "$newStatus"?';
+    }
+
+    showDialog(
+      context: context,
+      builder:
+          (ctx) => AlertDialog(
+            title: const Text('Konfirmasi Perubahan Status'),
+            content: Text('Apakah Anda yakin ingin $actionText'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('Tidak'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(ctx).pop(); // Tutup dialog konfirmasi
+                  _updateOrderStatus(
+                    pesanan,
+                    newStatus,
+                  ); // Lanjutkan perubahan status
+                },
+                child: const Text('Ya'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  // Fungsi format rupiah
   String _formatRupiahOrderCard(double number) {
     final formatCurrency = NumberFormat.currency(
       locale: 'id_ID',
@@ -718,10 +752,12 @@ class _OrderScreenState extends State<OrderScreen> {
     return formatCurrency.format(number);
   }
 
+  // Fungsi format tanggal
   String _formatDate(DateTime date) {
     return DateFormat('dd MMMM HH:mm', 'id_ID').format(date);
   }
 
+  // Fungsi format nomor kursi
   String _formatSeatNumbersOrderCard(List<int> seats) {
     seats.sort();
     if (seats.isEmpty) return '-';
@@ -732,6 +768,7 @@ class _OrderScreenState extends State<OrderScreen> {
   }
 }
 
+// FilterBottomSheet (tetap sama)
 class FilterBottomSheet extends StatefulWidget {
   final String initialStatus;
   final Function(String status) onFilterApplied;
@@ -800,8 +837,10 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
             spacing: 8,
             runSpacing: 8,
             children: [
+              _filterChip('all', 'Semua'),
               _filterChip('menunggu pembayaran', 'Menunggu Pembayaran'),
               _filterChip('dibayar', 'Dibayar'),
+              _filterChip('diproses', 'Diproses'),
               _filterChip('selesai', 'Selesai'),
               _filterChip('dibatalkan', 'Dibatalkan'),
             ],

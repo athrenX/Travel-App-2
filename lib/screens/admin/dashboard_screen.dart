@@ -4,7 +4,7 @@ import 'package:travelapp/providers/auth_provider.dart';
 import 'package:travelapp/screens/admin/kelola_destinasi_screen.dart';
 import 'package:travelapp/screens/admin/kelola_kendaraan_screen.dart';
 import 'package:travelapp/screens/admin/kelola_pembayaran_screen.dart';
-import 'package:travelapp/screens/admin/kelola_pemesanan_screen.dart';
+import 'package:travelapp/screens/admin/AdminOrderListScreen.dart';
 import 'package:travelapp/screens/admin/kelola_review_screen.dart';
 import 'package:travelapp/screens/auth/login_screen.dart';
 
@@ -22,17 +22,12 @@ class DashboardScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text(
           'Admin Dashboard',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         centerTitle: true,
         backgroundColor: primaryBlue,
         elevation: 0,
-        iconTheme: const IconThemeData(
-          color: Colors.white,
-        ),
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -80,46 +75,14 @@ class DashboardScreen extends StatelessWidget {
                       case 0:
                         return _buildDashboardCard(
                           context,
-                          icon: Icons.place_outlined,
-                          title: 'Kelola Destinasi',
-                          iconColor: Colors.green,
-                          onTap:
-                              () =>
-                                  _navigateTo(context, KelolaDestinasiScreen()),
-                        );
-                      case 1:
-                        return _buildDashboardCard(
-                          context,
-                          icon: Icons.directions_bus_outlined,
-                          title: 'Kelola Kendaraan',
-                          iconColor: Colors.orange,
-                          onTap:
-                              () =>
-                                  _navigateTo(context, KelolaKendaraanScreen()),
-                        );
-                      case 2:
-                        return _buildDashboardCard(
-                          context,
-                          icon: Icons.payment_outlined,
-                          title: 'Kelola Pembayaran',
-                          iconColor: Colors.purple,
-                          onTap:
-                              () => _navigateTo(
-                                context,
-                                KelolaPembayaranScreen(),
-                              ),
-                        );
-                      case 3:
-                        return _buildDashboardCard(
-                          context,
                           icon: Icons.book_online_outlined,
                           title: 'Kelola Pemesanan',
                           iconColor: Colors.red,
                           onTap:
                               () =>
-                                  _navigateTo(context, KelolaPemesananScreen()),
+                                  _navigateTo(context, AdminOrderListScreen()),
                         );
-                      case 4:
+                      case 1:
                         return _buildDashboardCard(
                           context,
                           icon: Icons.reviews_outlined,
@@ -128,6 +91,7 @@ class DashboardScreen extends StatelessWidget {
                           onTap:
                               () => _navigateTo(context, KelolaReviewScreen()),
                         );
+
                       default:
                         return const SizedBox();
                     }
@@ -197,9 +161,7 @@ class DashboardScreen extends StatelessWidget {
                 },
                 child: const Text(
                   'Logout',
-                  style: TextStyle(
-                    color: Colors.white,
-                  ),
+                  style: TextStyle(color: Colors.white),
                 ),
               ),
             ],

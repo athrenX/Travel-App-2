@@ -28,7 +28,10 @@ class AuthService {
     final token = prefs.getString('auth_token');
     final userDataString = prefs.getString('user_data');
 
-    if (token != null && userDataString != null && token.isNotEmpty && userDataString.isNotEmpty) {
+    if (token != null &&
+        userDataString != null &&
+        token.isNotEmpty &&
+        userDataString.isNotEmpty) {
       try {
         final userMap = json.decode(userDataString) as Map<String, dynamic>;
         return User.fromJson(userMap).copyWith(token: token);
@@ -50,14 +53,20 @@ class AuthService {
 
   // --- Metode API Autentikasi ---
 
-  static Future<User> register(String nama, String email, String password, String passwordConfirmation) async {
+  static Future<User> register(
+    String nama,
+    String email,
+    String password,
+    String passwordConfirmation,
+  ) async {
     final url = Uri.parse('$_baseUrl/api/register');
     try {
       final response = await http.post(
         url,
         headers: await _getHeaders(),
         body: json.encode({
-          'nama': nama, // PENTING: Kirim sebagai 'nama' sesuai validasi Laravel Anda
+          'nama':
+              nama, // PENTING: Kirim sebagai 'nama' sesuai validasi Laravel Anda
           'email': email,
           'password': password,
           'password_confirmation': passwordConfirmation,
@@ -75,7 +84,9 @@ class AuthService {
           await saveUserAndToken(user);
           return user;
         } else {
-          throw Exception('Failed to register: ${responseData['message'] ?? 'Unknown error.'}');
+          throw Exception(
+            'Failed to register: ${responseData['message'] ?? 'Unknown error.'}',
+          );
         }
       } else {
         if (response.statusCode == 422) {
@@ -86,7 +97,9 @@ class AuthService {
           });
           throw Exception(validationMessage);
         } else {
-          throw Exception('Failed to register. Status code: ${response.statusCode}. Message: ${responseData['message'] ?? response.body}');
+          throw Exception(
+            'Failed to register. Status code: ${response.statusCode}. Message: ${responseData['message'] ?? response.body}',
+          );
         }
       }
     } catch (e) {
@@ -101,16 +114,14 @@ class AuthService {
       final response = await http.post(
         url,
         headers: await _getHeaders(),
-        body: json.encode({
-          'email': email,
-          'password': password,
-        }),
+        body: json.encode({'email': email, 'password': password}),
       );
 
       final Map<String, dynamic> responseData = json.decode(response.body);
 
       if (response.statusCode == 200) {
-        if (responseData['success'] == true) { // PENTING: Backend Anda menggunakan 'success' bukan 'status' untuk login
+        if (responseData['success'] == true) {
+          // PENTING: Backend Anda menggunakan 'success' bukan 'status' untuk login
           // PENTING: Akses 'data' terlebih dahulu, lalu 'user' dan 'token'
           final userMap = responseData['data']['user'] as Map<String, dynamic>;
           final token = responseData['data']['token'] as String;
@@ -119,22 +130,28 @@ class AuthService {
           return user; // Langsung return user jika sukses
         } else {
           // Jika status code 200 tapi 'success' bukan true
-          throw Exception('Failed to login: ${responseData['message'] ?? 'Unknown response status.'}');
+          throw Exception(
+            'Failed to login: ${responseData['message'] ?? 'Unknown response status.'}',
+          );
         }
       } else {
         // Tangani error berdasarkan status code
         if (response.statusCode == 401) {
-          throw Exception('Unauthorized: ${responseData['message'] ?? 'Invalid credentials.'}');
-        } else if (response.statusCode == 422) { // Tambahkan penanganan 422 untuk login jika ada
-            final errors = responseData['errors'] as Map<String, dynamic>;
-            String validationMessage = 'Validation failed: ';
-            errors.forEach((key, value) {
-                validationMessage += '${key}: ${(value as List).join(', ')}. ';
-            });
-            throw Exception(validationMessage);
-        }
-        else {
-          throw Exception('Failed to login. Status code: ${response.statusCode}. Message: ${responseData['message'] ?? response.body}');
+          throw Exception(
+            'Unauthorized: ${responseData['message'] ?? 'Invalid credentials.'}',
+          );
+        } else if (response.statusCode == 422) {
+          // Tambahkan penanganan 422 untuk login jika ada
+          final errors = responseData['errors'] as Map<String, dynamic>;
+          String validationMessage = 'Validation failed: ';
+          errors.forEach((key, value) {
+            validationMessage += '${key}: ${(value as List).join(', ')}. ';
+          });
+          throw Exception(validationMessage);
+        } else {
+          throw Exception(
+            'Failed to login. Status code: ${response.statusCode}. Message: ${responseData['message'] ?? response.body}',
+          );
         }
       }
     } catch (e) {
@@ -146,10 +163,7 @@ class AuthService {
   static Future<void> logout(String token) async {
     final url = Uri.parse('$_baseUrl/api/logout');
     try {
-      await http.post(
-        url,
-        headers: await _getHeaders(token: token),
-      );
+      await http.post(url, headers: await _getHeaders(token: token));
     } catch (e) {
       print('Error during logout API call: $e');
     } finally {
@@ -168,17 +182,24 @@ class AuthService {
       final Map<String, dynamic> responseData = json.decode(response.body);
 
       if (response.statusCode == 200) {
-        if (responseData['success'] == true) { // PENTING: 'success'
-            final userMap = responseData['data']['user'] as Map<String, dynamic>; // PENTING: 'data' lalu 'user'
-            return User.fromJson(userMap).copyWith(token: token);
+        if (responseData['success'] == true) {
+          // PENTING: 'success'
+          final userMap =
+              responseData['data']['user']
+                  as Map<String, dynamic>; // PENTING: 'data' lalu 'user'
+          return User.fromJson(userMap).copyWith(token: token);
         } else {
-            throw Exception('Failed to fetch user data: ${responseData['message'] ?? 'Unknown status.'}');
+          throw Exception(
+            'Failed to fetch user data: ${responseData['message'] ?? 'Unknown status.'}',
+          );
         }
       } else if (response.statusCode == 401) {
         await clearUserAndToken();
         throw Exception('Unauthenticated: Token is invalid or expired.');
       } else {
-        throw Exception('Failed to fetch user data. Status code: ${response.statusCode}, Message: ${responseData['message'] ?? response.body}');
+        throw Exception(
+          'Failed to fetch user data. Status code: ${response.statusCode}, Message: ${responseData['message'] ?? response.body}',
+        );
       }
     } catch (e) {
       print('Error fetching current user data in AuthService: $e');
@@ -203,12 +224,12 @@ class AuthService {
       });
       request.fields['nama'] = nama; // PENTING: Kirim sebagai 'nama'
       if (email != null) request.fields['email'] = email;
-      if (paymentMethod != null) request.fields['payment_method'] = paymentMethod;
+      if (paymentMethod != null)
+        request.fields['payment_method'] = paymentMethod;
 
-      request.files.add(await http.MultipartFile.fromPath(
-        'foto_profil',
-        fotoProfil.path,
-      ));
+      request.files.add(
+        await http.MultipartFile.fromPath('foto_profil', fotoProfil.path),
+      );
 
       try {
         var streamedResponse = await request.send();
@@ -216,17 +237,25 @@ class AuthService {
         final Map<String, dynamic> responseData = json.decode(response.body);
 
         if (response.statusCode == 200) {
-          if (responseData['success'] == true) { // PENTING: 'success'
-            final updatedUserMap = responseData['data']['user'] as Map<String, dynamic>; // PENTING: 'data' lalu 'user'
-            final updatedUser = User.fromJson(updatedUserMap).copyWith(token: token);
+          if (responseData['success'] == true) {
+            // PENTING: 'success'
+            final updatedUserMap =
+                responseData['data']['user']
+                    as Map<String, dynamic>; // PENTING: 'data' lalu 'user'
+            final updatedUser = User.fromJson(
+              updatedUserMap,
+            ).copyWith(token: token);
             await saveUserAndToken(updatedUser);
             return updatedUser;
           } else {
-            throw Exception('Failed to update profile (multipart): ${responseData['message']}');
+            throw Exception(
+              'Failed to update profile (multipart): ${responseData['message']}',
+            );
           }
         } else {
           final errors = responseData['errors'] ?? {};
-          String errorMessage = 'Failed to update profile (multipart). Status: ${response.statusCode}. ';
+          String errorMessage =
+              'Failed to update profile (multipart). Status: ${response.statusCode}. ';
           errors.forEach((key, value) {
             errorMessage += '${key}: ${value.join(', ')}. ';
           });
@@ -251,17 +280,25 @@ class AuthService {
         final Map<String, dynamic> responseData = json.decode(response.body);
 
         if (response.statusCode == 200) {
-          if (responseData['success'] == true) { // PENTING: 'success'
-            final updatedUserMap = responseData['data']['user'] as Map<String, dynamic>; // PENTING: 'data' lalu 'user'
-            final updatedUser = User.fromJson(updatedUserMap).copyWith(token: token);
+          if (responseData['success'] == true) {
+            // PENTING: 'success'
+            final updatedUserMap =
+                responseData['data']['user']
+                    as Map<String, dynamic>; // PENTING: 'data' lalu 'user'
+            final updatedUser = User.fromJson(
+              updatedUserMap,
+            ).copyWith(token: token);
             await saveUserAndToken(updatedUser);
             return updatedUser;
           } else {
-            throw Exception('Failed to update profile: ${responseData['message']}');
+            throw Exception(
+              'Failed to update profile: ${responseData['message']}',
+            );
           }
         } else {
           final errors = responseData['errors'] ?? {};
-          String errorMessage = 'Failed to update profile. Status: ${response.statusCode}. ';
+          String errorMessage =
+              'Failed to update profile. Status: ${response.statusCode}. ';
           errors.forEach((key, value) {
             errorMessage += '${key}: ${value.join(', ')}. ';
           });
@@ -294,14 +331,18 @@ class AuthService {
       final Map<String, dynamic> responseData = json.decode(response.body);
 
       if (response.statusCode == 200) {
-        if (responseData['success'] == true) { // PENTING: 'success'
+        if (responseData['success'] == true) {
+          // PENTING: 'success'
           return true;
         } else {
-          throw Exception('Failed to change password: ${responseData['message']}');
+          throw Exception(
+            'Failed to change password: ${responseData['message']}',
+          );
         }
       } else {
         final errors = responseData['errors'] ?? {};
-        String errorMessage = 'Failed to change password. Status: ${response.statusCode}. ';
+        String errorMessage =
+            'Failed to change password. Status: ${response.statusCode}. ';
         errors.forEach((key, value) {
           errorMessage += '${key}: ${value.join(', ')}. ';
         });
