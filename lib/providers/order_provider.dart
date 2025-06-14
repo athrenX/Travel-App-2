@@ -18,12 +18,7 @@ class OrderProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
-      if (token == null) {
-        throw Exception('User not logged in. Token is missing.');
-      }
-      _orders = await PemesananService.getMyPemesananan(token);
+      _orders = await PemesananService.getMyPemesananan(); // TANPA token
     } catch (e) {
       _errorMessage = e.toString();
       _orders = [];
@@ -77,6 +72,8 @@ class OrderProvider with ChangeNotifier {
     //   print('Error updating order status: $e');
     //   rethrow;
     // }
-    print('Update order status for $pemesananId to $newStatus (API not fully implemented yet)');
+    print(
+      'Update order status for $pemesananId to $newStatus (API not fully implemented yet)',
+    );
   }
 }

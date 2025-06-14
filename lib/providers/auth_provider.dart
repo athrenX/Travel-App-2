@@ -64,12 +64,22 @@ class AuthProvider with ChangeNotifier {
   }
 
   // Register
-  Future<bool> register(String nama, String email, String password, String passwordConfirmation) async {
+  Future<bool> register(
+    String nama,
+    String email,
+    String password,
+    String passwordConfirmation,
+  ) async {
     _isLoading = true;
     _loginErrorMessage = null; // Reset pesan error
     notifyListeners();
     try {
-      final registeredUser = await AuthService.register(nama, email, password, passwordConfirmation);
+      final registeredUser = await AuthService.register(
+        nama,
+        email,
+        password,
+        passwordConfirmation,
+      );
       _user = registeredUser;
       _token = registeredUser.token;
 
@@ -127,7 +137,8 @@ class AuthProvider with ChangeNotifier {
       return _user;
     } catch (e) {
       print('Error di AuthProvider getCurrentUser: $e');
-      if (e.toString().contains('401') || e.toString().contains('Unauthenticated')) {
+      if (e.toString().contains('401') ||
+          e.toString().contains('Unauthenticated')) {
         await AuthService.clearUserAndToken();
       }
       _user = null;
@@ -217,7 +228,9 @@ class AuthProvider with ChangeNotifier {
     try {
       final savedUser = await AuthService.getUserAndToken();
 
-      if (savedUser != null && savedUser.token != null && savedUser.token!.isNotEmpty) {
+      if (savedUser != null &&
+          savedUser.token != null &&
+          savedUser.token!.isNotEmpty) {
         _user = savedUser;
         _token = savedUser.token;
         _isAuthenticated = true;

@@ -41,17 +41,26 @@ class _OrderScreenState extends State<OrderScreen> {
     List<Pemesanan> filtered = allOrders;
 
     if (_selectedFilterStatus != 'all') {
-      filtered = filtered.where((order) => order.status.toLowerCase() == _selectedFilterStatus.toLowerCase()).toList();
+      filtered =
+          filtered
+              .where(
+                (order) =>
+                    order.status.toLowerCase() ==
+                    _selectedFilterStatus.toLowerCase(),
+              )
+              .toList();
     }
 
     final searchText = _searchController.text.toLowerCase();
     if (searchText.isNotEmpty) {
-      filtered = filtered.where((order) {
-        final destinasiName = order.destinasi.nama.toLowerCase();
-        final userName = order.user?.nama?.toLowerCase() ?? '';
+      filtered =
+          filtered.where((order) {
+            final destinasiName = order.destinasi.nama.toLowerCase();
+            final userName = order.user?.nama?.toLowerCase() ?? '';
 
-        return destinasiName.contains(searchText) || userName.contains(searchText);
-      }).toList();
+            return destinasiName.contains(searchText) ||
+                userName.contains(searchText);
+          }).toList();
     }
 
     return filtered;
@@ -59,15 +68,21 @@ class _OrderScreenState extends State<OrderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    print("Building OrderScreen");
     return Consumer<OrderProvider>(
       builder: (context, orderProvider, child) {
-        final List<Pemesanan> daftarPesanan = _filterOrders(orderProvider.orders);
+        final List<Pemesanan> daftarPesanan = _filterOrders(
+          orderProvider.orders,
+        );
 
         return Scaffold(
           appBar: AppBar(
             title: const Text(
               'Pesanan Saya',
-              style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
             ),
             backgroundColor: Colors.blue.shade600,
             elevation: 0,
@@ -77,15 +92,16 @@ class _OrderScreenState extends State<OrderScreen> {
                 onPressed: () {
                   showModalBottomSheet(
                     context: context,
-                    builder: (context) => FilterBottomSheet(
-                      initialStatus: _selectedFilterStatus,
-                      onFilterApplied: (status) {
-                        setState(() {
-                          _selectedFilterStatus = status;
-                        });
-                        Navigator.pop(context);
-                      },
-                    ),
+                    builder:
+                        (context) => FilterBottomSheet(
+                          initialStatus: _selectedFilterStatus,
+                          onFilterApplied: (status) {
+                            setState(() {
+                              _selectedFilterStatus = status;
+                            });
+                            Navigator.pop(context);
+                          },
+                        ),
                   );
                 },
               ),
@@ -94,7 +110,10 @@ class _OrderScreenState extends State<OrderScreen> {
           body: Column(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.blue.shade50,
                   borderRadius: const BorderRadius.only(
@@ -112,15 +131,16 @@ class _OrderScreenState extends State<OrderScreen> {
                           Icons.search,
                           color: Colors.blue.shade600,
                         ),
-                        suffixIcon: _searchController.text.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(Icons.clear),
-                                onPressed: () {
-                                  _searchController.clear();
-                                  setState(() {});
-                                },
-                              )
-                            : null,
+                        suffixIcon:
+                            _searchController.text.isNotEmpty
+                                ? IconButton(
+                                  icon: const Icon(Icons.clear),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    setState(() {});
+                                  },
+                                )
+                                : null,
                         filled: true,
                         fillColor: Colors.white,
                         border: OutlineInputBorder(
@@ -139,18 +159,26 @@ class _OrderScreenState extends State<OrderScreen> {
                       alignment: Alignment.centerLeft,
                       child: ListView(
                         scrollDirection: Axis.horizontal,
-                        children: [
-                          _buildStatusChip('all', 'Semua'),
-                          _buildStatusChip('pending', 'Pending'),
-                          _buildStatusChip('menunggu pembayaran', 'Menunggu Pembayaran'),
-                          _buildStatusChip('dibayar', 'Dibayar'),
-                          _buildStatusChip('diproses', 'Diproses'),
-                          _buildStatusChip('selesai', 'Selesai'),
-                          _buildStatusChip('dibatalkan', 'Dibatalkan'),
-                        ].map((chip) => Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
-                          child: chip,
-                        )).toList(),
+                        children:
+                            [
+                                  _buildStatusChip('all', 'Semua'),
+                                  _buildStatusChip('pending', 'Pending'),
+                                  _buildStatusChip(
+                                    'menunggu pembayaran',
+                                    'Menunggu Pembayaran',
+                                  ),
+                                  _buildStatusChip('dibayar', 'Dibayar'),
+                                  _buildStatusChip('diproses', 'Diproses'),
+                                  _buildStatusChip('selesai', 'Selesai'),
+                                  _buildStatusChip('dibatalkan', 'Dibatalkan'),
+                                ]
+                                .map(
+                                  (chip) => Padding(
+                                    padding: const EdgeInsets.only(right: 8.0),
+                                    child: chip,
+                                  ),
+                                )
+                                .toList(),
                       ),
                     ),
                   ],
@@ -160,51 +188,62 @@ class _OrderScreenState extends State<OrderScreen> {
 
               orderProvider.isLoading
                   ? const Expanded(
-                      child: Center(
-                        child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.blue)),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
                       ),
-                    )
+                    ),
+                  )
                   : orderProvider.errorMessage != null
-                          ? Expanded(
-                              child: Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.error_outline, size: 80, color: Colors.red.shade200),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      'Error: ${orderProvider.errorMessage}',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(color: Colors.red.shade700, fontSize: 16),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    ElevatedButton(
-                                      onPressed: _fetchOrders,
-                                      style: ElevatedButton.styleFrom(backgroundColor: Colors.blue.shade600),
-                                      child: const Text('Coba Lagi'),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            )
-                          : daftarPesanan.isEmpty
-                              ? _buildEmptyState(context)
-                              : Expanded(
-                                  child: RefreshIndicator(
-                                    onRefresh: _fetchOrders,
-                                    child: ListView.builder(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 8,
-                                      ),
-                                      itemCount: daftarPesanan.length,
-                                      itemBuilder: (context, index) {
-                                        final pesanan = daftarPesanan[index];
-                                        return _buildOrderCard(pesanan, context);
-                                      },
-                                    ),
-                                  ),
-                                ),
+                  ? Expanded(
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 80,
+                            color: Colors.red.shade200,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Error: ${orderProvider.errorMessage}',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.red.shade700,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: _fetchOrders,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue.shade600,
+                            ),
+                            child: const Text('Coba Lagi'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                  : daftarPesanan.isEmpty
+                  ? _buildEmptyState(context)
+                  : Expanded(
+                    child: RefreshIndicator(
+                      onRefresh: _fetchOrders,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        itemCount: daftarPesanan.length,
+                        itemBuilder: (context, index) {
+                          final pesanan = daftarPesanan[index];
+                          return _buildOrderCard(pesanan, context);
+                        },
+                      ),
+                    ),
+                  ),
             ],
           ),
         );
@@ -217,7 +256,10 @@ class _OrderScreenState extends State<OrderScreen> {
       label: Text(
         label,
         style: TextStyle(
-          color: _selectedFilterStatus == value ? Colors.white : Colors.blue.shade600,
+          color:
+              _selectedFilterStatus == value
+                  ? Colors.white
+                  : Colors.blue.shade600,
           fontSize: 12,
         ),
       ),
@@ -258,10 +300,7 @@ class _OrderScreenState extends State<OrderScreen> {
           const SizedBox(height: 24),
           ElevatedButton(
             onPressed: () {
-              Navigator.pushNamed(
-                context,
-                '/home',
-              );
+              Navigator.pushNamed(context, '/home');
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue.shade600,
@@ -319,7 +358,11 @@ class _OrderScreenState extends State<OrderScreen> {
           } else {
             // Bisa navigasi ke halaman detail pemesanan umum
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Detail pemesanan (jika ada) akan ditampilkan di sini.')),
+              const SnackBar(
+                content: Text(
+                  'Detail pemesanan (jika ada) akan ditampilkan di sini.',
+                ),
+              ),
             );
           }
         },
@@ -370,7 +413,10 @@ class _OrderScreenState extends State<OrderScreen> {
                           width: 80,
                           height: 80,
                           color: Colors.grey[200],
-                          child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                          child: const Icon(
+                            Icons.image_not_supported,
+                            color: Colors.grey,
+                          ),
                         );
                       },
                     ),
@@ -516,19 +562,18 @@ class _OrderScreenState extends State<OrderScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ReviewScreen(
-              pemesanan: pesanan,
-              destinasi: pesanan.destinasi,
-            ),
+            builder:
+                (context) => ReviewScreen(
+                  pemesanan: pesanan,
+                  destinasi: pesanan.destinasi,
+                ),
           ),
         );
       },
       style: OutlinedButton.styleFrom(
         foregroundColor: Colors.blue.shade600,
         side: BorderSide(color: Colors.blue.shade200),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         padding: const EdgeInsets.symmetric(horizontal: 12),
       ),
       child: const Text('Beri Ulasan'),
@@ -540,31 +585,41 @@ class _OrderScreenState extends State<OrderScreen> {
           children: [
             OutlinedButton(
               onPressed: () async {
-                final confirmCancel = await showDialog<bool>(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: const Text('Batalkan Pemesanan?'),
-                    content: const Text('Apakah Anda yakin ingin membatalkan pemesanan ini? Kursi akan dikembalikan ke tersedia.'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(ctx).pop(false),
-                        child: const Text('Tidak'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.of(ctx).pop(true),
-                        child: const Text('Ya'),
-                      ),
-                    ],
-                  ),
-                ) ?? false;
+                final confirmCancel =
+                    await showDialog<bool>(
+                      context: context,
+                      builder:
+                          (ctx) => AlertDialog(
+                            title: const Text('Batalkan Pemesanan?'),
+                            content: const Text(
+                              'Apakah Anda yakin ingin membatalkan pemesanan ini? Kursi akan dikembalikan ke tersedia.',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(ctx).pop(false),
+                                child: const Text('Tidak'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.of(ctx).pop(true),
+                                child: const Text('Ya'),
+                              ),
+                            ],
+                          ),
+                    ) ??
+                    false;
 
                 if (confirmCancel) {
                   showDialog(
                     context: context,
                     barrierDismissible: false,
-                    builder: (ctx) => const Center(
-                      child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.red)),
-                    ),
+                    builder:
+                        (ctx) => const Center(
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.red,
+                            ),
+                          ),
+                        ),
                   );
                   try {
                     await PemesananService.cancelPemesanan(pesanan.id);
@@ -583,7 +638,9 @@ class _OrderScreenState extends State<OrderScreen> {
                       Navigator.of(context).pop();
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Gagal membatalkan pemesanan: ${e.toString()}'),
+                          content: Text(
+                            'Gagal membatalkan pemesanan: ${e.toString()}',
+                          ),
                           backgroundColor: Colors.red,
                         ),
                       );
@@ -607,9 +664,7 @@ class _OrderScreenState extends State<OrderScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => PembayaranScreen(
-                      pemesanan: pesanan,
-                    ),
+                    builder: (context) => PembayaranScreen(pemesanan: pesanan),
                   ),
                 );
               },
@@ -809,7 +864,10 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
       backgroundColor: Colors.white,
       side: BorderSide(color: Colors.blue.shade200),
       labelStyle: TextStyle(
-        color: _selectedStatus == value ? Colors.blue.shade800 : Colors.grey.shade700,
+        color:
+            _selectedStatus == value
+                ? Colors.blue.shade800
+                : Colors.grey.shade700,
       ),
     );
   }
