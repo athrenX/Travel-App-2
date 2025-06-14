@@ -1,3 +1,5 @@
+// lib/services/pemesanan_service.dart
+
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -10,7 +12,9 @@ class PemesananService {
 
   static Future<Map<String, String>> _getHeaders() async {
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('auth_token');
+    final token = prefs.getString(
+      'auth_token',
+    ); // Pastikan kunci token yang disimpan adalah 'auth_token'
     return {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -19,7 +23,9 @@ class PemesananService {
   }
 
   static Future<Pemesanan> createPemesanan(Pemesanan pemesanan) async {
-    final url = Uri.parse('$_baseUrl/api/pemesanans');
+    final url = Uri.parse(
+      '$_baseUrl/api/pemesanans',
+    ); // Menggunakan /api/pemesanans
     try {
       final response = await http.post(
         url,
@@ -30,7 +36,6 @@ class PemesananService {
       final Map<String, dynamic> responseData = json.decode(response.body);
 
       if (response.statusCode == 201) {
-        // 201 Created
         if (responseData['status'] == 'success') {
           return Pemesanan.fromMap(responseData['data']);
         } else {
@@ -39,10 +44,8 @@ class PemesananService {
           );
         }
       } else if (response.statusCode == 422) {
-        // Validation error
         throw Exception('Validation Error: ${responseData['errors']}');
       } else if (response.statusCode == 409) {
-        // Conflict
         throw Exception('Conflict: ${responseData['message']}');
       } else {
         throw Exception(
@@ -62,15 +65,13 @@ class PemesananService {
       throw Exception('Token tidak ditemukan atau belum login.');
     }
 
-    final url = Uri.parse('$_baseUrl/api/my-pemesanans');
+    final url = Uri.parse(
+      '$_baseUrl/api/my-pemesanans',
+    ); // Menggunakan /api/my-pemesanans
     try {
       final response = await http.get(
         url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: await _getHeaders(), // Menggunakan _getHeaders()
       );
 
       print("getMyPemesananan status: ${response.statusCode}");
@@ -99,10 +100,44 @@ class PemesananService {
     }
   }
 
+  // >>> BARU: Metode untuk mengambil semua pesanan (khusus admin)
+  static Future<List<Pemesanan>> getAllPemesananForAdmin() async {
+    final url = Uri.parse(
+      '$_baseUrl/api/pemesanans',
+    ); // Menggunakan /api/pemesanans untuk admin
+    try {
+      final response = await http.get(url, headers: await _getHeaders());
+
+      print("getAllPemesananForAdmin status: ${response.statusCode}");
+      print("getAllPemesananForAdmin body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = json.decode(response.body);
+        if (responseData['status'] == 'success') {
+          final List<dynamic> pemesananList = responseData['data'];
+          return pemesananList.map((json) => Pemesanan.fromMap(json)).toList();
+        } else {
+          throw Exception(
+            'Failed to load all pemesanans for admin: ${responseData['message']}',
+          );
+        }
+      } else if (response.statusCode == 403) {
+        throw Exception('Akses ditolak (403). Anda bukan admin.');
+      } else {
+        throw Exception(
+          'Failed to load all pemesanans for admin. Status code: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      print('Error in getAllPemesananForAdmin: $e');
+      rethrow;
+    }
+  }
+
   static Future<Pemesanan> confirmPayment(String pemesananId) async {
     final url = Uri.parse(
       '$_baseUrl/api/pemesanans/$pemesananId/confirm-payment',
-    );
+    ); // Menggunakan /api/pemesanans
     try {
       final response = await http.post(url, headers: await _getHeaders());
 
@@ -117,10 +152,8 @@ class PemesananService {
           );
         }
       } else if (response.statusCode == 409) {
-        // Conflict (e.g., already paid or expired)
         throw Exception('Conflict: ${responseData['message']}');
       } else if (response.statusCode == 410) {
-        // Gone (expired)
         throw Exception('Expired: ${responseData['message']}');
       } else {
         throw Exception(
@@ -134,7 +167,9 @@ class PemesananService {
   }
 
   static Future<Pemesanan> cancelPemesanan(String pemesananId) async {
-    final url = Uri.parse('$_baseUrl/api/pemesanans/$pemesananId/cancel');
+    final url = Uri.parse(
+      '$_baseUrl/api/pemesanans/$pemesananId/cancel',
+    ); // Menggunakan /api/pemesanans
     try {
       final response = await http.post(url, headers: await _getHeaders());
 
@@ -149,10 +184,8 @@ class PemesananService {
           );
         }
       } else if (response.statusCode == 403) {
-        // Forbidden
         throw Exception('Forbidden: ${responseData['message']}');
       } else if (response.statusCode == 409) {
-        // Conflict
         throw Exception('Conflict: ${responseData['message']}');
       } else {
         throw Exception(
@@ -161,6 +194,50 @@ class PemesananService {
       }
     } catch (e) {
       print('Error in cancelPemesanan: $e');
+      rethrow;
+    }
+  }
+
+  // >>> BARU: Metode untuk admin memperbarui status pemesanan
+  static Future<Pemesanan> updatePemesananStatus(
+    String pemesananId,
+    String newStatus,
+  ) async {
+    final url = Uri.parse(
+      '$_baseUrl/api/pemesanans/$pemesananId',
+    ); // Menggunakan /api/pemesanans
+    try {
+      final response = await http.put(
+        url,
+        headers: await _getHeaders(),
+        body: json.encode({'status': newStatus}),
+      );
+
+      final Map<String, dynamic> responseData = json.decode(response.body);
+
+      if (response.statusCode == 200) {
+        if (responseData['status'] == 'success') {
+          return Pemesanan.fromMap(responseData['data']);
+        } else {
+          throw Exception(
+            'Failed to update order status: ${responseData['message']}',
+          );
+        }
+      } else if (response.statusCode == 422) {
+        // Validation error
+        throw Exception('Validation Error: ${responseData['errors']}');
+      } else if (response.statusCode == 403) {
+        // Forbidden (not admin)
+        throw Exception(
+          'Akses ditolak (403). Anda tidak memiliki izin untuk memperbarui status ini.',
+        );
+      } else {
+        throw Exception(
+          'Failed to update order status. Status code: ${response.statusCode}, Message: ${responseData['message'] ?? response.body}',
+        );
+      }
+    } catch (e) {
+      print('Error in updatePemesananStatus: $e');
       rethrow;
     }
   }
