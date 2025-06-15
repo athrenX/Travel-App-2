@@ -5,13 +5,14 @@ import 'package:travelapp/providers/wishlist_provider.dart';
 import 'package:travelapp/screens/user/pemilihan_kendaraan_screen.dart';
 import 'package:travelapp/screens/auth/login_screen.dart'; // Ensure this import points to the correct path
 import 'package:travelapp/providers/auth_provider.dart'; // Add this import for AuthProvider
+import 'package:travelapp/providers/review_provider.dart'; // <-- Add this import
+import 'package:travelapp/models/review.dart'; // <-- Add this import for Review model
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' as latlng2;
 import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:geolocator/geolocator.dart';
-
 
 class DetailDestinasiScreen extends StatefulWidget {
   final Destinasi destinasi;
@@ -69,10 +70,10 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
 
   @override
   void initState() {
-    _getCurrentLocation();
     super.initState();
-    // Check if the destination is in wishlist when screen loads
+    _getCurrentLocation();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Cek wishlist
       final wishlistProvider = Provider.of<WishlistProvider>(
         context,
         listen: false,
@@ -80,16 +81,40 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
       setState(() {
         _isInWishlist = wishlistProvider.isInWishlist(widget.destinasi.id);
       });
+
+      // Fetch review destinasi
+      final reviewProvider = Provider.of<ReviewProvider>(
+        context,
+        listen: false,
+      );
+      reviewProvider.fetchReviewsByDestinasi(widget.destinasi.id);
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final reviewProvider = Provider.of<ReviewProvider>(context);
+    final List<Review> reviews = reviewProvider.getReviewsByDestinasi(
+      widget.destinasi.id,
+    );
+    print('Reviews: $reviews');
+
     final destinasi = widget.destinasi;
     final theme = Theme.of(context);
     final wishlistProvider = Provider.of<WishlistProvider>(context);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final screenWidth = MediaQuery.of(context).size.width;
+
+    final int totalReview = reviews.length;
+    double avgRating = 0.0;
+    if (reviews.isNotEmpty) {
+      avgRating =
+          reviews.map((r) => r.rating).reduce((a, b) => a + b) / reviews.length;
+    }
+
+    final List<Review> latestReviews = List.from(reviews)
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final shownReviews = latestReviews.take(4).toList();
 
     return Scaffold(
       body: CustomScrollView(
@@ -1017,19 +1042,31 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                   ),
                 ),
                 // Reviews Section
+                // Reviews Section
                 Container(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          const Text(
-                            'Review Pengguna',
+                          Icon(Icons.star, color: Colors.amber, size: 28),
+                          const SizedBox(width: 4),
+                          Text(
+                            avgRating.toStringAsFixed(1),
                             style: TextStyle(
-                              fontSize: 18,
                               fontWeight: FontWeight.bold,
+                              fontSize: 22,
+                              color: Colors.blue.shade800,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '($totalReview review)',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade600,
                             ),
                           ),
                         ],
@@ -1048,23 +1085,36 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                             ),
                           ],
                         ),
-                        child: Column(
-                          children: [
-                            ReviewCard(
-                              name: 'Ayu',
-                              rating: 5,
-                              comment: 'Sangat indah dan memuaskan!',
-                              date: '2 hari yang lalu',
-                            ),
-                            const Divider(height: 1),
-                            ReviewCard(
-                              name: 'Budi',
-                              rating: 4,
-                              comment: 'Cocok buat healing. Recommended!',
-                              date: '1 minggu yang lalu',
-                            ),
-                          ],
-                        ),
+                        child:
+                            shownReviews.isEmpty
+                                ? Padding(
+                                  padding: const EdgeInsets.all(24),
+                                  child: Center(
+                                    child: Text(
+                                      'Belum ada review untuk destinasi ini.',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade600,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                                : Column(
+                                  children:
+                                      shownReviews
+                                          .map(
+                                            (review) => ReviewCard(
+                                              name: review.userName,
+                                              rating: review.rating,
+                                              comment: review.comment,
+                                              date: DateFormat(
+                                                'd MMM yyyy',
+                                                'id_ID',
+                                              ).format(review.createdAt),
+                                            ),
+                                          )
+                                          .toList(),
+                                ),
                       ),
                     ],
                   ),
@@ -1117,7 +1167,7 @@ class ReviewCard extends StatelessWidget {
               CircleAvatar(
                 backgroundColor: Colors.blue.shade100,
                 child: Text(
-                  name[0],
+                  (name.isNotEmpty ? name[0] : '?').toUpperCase(),
                   style: TextStyle(
                     color: Colors.blue.shade800,
                     fontWeight: FontWeight.bold,
@@ -1135,6 +1185,7 @@ class ReviewCard extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                     Row(
                       children: [
