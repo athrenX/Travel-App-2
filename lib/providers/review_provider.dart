@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:travelapp/models/review.dart';
 import 'package:http/http.dart' as http;
-import 'package:travelapp/services/review_service.dart';
 import 'dart:convert';
 
 class ReviewProvider with ChangeNotifier {
@@ -9,80 +8,200 @@ class ReviewProvider with ChangeNotifier {
   String? _errorMessage;
   bool _isLoading = false;
 
-  // Getter untuk semua review
-
   String? get errorMessage => _errorMessage;
   bool get isLoading => _isLoading;
 
-  // GET Review khusus destinasi tertentu
   List<Review> getReviewsByDestinasi(String destinasiId) {
     return _reviews[destinasiId] ?? [];
   }
 
-  final String baseUrl = 'http://192.168.1.14:8000/api'; // ganti sesuai backend
+  final String baseUrl = 'http://192.168.1.4:8000/api';
 
-  // POST Review baru
-  Future<void> postReview(Review review, String token) async {
+  Future<void> postReview(
+    String userId,
+    String destinasiId,
+    String orderId,
+    String userName,
+    String comment,
+    int ratingValue,
+    String token,
+  ) async {
+    _isLoading = true;
+    // notifyListeners(); // Baris ini sudah dihapus dengan benar
+
     final url = Uri.parse('$baseUrl/reviews');
-    final response = await http.post(
-      url,
-      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
-      body: {
-        'user_id': review.userId,
-        'destinasi_id': review.destinasiId.toString(),
-        'order_id': review.orderId,
-        'user_name': review.userName,
-        'rating': review.rating.toString(),
-        'comment': review.comment,
-      },
-    );
-    if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception('Gagal menyimpan review');
-    }
-    notifyListeners();
-  }
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'user_id': userId,
+          'destinasi_id': destinasiId,
+          'order_id': orderId,
+          'user_name': userName,
+          'comment': comment,
+          'rating': ratingValue,
+        }),
+      );
 
-  // PUT Update Review
-  Future<void> updateReview(Review review, String token) async {
-    final url = Uri.parse('$baseUrl/reviews/${review.id}');
-    final response = await http.put(
-      url,
-      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
-      body: {'rating': review.rating.toString(), 'comment': review.comment},
-    );
-    if (response.statusCode != 200) {
-      throw Exception('Gagal update review');
-    }
-    notifyListeners();
-  }
-
-  // GET Review by Order ID
-  Future<Review?> fetchReviewByOrder(String orderId, String token) async {
-    final url = Uri.parse('$baseUrl/reviews/order/$orderId');
-    final response = await http.get(
-      url,
-      headers: {'Authorization': 'Bearer $token'},
-    );
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body)['review'];
-      if (data != null) {
-        return Review.fromJson(data);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        await fetchReviewsByDestinasi(destinasiId, token);
+      } else {
+        _errorMessage =
+            'Gagal menyimpan review: ${response.statusCode} ${response.body}';
+        throw Exception(_errorMessage);
       }
+    } catch (e) {
+      _errorMessage = 'Terjadi kesalahan jaringan saat menyimpan review: $e';
+      throw Exception(_errorMessage);
+    } finally {
+      _isLoading = false;
+      notifyListeners(); // Ini tetap ada dan benar di sini
+    }
+  }
+
+  Future<void> updateReview(
+    String reviewId,
+    String comment,
+    int ratingValue,
+    String token,
+  ) async {
+    _isLoading = true;
+    // notifyListeners(); // Baris ini sudah dihapus dengan benar
+
+    final url = Uri.parse('$baseUrl/reviews/$reviewId');
+    try {
+      final response = await http.put(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'comment': comment, 'rating': ratingValue}),
+      );
+
+      if (response.statusCode == 200) {
+        final updatedReviewData = jsonDecode(response.body)['review'];
+        if (updatedReviewData != null &&
+            updatedReviewData['destinasi_id'] != null) {
+          await fetchReviewsByDestinasi(
+            updatedReviewData['destinasi_id'].toString(),
+            token,
+          );
+        } else {
+          debugPrint(
+            'Warning: destinasi_id not found in update review response. Cannot refresh specific reviews.',
+          );
+        }
+      } else {
+        _errorMessage =
+            'Gagal update review: ${response.statusCode} ${response.body}';
+        throw Exception(_errorMessage);
+      }
+    } catch (e) {
+      _errorMessage = 'Terjadi kesalahan jaringan saat update review: $e';
+      throw Exception(_errorMessage);
+    } finally {
+      _isLoading = false;
+      notifyListeners(); // Ini tetap ada dan benar di sini
+    }
+  }
+
+  Future<Review?> fetchReviewByOrder(String orderId, String token) async {
+    _isLoading = true;
+    // notifyListeners(); // Baris ini sudah dihapus dengan benar
+
+    final url = Uri.parse('$baseUrl/reviews/order/$orderId');
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body)['review'];
+        if (data != null) {
+          return Review.fromJson(data);
+        }
+      } else if (response.statusCode == 404) {
+        debugPrint('Review for order $orderId not found.');
+        return null;
+      } else {
+        _errorMessage =
+            'Gagal memuat review berdasarkan order ID: ${response.statusCode} ${response.body}';
+        throw Exception(_errorMessage);
+      }
+    } catch (e) {
+      _errorMessage =
+          'Terjadi kesalahan jaringan saat memuat review by order: $e';
+      throw Exception(_errorMessage);
+    } finally {
+      _isLoading = false;
+      notifyListeners(); // Ini tetap ada dan benar di sini
     }
     return null;
   }
 
-  Future<void> fetchReviewsByDestinasi(String destinasiId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/destinasis/$destinasiId/reviews'),
-    );
-    if (response.statusCode == 200) {
-      List data = jsonDecode(response.body);
-      _reviews[destinasiId] =
-          data.map((json) => Review.fromJson(json)).toList();
-      notifyListeners();
+  Future<void> fetchReviewsByDestinasi(
+    String destinasiId,
+    String? token,
+  ) async {
+    _isLoading = true;
+    _errorMessage = null;
+    // notifyListeners(); // Baris ini sudah dihapus dengan benar
+
+    Map<String, String> headers = {'Accept': 'application/json'};
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    } else {
+      debugPrint(
+        'Warning: No authentication token provided for fetching reviews. Request might fail if route is protected.',
+      );
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/destinasis/$destinasiId/reviews'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        List data = jsonDecode(response.body);
+        _reviews[destinasiId] =
+            data.map((json) => Review.fromJson(json)).toList();
+        debugPrint(
+          'Reviews for $destinasiId: ${_reviews[destinasiId]?.length} items',
+        );
+        _reviews[destinasiId]?.forEach((review) {
+          debugPrint(
+            '  - Review: ${review.userName}, Rating: ${review.rating}, Comment: ${review.comment}, Profile: ${review.userProfilePictureUrl}',
+          ); // Tambahkan debug foto profil
+        });
+      } else if (response.statusCode == 404) {
+        _reviews[destinasiId] = [];
+        _errorMessage = 'No reviews found for this destination.';
+        debugPrint('No reviews found for $destinasiId. Status: 404');
+      } else {
+        _errorMessage =
+            'Gagal memuat review destinasi: ${response.statusCode} ${response.body}';
+        throw Exception(_errorMessage);
+      }
+    } catch (e) {
+      _errorMessage =
+          'Terjadi kesalahan jaringan saat memuat review destinasi: $e';
+      debugPrint('Network error fetching reviews: $e');
+      throw Exception(_errorMessage);
+    } finally {
+      _isLoading = false;
+      notifyListeners(); // Ini tetap ada dan benar di sini
     }
   }
-
-  // Lokasi penyimpanan review lokal bisa menggunakan Map/Cache sesuai kebutuhan.
 }

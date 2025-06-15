@@ -7,6 +7,8 @@ class Review {
   final int rating;
   final String comment;
   final DateTime createdAt;
+  final String?
+  userProfilePictureUrl; // Ini akan menerima URL LENGKAP dari backend
 
   Review({
     required this.id,
@@ -17,18 +19,23 @@ class Review {
     required this.rating,
     required this.comment,
     required this.createdAt,
+    this.userProfilePictureUrl,
   });
 
   factory Review.fromJson(Map<String, dynamic> json) {
     return Review(
-      id: json['id'].toString(),
-      userId: json['user_id'].toString(),
-      destinasiId: int.parse(json['destinasi_id'].toString()),
-      orderId: json['order_id'].toString(),
-      userName: json['user_name'],
-      rating: int.parse(json['rating'].toString()),
-      comment: json['comment'],
-      createdAt: DateTime.parse(json['created_at']),
+      id: json['id']?.toString() ?? '',
+      userId: json['user_id']?.toString() ?? '',
+      destinasiId: int.tryParse(json['destinasi_id']?.toString() ?? '0') ?? 0,
+      orderId: json['order_id']?.toString() ?? '',
+      userName: json['user_name'] ?? '',
+      rating: int.tryParse(json['rating']?.toString() ?? '0') ?? 0,
+      comment: json['comment'] ?? '',
+      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
+      // PASTIKAN PARSING user_profile_picture_url DI SINI DENGAN SANGAT HATI-HATI
+      userProfilePictureUrl:
+          json['user_profile_picture_url']?.toString() ??
+          '', // <-- Perbaikan di sini
     );
   }
 
@@ -41,7 +48,8 @@ class Review {
       "user_name": userName,
       "rating": rating,
       "comment": comment,
-      "created_at": createdAt.toIso8601String(), // Format tanggal ke string ISO
+      "created_at": createdAt.toIso8601String(),
+      "user_profile_picture_url": userProfilePictureUrl,
     };
   }
 }

@@ -2,20 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:travelapp/models/destinasi.dart';
 import 'package:travelapp/providers/wishlist_provider.dart';
-import 'package:travelapp/screens/user/pemilihan_kendaraan_screen.dart';
-import 'package:travelapp/screens/auth/login_screen.dart'; // Ensure this import points to the correct path
-import 'package:travelapp/providers/auth_provider.dart'; // Add this import for AuthProvider
-import 'package:travelapp/providers/review_provider.dart'; // <-- Add this import
-import 'package:travelapp/models/review.dart'; // <-- Add this import for Review model
 import 'package:travelapp/screens/user/pilih_waktu_keberangkatan_screen.dart'; // Import the new screen
 import 'package:travelapp/screens/auth/login_screen.dart';
 import 'package:travelapp/providers/auth_provider.dart';
+// Import ReviewProvider dan model Review
+import 'package:travelapp/providers/review_provider.dart';
+import 'package:travelapp/models/review.dart';
+
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' as latlng2;
 import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter/scheduler.dart';
+import 'package:flutter/scheduler.dart'; // Penting untuk WidgetsBinding.instance.addPostFrameCallback
 import 'package:geolocator/geolocator.dart';
+
+// Asumsi Anda memiliki DestinasiProvider jika ingin me-refresh detail destinasi
+// import 'package:travelapp/providers/destinasi_provider.dart';
 
 class DetailDestinasiScreen extends StatefulWidget {
   final Destinasi destinasi;
@@ -32,6 +34,9 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
   double _currentZoom = 13.0;
   final ScrollController _scrollController = ScrollController();
   bool _isInWishlist = false;
+
+  late Destinasi
+  _displayDestinasi; // Variabel untuk menyimpan objek destinasi yang bisa diperbarui
 
   String formatRupiah(num nominal) {
     final formatter = NumberFormat.currency(
@@ -60,60 +65,101 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
         desiredAccuracy: LocationAccuracy.high,
       );
 
-      setState(() {
-        _currentPosition = latlng2.LatLng(
-          position.latitude,
-          position.longitude,
-        );
-      });
+      if (mounted) {
+        // Pengecekan mounted
+        setState(() {
+          _currentPosition = latlng2.LatLng(
+            position.latitude,
+            position.longitude,
+          );
+        });
+      }
     } catch (e) {
       debugPrint('Error getting location: $e');
+    }
+  }
+
+  // Fungsi untuk memuat semua data yang relevan: review, wishlist, dan mungkin detail destinasi
+  Future<void> _loadAllData() async {
+    final reviewProvider = Provider.of<ReviewProvider>(context, listen: false);
+    final wishlistProvider = Provider.of<WishlistProvider>(
+      context,
+      listen: false,
+    );
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+    final String? token = authProvider.token;
+
+    // Pastikan token tersedia sebelum memuat review
+    if (token == null || token.isEmpty) {
+      debugPrint('Authentication token is missing. Cannot fetch reviews.');
+      // Opsi: tampilkan snackbar atau arahkan ke login jika tidak otentikasi
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Anda perlu login untuk melihat ulasan.'),
+          ),
+        );
+      }
+      return; // Hentikan proses jika token tidak ada
+    }
+
+    await reviewProvider.fetchReviewsByDestinasi(widget.destinasi.id, token);
+
+    // TODO: Refresh data destinasi untuk mendapatkan rating terbaru (Jika Anda memiliki DestinasiProvider)
+    // Destinasi? updatedDestinasi;
+    // try {
+    //   // Asumsi ada DestinasiProvider dan method fetchDestinasiById yang mengembalikan Destinasi
+    //   final destinasiProvider = Provider.of<DestinasiProvider>(context, listen: false);
+    //   updatedDestinasi = await destinasiProvider.fetchDestinasiById(widget.destinasi.id);
+    //   if (mounted) {
+    //     setState(() {
+    //       _displayDestinasi = updatedDestinasi!; // Update destinasi yang ditampilkan
+    //     });
+    //   }
+    // } catch (e) {
+    //   debugPrint('Failed to refresh destinasi data: $e');
+    //   // Handle error fetching updated destinasi
+    // }
+
+    if (mounted) {
+      setState(() {
+        _isInWishlist = wishlistProvider.isInWishlist(widget.destinasi.id);
+      });
     }
   }
 
   @override
   void initState() {
     super.initState();
+    _displayDestinasi = widget.destinasi;
     _getCurrentLocation();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Cek wishlist
-      final wishlistProvider = Provider.of<WishlistProvider>(
-        context,
-        listen: false,
-      );
-      setState(() {
-        _isInWishlist = wishlistProvider.isInWishlist(widget.destinasi.id);
-      });
 
-      // Fetch review destinasi
-      final reviewProvider = Provider.of<ReviewProvider>(
-        context,
-        listen: false,
-      );
-      reviewProvider.fetchReviewsByDestinasi(widget.destinasi.id);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadAllData();
     });
+  }
+
+  void _onScreenResumed() {
+    _loadAllData();
   }
 
   @override
   Widget build(BuildContext context) {
-    final reviewProvider = Provider.of<ReviewProvider>(context);
+    final reviewProvider = Provider.of<ReviewProvider>(context); // listen: true
     final List<Review> reviews = reviewProvider.getReviewsByDestinasi(
       widget.destinasi.id,
     );
-    print('Reviews: $reviews');
 
-    final destinasi = widget.destinasi;
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+    final currentDestinasi = _displayDestinasi;
     final theme = Theme.of(context);
     final wishlistProvider = Provider.of<WishlistProvider>(context);
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
     final screenWidth = MediaQuery.of(context).size.width;
 
     final int totalReview = reviews.length;
-    double avgRating = 0.0;
-    if (reviews.isNotEmpty) {
-      avgRating =
-          reviews.map((r) => r.rating).reduce((a, b) => a + b) / reviews.length;
-    }
 
     final List<Review> latestReviews = List.from(reviews)
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
@@ -134,7 +180,7 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                 fit: StackFit.expand,
                 children: [
                   Hero(
-                    tag: 'destinasi-${destinasi.nama}',
+                    tag: 'destinasi-${currentDestinasi.nama}',
                     child: GestureDetector(
                       onTap: () {
                         showDialog(
@@ -142,13 +188,16 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                           builder:
                               (_) => Dialog(
                                 child: Image.network(
-                                  destinasi.gambar,
+                                  currentDestinasi.gambar,
                                   fit: BoxFit.contain,
                                 ),
                               ),
                         );
                       },
-                      child: Image.network(destinasi.gambar, fit: BoxFit.cover),
+                      child: Image.network(
+                        currentDestinasi.gambar,
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
                   Positioned(
@@ -180,11 +229,11 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                 ),
                 onPressed: () {
                   Share.share(
-                    'Yuk jelajahi ${destinasi.nama} di Java Wonderland! 🌍\n\n'
-                    'Lokasi: ${destinasi.lokasi}\n'
-                    'Kategori: ${destinasi.kategori}\n'
-                    'Harga: Rp ${destinasi.harga}\n\n'
-                    'Deskripsi: ${destinasi.deskripsi}',
+                    'Yuk jelajahi ${currentDestinasi.nama} di Java Wonderland! 🌍\n\n'
+                    'Lokasi: ${currentDestinasi.lokasi}\n'
+                    'Kategori: ${currentDestinasi.kategori}\n'
+                    'Harga: Rp ${currentDestinasi.harga}\n\n'
+                    'Deskripsi: ${currentDestinasi.deskripsi}',
                     subject: 'Rekomendasi Wisata Java Wonderland',
                   );
                 },
@@ -199,61 +248,74 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                 ),
                 onPressed: () async {
                   if (!authProvider.isAuthenticated) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text(
-                          'Silakan login untuk mengakses wishlist',
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text(
+                            'Silakan login untuk mengakses wishlist',
+                          ),
+                          duration: const Duration(seconds: 2),
+                          action: SnackBarAction(
+                            label: 'Login',
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => LoginScreen(),
+                                ),
+                              );
+                            },
+                          ),
                         ),
-                        duration: const Duration(seconds: 2),
-                        action: SnackBarAction(
-                          label: 'Login',
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => LoginScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    );
+                      );
+                    }
                     return;
                   }
 
                   try {
-                    if (_isInWishlist) {
-                      await wishlistProvider.removeWishlist(destinasi.id);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            '${destinasi.nama} dihapus dari wishlist',
-                          ),
-                          duration: const Duration(seconds: 2),
-                        ),
+                    if (wishlistProvider.isInWishlist(currentDestinasi.id)) {
+                      await wishlistProvider.removeWishlist(
+                        currentDestinasi.id,
                       );
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              '${currentDestinasi.nama} dihapus dari wishlist',
+                            ),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      }
                     } else {
-                      await wishlistProvider.addWishlist(destinasi.id);
+                      await wishlistProvider.addWishlist(currentDestinasi.id);
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              '${currentDestinasi.nama} ditambahkan ke wishlist',
+                            ),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    }
+                    if (mounted) {
+                      setState(() {
+                        _isInWishlist = wishlistProvider.isInWishlist(
+                          currentDestinasi.id,
+                        );
+                      });
+                    }
+                  } catch (e) {
+                    if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(
-                            '${destinasi.nama} ditambahkan ke wishlist',
-                          ),
+                          content: Text('Terjadi kesalahan: ${e.toString()}'),
                           duration: const Duration(seconds: 2),
                         ),
                       );
                     }
-                    // Update lokal state setelah operasi provider selesai
-                    setState(() {
-                      _isInWishlist = !_isInWishlist;
-                    });
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Terjadi kesalahan: ${e.toString()}'),
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
                   }
                 },
               ),
@@ -280,7 +342,7 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  destinasi.nama,
+                                  currentDestinasi.nama,
                                   style: theme.textTheme.headlineMedium
                                       ?.copyWith(
                                         fontWeight: FontWeight.bold,
@@ -291,14 +353,16 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                 Container(
                                   decoration: BoxDecoration(
                                     color:
-                                        destinasi.kategori.toLowerCase() ==
+                                        currentDestinasi.kategori
+                                                    .toLowerCase() ==
                                                 'gunung'
                                             ? Colors.green.shade50
                                             : Colors.blue.shade50,
                                     borderRadius: BorderRadius.circular(16),
                                     border: Border.all(
                                       color:
-                                          destinasi.kategori.toLowerCase() ==
+                                          currentDestinasi.kategori
+                                                      .toLowerCase() ==
                                                   'gunung'
                                               ? Colors.green.shade300
                                               : Colors.blue.shade300,
@@ -310,10 +374,11 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                     vertical: 4,
                                   ),
                                   child: Text(
-                                    destinasi.kategori,
+                                    currentDestinasi.kategori,
                                     style: TextStyle(
                                       color:
-                                          destinasi.kategori.toLowerCase() ==
+                                          currentDestinasi.kategori
+                                                      .toLowerCase() ==
                                                   'gunung'
                                               ? Colors.green.shade700
                                               : Colors.blue.shade700,
@@ -341,10 +406,11 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                     color: Colors.amber,
                                     size: 20,
                                   ),
-                                  const SizedBox(width: 4),
                                   Flexible(
                                     child: Text(
-                                      destinasi.rating.toString(),
+                                      currentDestinasi.rating.toStringAsFixed(
+                                        1,
+                                      ),
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
@@ -387,7 +453,7 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    formatRupiah(destinasi.harga),
+                                    formatRupiah(currentDestinasi.harga),
                                     style: TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,
@@ -402,17 +468,16 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                 child: ElevatedButton.icon(
                                   icon: const Icon(Icons.directions_car),
                                   onPressed: () {
-                                    // NAVIGATE TO NEW SCREEN HERE
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
                                         builder:
                                             (context) =>
                                                 PilihWaktuKeberangkatanScreen(
-                                                  destinasi: destinasi,
+                                                  destinasi: currentDestinasi,
                                                 ),
                                       ),
-                                    );
+                                    ).then((_) => _onScreenResumed());
                                   },
                                   label: const Text('Pesan'),
                                   style: ElevatedButton.styleFrom(
@@ -455,7 +520,7 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      formatRupiah(destinasi.harga),
+                                      formatRupiah(currentDestinasi.harga),
                                       style: TextStyle(
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold,
@@ -472,17 +537,16 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                 child: ElevatedButton.icon(
                                   icon: const Icon(Icons.directions_car),
                                   onPressed: () {
-                                    // NAVIGATE TO NEW SCREEN HERE
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
                                         builder:
                                             (context) =>
                                                 PilihWaktuKeberangkatanScreen(
-                                                  destinasi: destinasi,
+                                                  destinasi: currentDestinasi,
                                                 ),
                                       ),
-                                    );
+                                    ).then((_) => _onScreenResumed());
                                   },
                                   label: const Text('Pesan'),
                                   style: ElevatedButton.styleFrom(
@@ -553,7 +617,7 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                           ],
                         ),
                         child: Text(
-                          destinasi.deskripsi,
+                          currentDestinasi.deskripsi,
                           textAlign: TextAlign.justify,
                           style: const TextStyle(
                             fontSize: 15,
@@ -596,14 +660,14 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                         height: 160,
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
-                          itemCount: destinasi.galeri.length,
+                          itemCount: currentDestinasi.galeri.length,
                           padding: const EdgeInsets.symmetric(horizontal: 4),
                           physics: const BouncingScrollPhysics(),
                           clipBehavior: Clip.none,
                           separatorBuilder:
                               (_, __) => const SizedBox(width: 16),
                           itemBuilder: (context, index) {
-                            final imageUrl = destinasi.galeri[index];
+                            final imageUrl = currentDestinasi.galeri[index];
                             return GestureDetector(
                               onTap: () {
                                 showDialog(
@@ -617,7 +681,7 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                           children: [
                                             Hero(
                                               tag:
-                                                  'gallery-${destinasi.nama}-$index',
+                                                  'gallery-${currentDestinasi.nama}-$index',
                                               child: ClipRRect(
                                                 borderRadius:
                                                     BorderRadius.circular(16),
@@ -770,7 +834,7 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                 );
                               },
                               child: Hero(
-                                tag: 'gallery-${destinasi.nama}-$index',
+                                tag: 'gallery-${currentDestinasi.nama}-$index',
                                 child: Container(
                                   width: 180,
                                   decoration: BoxDecoration(
@@ -959,8 +1023,8 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                           mapController: _mapController,
                           options: MapOptions(
                             initialCenter: latlng2.LatLng(
-                              widget.destinasi.lat,
-                              widget.destinasi.lng,
+                              currentDestinasi.lat, // Gunakan currentDestinasi
+                              currentDestinasi.lng, // Gunakan currentDestinasi
                             ),
                             initialZoom: _currentZoom,
                             maxZoom: 18,
@@ -979,8 +1043,10 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                   width: 150,
                                   height: 100,
                                   point: latlng2.LatLng(
-                                    widget.destinasi.lat,
-                                    widget.destinasi.lng,
+                                    currentDestinasi
+                                        .lat, // Gunakan currentDestinasi
+                                    currentDestinasi
+                                        .lng, // Gunakan currentDestinasi
                                   ),
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
@@ -1009,7 +1075,8 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                           maxWidth: 140,
                                         ),
                                         child: Text(
-                                          widget.destinasi.nama,
+                                          currentDestinasi
+                                              .nama, // Gunakan currentDestinasi
                                           style: const TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold,
@@ -1033,7 +1100,7 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                     width: 60,
                                     height: 60,
                                     point: _currentPosition!,
-                                    child: Icon(
+                                    child: const Icon(
                                       Icons.my_location,
                                       color: Colors.blue,
                                       size: 38,
@@ -1053,14 +1120,19 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                             onPressed: () {
                               _mapController.move(
                                 latlng2.LatLng(
-                                  widget.destinasi.lat,
-                                  widget.destinasi.lng,
+                                  currentDestinasi
+                                      .lat, // Gunakan currentDestinasi
+                                  currentDestinasi
+                                      .lng, // Gunakan currentDestinasi
                                 ),
                                 15.0,
                               );
-                              setState(() {
-                                _currentZoom = 15.0;
-                              });
+                              if (mounted) {
+                                // Pengecekan mounted
+                                setState(() {
+                                  _currentZoom = 15.0;
+                                });
+                              }
                             },
                             backgroundColor: Colors.blue.shade800,
                             child: const Icon(Icons.location_on),
@@ -1077,9 +1149,12 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                               heroTag: 'btnToUserLocation',
                               onPressed: () {
                                 _mapController.move(_currentPosition!, 15.0);
-                                setState(() {
-                                  _currentZoom = 15.0;
-                                });
+                                if (mounted) {
+                                  // Pengecekan mounted
+                                  setState(() {
+                                    _currentZoom = 15.0;
+                                  });
+                                }
                               },
                               backgroundColor: Colors.green.shade700,
                               child: const Icon(Icons.my_location),
@@ -1096,16 +1171,19 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                               FloatingActionButton.small(
                                 heroTag: 'zoomIn',
                                 onPressed: () {
-                                  setState(() {
-                                    _currentZoom = (_currentZoom + 1).clamp(
-                                      3.0,
-                                      18.0,
-                                    );
-                                    _mapController.move(
-                                      _mapController.camera.center,
-                                      _currentZoom,
-                                    );
-                                  });
+                                  if (mounted) {
+                                    // Pengecekan mounted
+                                    setState(() {
+                                      _currentZoom = (_currentZoom + 1).clamp(
+                                        3.0,
+                                        18.0,
+                                      );
+                                      _mapController.move(
+                                        _mapController.camera.center,
+                                        _currentZoom,
+                                      );
+                                    });
+                                  }
                                 },
                                 backgroundColor: Colors.white,
                                 foregroundColor: Colors.blue.shade800,
@@ -1115,16 +1193,19 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                               FloatingActionButton.small(
                                 heroTag: 'zoomOut',
                                 onPressed: () {
-                                  setState(() {
-                                    _currentZoom = (_currentZoom - 1).clamp(
-                                      3.0,
-                                      18.0,
-                                    );
-                                    _mapController.move(
-                                      _mapController.camera.center,
-                                      _currentZoom,
-                                    );
-                                  });
+                                  if (mounted) {
+                                    // Pengecekan mounted
+                                    setState(() {
+                                      _currentZoom = (_currentZoom - 1).clamp(
+                                        3.0,
+                                        18.0,
+                                      );
+                                      _mapController.move(
+                                        _mapController.camera.center,
+                                        _currentZoom,
+                                      );
+                                    });
+                                  }
                                 },
                                 backgroundColor: Colors.white,
                                 foregroundColor: Colors.blue.shade800,
@@ -1138,7 +1219,6 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                   ),
                 ),
                 // Reviews Section
-                // Reviews Section
                 Container(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -1150,7 +1230,7 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                           Icon(Icons.star, color: Colors.amber, size: 28),
                           const SizedBox(width: 4),
                           Text(
-                            avgRating.toStringAsFixed(1),
+                            currentDestinasi.rating.toStringAsFixed(1),
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 22,
@@ -1181,15 +1261,23 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                             ),
                           ],
                         ),
+                        // Perbaikan sintaksis ternary operator di sini
                         child:
-                            shownReviews.isEmpty
-                                ? Padding(
-                                  padding: const EdgeInsets.all(24),
+                            reviewProvider.isLoading
+                                ? const Padding(
+                                  padding: EdgeInsets.all(24.0),
+                                  child: Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                )
+                                : shownReviews.isEmpty
+                                ? const Padding(
+                                  padding: EdgeInsets.all(24),
                                   child: Center(
                                     child: Text(
                                       'Belum ada review untuk destinasi ini.',
                                       style: TextStyle(
-                                        color: Colors.grey.shade600,
+                                        color: Color(0xFF757575),
                                         fontStyle: FontStyle.italic,
                                       ),
                                     ),
@@ -1199,14 +1287,21 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                   children:
                                       shownReviews
                                           .map(
-                                            (review) => ReviewCard(
-                                              name: review.userName,
-                                              rating: review.rating,
-                                              comment: review.comment,
-                                              date: DateFormat(
-                                                'd MMM yyyy',
-                                                'id_ID',
-                                              ).format(review.createdAt),
+                                            (review) => Column(
+                                              children: [
+                                                ReviewCard(
+                                                  name: review.userName,
+                                                  rating: review.rating,
+                                                  comment: review.comment,
+                                                  date: DateFormat(
+                                                    'd MMM,yyyy',
+                                                    'id_ID',
+                                                  ).format(review.createdAt),
+                                                ),
+                                                if (reviews.indexOf(review) <
+                                                    reviews.length - 1)
+                                                  const Divider(height: 1),
+                                              ],
                                             ),
                                           )
                                           .toList(),
@@ -1242,6 +1337,7 @@ class ReviewCard extends StatelessWidget {
   final int rating;
   final String comment;
   final String date;
+  final String? userProfilePictureUrl;
 
   const ReviewCard({
     super.key,
@@ -1249,10 +1345,18 @@ class ReviewCard extends StatelessWidget {
     required this.rating,
     required this.comment,
     required this.date,
+    this.userProfilePictureUrl,
   });
 
   @override
   Widget build(BuildContext context) {
+    final bool hasProfileImage =
+        userProfilePictureUrl != null && userProfilePictureUrl!.isNotEmpty;
+
+    debugPrint(
+      'ReviewCard for ${name}: FINAL Image URL being used: ${userProfilePictureUrl ?? "null (using initials fallback)"}',
+    );
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -1262,13 +1366,21 @@ class ReviewCard extends StatelessWidget {
             children: [
               CircleAvatar(
                 backgroundColor: Colors.blue.shade100,
-                child: Text(
-                  (name.isNotEmpty ? name[0] : '?').toUpperCase(),
-                  style: TextStyle(
-                    color: Colors.blue.shade800,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                backgroundImage:
+                    hasProfileImage
+                        ? NetworkImage(userProfilePictureUrl!)
+                            as ImageProvider<Object>?
+                        : null,
+                child:
+                    hasProfileImage
+                        ? null
+                        : Text(
+                          (name.isNotEmpty ? name[0] : '?').toUpperCase(),
+                          style: TextStyle(
+                            color: Colors.blue.shade800,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
               ),
               const SizedBox(width: 12),
               Expanded(
