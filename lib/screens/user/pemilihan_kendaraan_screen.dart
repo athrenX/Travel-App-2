@@ -1,3 +1,828 @@
+// import 'package:flutter/material.dart';
+// import 'package:provider/provider.dart';
+// import 'package:intl/intl.dart';
+// import 'package:travelapp/models/destinasi.dart';
+// import 'package:travelapp/models/kendaraan.dart';
+// import 'package:travelapp/providers/kendaraan_provider.dart';
+// import 'package:travelapp/screens/user/pilih_kursi_screen.dart';
+
+// class PemilihanKendaraanScreen extends StatefulWidget {
+//   final Destinasi destinasi;
+
+//   const PemilihanKendaraanScreen({super.key, required this.destinasi});
+
+//   @override
+//   State<PemilihanKendaraanScreen> createState() =>
+//       _PemilihanKendaraanScreenState();
+// }
+
+// class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
+//   Kendaraan? selectedKendaraan;
+//   String selectedFilter = 'Semua';
+//   bool _hasInitialized = false;
+
+//   static const Color primaryBlue = Color(0xFF1A73E8);
+//   static const Color darkBlue = Color(0xFF0D47A1);
+//   static const Color lightBlue = Color(0xFFE8F0FE);
+//   static const Color accentColor = Color(0xFF34A853);
+//   static const Color whiteColor = Colors.white;
+//   static const Color cardShadowColor = Color(0x1A000000);
+
+//   @override
+//   void initState() {
+//     super.initState();
+//     WidgetsBinding.instance.addPostFrameCallback((_) {
+//       if (!_hasInitialized) {
+//         _loadKendaraan();
+//         _hasInitialized = true;
+//       }
+//     });
+//   }
+
+//   Future<void> _loadKendaraan() async {
+//     try {
+//       await Provider.of<KendaraanProvider>(
+//         context,
+//         listen: false,
+//       ).fetchKendaraanByDestinasi(widget.destinasi.id);
+//     } catch (error) {
+//       if (mounted) {
+//         ScaffoldMessenger.of(context).showSnackBar(
+//           SnackBar(
+//             content: Text('Gagal memuat data kendaraan: ${error.toString()}'),
+//             backgroundColor: Colors.red[700],
+//             behavior: SnackBarBehavior.floating,
+//             shape: RoundedRectangleBorder(
+//               borderRadius: BorderRadius.circular(10),
+//             ),
+//           ),
+//         );
+//       }
+//     }
+//   }
+
+//   // Filter kendaraan berdasarkan tipe dan kapasitas
+//   List<Kendaraan> _filterKendaraan(List<Kendaraan> list) {
+//     // HAPUS BARIS INI:
+//     // List<Kendaraan> filteredByDestinasi = list.where((k) => k.id.startsWith(widget.destinasi.id)).toList();
+//     // Karena KendaraanService.getKendaraanByDestinasi sudah memastikan hanya kendaraan untuk destinasi ini yang diambil.
+
+//     // Gunakan langsung 'list' yang sudah difilter oleh backend berdasarkan destinasi ID
+//     if (selectedFilter == 'Semua') {
+//       return list;
+//     } else if (selectedFilter == 'Kecil') {
+//       return list.where((k) => k.kapasitas <= 12 || k.tipe.toLowerCase().contains('minibus') || k.tipe.toLowerCase().contains('suv')).toList();
+//     } else if (selectedFilter == 'Besar') {
+//       return list.where((k) => k.kapasitas > 12 || k.tipe.toLowerCase().contains('bus') || k.tipe.toLowerCase().contains('van')).toList();
+//     }
+//     return list; // Fallback
+//   }
+
+//   void _showVehicleImageDialog(Kendaraan kendaraan) {
+//     showDialog(
+//       context: context,
+//       builder:
+//           (ctx) => Dialog(
+//             shape: RoundedRectangleBorder(
+//               borderRadius: BorderRadius.circular(20),
+//             ),
+//             child: Column(
+//               mainAxisSize: MainAxisSize.min,
+//               children: [
+//                 Container(
+//                   height: 200,
+//                   width: double.infinity,
+//                   decoration: BoxDecoration(
+//                     borderRadius: BorderRadius.vertical(
+//                       top: Radius.circular(20),
+//                     ),
+//                     color: lightBlue,
+//                   ),
+//                   child: ClipRRect(
+//                     borderRadius: BorderRadius.vertical(
+//                       top: Radius.circular(20),
+//                     ),
+//                     child:
+//                         kendaraan.gambar.isNotEmpty
+//                             ? FadeInImage.assetNetwork(
+//                                 placeholder:
+//                                     'assets/images/loading.gif', // Pastikan path placeholder benar
+//                                 image: kendaraan.gambar,
+//                                 fit: BoxFit.cover,
+//                                 imageErrorBuilder:
+//                                     (context, error, stackTrace) => Center(
+//                                       child: Column(
+//                                         mainAxisAlignment:
+//                                             MainAxisAlignment.center,
+//                                         children: [
+//                                           Icon(
+//                                             Icons.directions_bus,
+//                                             size: 60,
+//                                             color: primaryBlue,
+//                                           ),
+//                                           SizedBox(height: 8),
+//                                           Text(
+//                                             'Gambar tidak tersedia',
+//                                             style: TextStyle(
+//                                               color: Colors.grey[600],
+//                                               fontSize: 12,
+//                                             ),
+//                                           ),
+//                                         ],
+//                                       ),
+//                                     ),
+//                               )
+//                             : Center(
+//                                 child: Icon(
+//                                   Icons.directions_bus,
+//                                   size: 60,
+//                                   color: primaryBlue,
+//                                 ),
+//                               ),
+//                   ),
+//                 ),
+
+//                 Padding(
+//                   padding: EdgeInsets.all(16),
+//                   child: Column(
+//                     children: [
+//                       Text(
+//                         kendaraan.jenis,
+//                         style: TextStyle(
+//                           fontSize: 18,
+//                           fontWeight: FontWeight.bold,
+//                         ),
+//                       ),
+//                       SizedBox(height: 12),
+//                       _buildDetailRow(
+//                         Icons.category,
+//                         'Tipe: ${kendaraan.tipe}',
+//                       ),
+//                       _buildDetailRow(
+//                         Icons.people,
+//                         'Kapasitas: ${kendaraan.kapasitas} orang',
+//                       ),
+//                       _buildDetailRow(
+//                         Icons.speed,
+//                         'Fasilitas: ${kendaraan.fasilitas}',
+//                       ),
+//                       SizedBox(height: 16),
+//                       Text(
+//                         formatRupiah(kendaraan.harga),
+//                         style: TextStyle(
+//                           fontSize: 18,
+//                           fontWeight: FontWeight.bold,
+//                           color: primaryBlue,
+//                         ),
+//                       ),
+//                       SizedBox(height: 16),
+//                       Material(
+//                         elevation: 2,
+//                         child: ElevatedButton(
+//                           onPressed: () {
+//                             Navigator.pop(context);
+//                             setState(() {
+//                               selectedKendaraan = kendaraan;
+//                             });
+//                           },
+//                           style: ElevatedButton.styleFrom(
+//                             backgroundColor: primaryBlue,
+//                             foregroundColor: whiteColor,
+//                             minimumSize: Size(double.infinity, 50),
+//                           ),
+//                           child: Text('Pilih Kendaraan Ini'),
+//                         ),
+//                       ),
+//                     ],
+//                   ),
+//                 ),
+//               ],
+//             ),
+//           ),
+//     );
+//   }
+
+//   Widget _buildDetailRow(IconData icon, String text) {
+//     return Padding(
+//       padding: const EdgeInsets.symmetric(vertical: 4.0),
+//       child: Row(
+//         crossAxisAlignment: CrossAxisAlignment.start,
+//         children: [
+//           Icon(icon, size: 18, color: Colors.grey[600]),
+//           const SizedBox(width: 8),
+//           Expanded(
+//             child: Text(
+//               text,
+//               style: TextStyle(
+//                 fontSize: 15,
+//                 color: Colors.grey[800],
+//                 height: 1.4,
+//               ),
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       backgroundColor: lightBlue,
+//       appBar: AppBar(
+//         title: const Text(
+//           'Pilih Kendaraan',
+//           style: TextStyle(
+//             color: whiteColor,
+//             fontWeight: FontWeight.bold,
+//             fontSize: 20,
+//           ),
+//         ),
+//         backgroundColor: primaryBlue,
+//         elevation: 0,
+//         iconTheme: const IconThemeData(color: whiteColor),
+//         centerTitle: true,
+//         shape: const RoundedRectangleBorder(
+//           borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+//         ),
+//       ),
+//       body: RefreshIndicator(
+//         onRefresh: _loadKendaraan,
+//         color: primaryBlue,
+//         backgroundColor: whiteColor,
+//         displacement: 40,
+//         strokeWidth: 3,
+//         child: Consumer<KendaraanProvider>(
+//           builder: (ctx, kendaraanProvider, _) {
+//             if (kendaraanProvider.isLoading && !_hasInitialized) {
+//               return Center(
+//                 child: Column(
+//                   mainAxisAlignment: MainAxisAlignment.center,
+//                   children: [
+//                     const CircularProgressIndicator(
+//                       color: primaryBlue,
+//                       strokeWidth: 3,
+//                     ),
+//                     const SizedBox(height: 20),
+//                     Text(
+//                       'Memuat kendaraan...',
+//                       style: TextStyle(color: Colors.grey[700], fontSize: 16),
+//                     ),
+//                   ],
+//                 ),
+//               );
+//             }
+
+//             // Langsung gunakan kendaraanList dari provider, karena sudah difilter oleh backend.
+//             // Kemudian terapkan filter "Kecil/Besar/Semua" di frontend.
+//             final filteredList = _filterKendaraan(kendaraanProvider.kendaraanList);
+
+//             if (filteredList.isEmpty && !kendaraanProvider.isLoading) { // Cek juga kalau tidak sedang loading
+//               return Center(
+//                 child: Column(
+//                   mainAxisAlignment: MainAxisAlignment.center,
+//                   children: [
+//                     Image.asset(
+//                       'assets/images/bus.jpg', // Ganti dengan ikon atau gambar yang sesuai
+//                       height: 150,
+//                       color: primaryBlue.withOpacity(0.5),
+//                     ),
+//                     const SizedBox(height: 20),
+//                     const Text(
+//                       'Tidak ada kendaraan tersedia',
+//                       style: TextStyle(
+//                         fontSize: 18,
+//                         fontWeight: FontWeight.bold,
+//                         color: darkBlue,
+//                       ),
+//                     ),
+//                     const SizedBox(height: 10),
+//                     Padding(
+//                       padding: const EdgeInsets.symmetric(horizontal: 40),
+//                       child: Text(
+//                         'Silakan coba lagi atau periksa koneksi internet Anda atau tambahkan kendaraan via admin panel.', // Tambahkan saran
+//                         textAlign: TextAlign.center,
+//                         style: TextStyle(color: Colors.grey[600], fontSize: 14),
+//                       ),
+//                     ),
+//                     const SizedBox(height: 20),
+//                     ElevatedButton(
+//                       onPressed: _loadKendaraan,
+//                       style: ElevatedButton.styleFrom(
+//                         backgroundColor: primaryBlue,
+//                         foregroundColor: whiteColor,
+//                         shape: RoundedRectangleBorder(
+//                           borderRadius: BorderRadius.circular(12),
+//                         ),
+//                         padding: const EdgeInsets.symmetric(
+//                           horizontal: 24,
+//                           vertical: 12,
+//                         ),
+//                       ),
+//                       child: const Text('MUAT ULANG'),
+//                     ),
+//                   ],
+//                 ),
+//               );
+//             }
+
+//             return Column(
+//               children: [
+//                 // Destination Card (tidak berubah)
+//                 Padding(
+//                   padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
+//                   child: Container(
+//                     decoration: BoxDecoration(
+//                       color: whiteColor,
+//                       borderRadius: BorderRadius.circular(16),
+//                       boxShadow: [
+//                         BoxShadow(
+//                           color: cardShadowColor,
+//                           blurRadius: 10,
+//                           offset: const Offset(0, 4),
+//                         ),
+//                       ],
+//                     ),
+//                     child: Padding(
+//                       padding: const EdgeInsets.all(16),
+//                       child: Column(
+//                         crossAxisAlignment: CrossAxisAlignment.start,
+//                         children: [
+//                           Row(
+//                             children: [
+//                               Container(
+//                                 padding: const EdgeInsets.all(8),
+//                                 decoration: BoxDecoration(
+//                                   color: primaryBlue.withOpacity(0.1),
+//                                   shape: BoxShape.circle,
+//                                 ),
+//                                 child: const Icon(
+//                                   Icons.location_on,
+//                                   color: primaryBlue,
+//                                   size: 24,
+//                                 ),
+//                               ),
+//                               const SizedBox(width: 12),
+//                               Expanded(
+//                                 child: Text(
+//                                   widget.destinasi.nama,
+//                                   style: const TextStyle(
+//                                     fontSize: 18,
+//                                     fontWeight: FontWeight.bold,
+//                                     color: darkBlue,
+//                                   ),
+//                                   overflow: TextOverflow.ellipsis,
+//                                 ),
+//                               ),
+//                             ],
+//                           ),
+//                           const SizedBox(height: 16),
+//                           Divider(height: 1, color: Colors.grey[300]),
+//                           const SizedBox(height: 16),
+//                           Row(
+//                             children: [
+//                               Expanded(
+//                                 child: Column(
+//                                   crossAxisAlignment: CrossAxisAlignment.start,
+//                                   children: [
+//                                     Row(
+//                                       children: [
+//                                         Icon(
+//                                           Icons.place,
+//                                           size: 18,
+//                                           color: Colors.grey[600],
+//                                         ),
+//                                         const SizedBox(width: 6),
+//                                         Expanded(
+//                                           child: Text(
+//                                             widget.destinasi.lokasi,
+//                                             style: TextStyle(
+//                                               fontSize: 14,
+//                                               color: Colors.grey[700],
+//                                             ),
+//                                             overflow: TextOverflow.ellipsis,
+//                                           ),
+//                                         ),
+//                                       ],
+//                                     ),
+//                                     const SizedBox(height: 8),
+//                                     Row(
+//                                       children: [
+//                                         Icon(
+//                                           Icons.calendar_today,
+//                                           size: 18,
+//                                           color: Colors.grey[600],
+//                                         ),
+//                                         const SizedBox(width: 6),
+//                                         const Text(
+//                                           'Buka setiap hari',
+//                                           style: TextStyle(
+//                                             fontSize: 14,
+//                                             color: Colors.grey,
+//                                           ),
+//                                         ),
+//                                       ],
+//                                     ),
+//                                   ],
+//                                 ),
+//                               ),
+//                               Container(
+//                                 padding: const EdgeInsets.symmetric(
+//                                   horizontal: 12,
+//                                   vertical: 8,
+//                                 ),
+//                                 decoration: BoxDecoration(
+//                                   color: accentColor.withOpacity(0.1),
+//                                   borderRadius: BorderRadius.circular(12),
+//                                 ),
+//                                 child: Text(
+//                                   formatRupiah(widget.destinasi.harga),
+//                                   style: const TextStyle(
+//                                     fontSize: 16,
+//                                     fontWeight: FontWeight.bold,
+//                                     color: accentColor,
+//                                   ),
+//                                 ),
+//                               ),
+//                             ],
+//                           ),
+//                         ],
+//                       ),
+//                     ),
+//                   ),
+//                 ),
+
+//                 // Filter Section (tidak berubah)
+//                 Container(
+//                   margin: const EdgeInsets.symmetric(
+//                     horizontal: 16,
+//                     vertical: 8,
+//                   ),
+//                   decoration: BoxDecoration(
+//                     color: whiteColor,
+//                     borderRadius: BorderRadius.circular(12),
+//                     boxShadow: [
+//                       BoxShadow(
+//                         color: cardShadowColor,
+//                         blurRadius: 6,
+//                         offset: const Offset(0, 2),
+//                       ),
+//                     ],
+//                   ),
+//                   child: Padding(
+//                     padding: const EdgeInsets.all(12),
+//                     child: Column(
+//                       crossAxisAlignment: CrossAxisAlignment.start,
+//                       children: [
+//                         const Text(
+//                           'FILTER KENDARAAN',
+//                           style: TextStyle(
+//                             fontSize: 12,
+//                             fontWeight: FontWeight.bold,
+//                             color: Colors.grey,
+//                             letterSpacing: 0.5,
+//                           ),
+//                         ),
+//                         const SizedBox(height: 8),
+//                         SingleChildScrollView(
+//                           scrollDirection: Axis.horizontal,
+//                           child: Row(
+//                             children: [
+//                               _buildFilterChip('Semua'),
+//                               const SizedBox(width: 8),
+//                               _buildFilterChip('Kecil'),
+//                               const SizedBox(width: 8),
+//                               _buildFilterChip('Besar'),
+//                             ],
+//                           ),
+//                         ),
+//                       ],
+//                     ),
+//                   ),
+//                 ),
+
+//                 // Results Count (tidak berubah)
+//                 Padding(
+//                   padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
+//                   child: Row(
+//                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//                     children: [
+//                       Text(
+//                         '${filteredList.length} kendaraan ditemukan',
+//                         style: TextStyle(
+//                           color: Colors.grey[700],
+//                           fontWeight: FontWeight.w500,
+//                           fontSize: 14,
+//                         ),
+//                       ),
+//                       if (selectedKendaraan != null)
+//                         Text(
+//                           '1 dipilih',
+//                           style: TextStyle(
+//                             color: primaryBlue,
+//                             fontWeight: FontWeight.bold,
+//                             fontSize: 14,
+//                           ),
+//                         ),
+//                     ],
+//                   ),
+//                 ),
+
+//                 // Vehicle List (tidak berubah)
+//                 Expanded(
+//                   child: ListView.builder(
+//                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+//                     itemCount: filteredList.length,
+//                     itemBuilder: (ctx, index) {
+//                       final kendaraan = filteredList[index];
+//                       return KendaraanCardCustom(
+//                         kendaraan: kendaraan,
+//                         isSelected:
+//                             selectedKendaraan?.id == kendaraan.id,
+//                         onTap: () {
+//                           setState(() {
+//                             selectedKendaraan = kendaraan;
+//                           });
+//                         },
+//                         onImageTap: () {
+//                           _showVehicleImageDialog(kendaraan);
+//                         },
+//                       );
+//                     },
+//                   ),
+//                 ),
+
+//                 // Continue Button (tidak berubah)
+//                 if (selectedKendaraan != null)
+//                   Container(
+//                     padding: const EdgeInsets.all(16),
+//                     decoration: BoxDecoration(
+//                       color: whiteColor,
+//                       boxShadow: [
+//                         BoxShadow(
+//                           color: Colors.black.withOpacity(0.1),
+//                           blurRadius: 10,
+//                           offset: const Offset(0, -5),
+//                         ),
+//                       ],
+//                       borderRadius: const BorderRadius.vertical(
+//                         top: Radius.circular(20),
+//                       ),
+//                     ),
+//                     child: SafeArea(
+//                       child: SizedBox(
+//                         height: 56,
+//                         child: ElevatedButton(
+//                           onPressed: () {
+//                             Navigator.push(
+//                               context,
+//                               MaterialPageRoute(
+//                                 builder:
+//                                     (ctx) =>
+//                                         PilihKursiScreen(
+//                                             destinasi: widget.destinasi,
+//                                             kendaraan: selectedKendaraan!,
+//                                         ),
+//                               ),
+//                             );
+//                           },
+//                           style: ElevatedButton.styleFrom(
+//                             backgroundColor: primaryBlue,
+//                             foregroundColor: whiteColor,
+//                             shape: RoundedRectangleBorder(
+//                               borderRadius: BorderRadius.circular(12),
+//                             ),
+//                             elevation: 2,
+//                           ),
+//                           child: const Row(
+//                             mainAxisAlignment: MainAxisAlignment.center,
+//                             children: [
+//                               Text(
+//                                 'LANJUT KE PEMESANAN',
+//                                 style: TextStyle(
+//                                   fontSize: 16,
+//                                   fontWeight: FontWeight.bold,
+//                                   letterSpacing: 0.5,
+//                                 ),
+//                               ),
+//                               SizedBox(width: 8),
+//                               Icon(Icons.arrow_forward, size: 20),
+//                             ],
+//                           ),
+//                         ),
+//                       ),
+//                     ),
+//                   ),
+//               ],
+//             );
+//           },
+//         ),
+//       ),
+//     );
+//   }
+
+//   Widget _buildFilterChip(String label) {
+//     final isSelected = selectedFilter == label;
+//     return ChoiceChip(
+//       label: Text(label),
+//       selected: isSelected,
+//       onSelected: (val) {
+//         setState(() {
+//           selectedFilter = label;
+//         });
+//       },
+//       labelStyle: TextStyle(
+//         color: isSelected ? whiteColor : Colors.grey[700],
+//         fontWeight: FontWeight.bold,
+//       ),
+//       selectedColor: primaryBlue,
+//       backgroundColor: whiteColor,
+//       shape: RoundedRectangleBorder(
+//         borderRadius: BorderRadius.circular(20),
+//         side: BorderSide(
+//           color: isSelected ? primaryBlue : Colors.grey[300]!,
+//           width: 1,
+//         ),
+//       ),
+//       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+//       visualDensity: VisualDensity.compact,
+//     );
+//   }
+
+//   String formatRupiah(dynamic price) {
+//     try {
+//       double numericPrice;
+
+//       if (price is int) {
+//         numericPrice = price.toDouble();
+//       } else if (price is double) {
+//         numericPrice = price;
+//       } else if (price is String) {
+//         String cleanPrice =
+//             price
+//                 .replaceAll('Rp', '')
+//                 .replaceAll('.', '')
+//                 .replaceAll(',', '')
+//                 .trim();
+//         numericPrice = double.tryParse(cleanPrice) ?? 0.0;
+//       } else {
+//         return 'Rp 0';
+//       }
+
+//       final formatter = NumberFormat.currency(
+//         locale: 'id_ID',
+//         symbol: 'Rp',
+//         decimalDigits: 0,
+//       );
+
+//       return formatter.format(numericPrice);
+//     } catch (e) {
+//       return 'Rp 0';
+//     }
+//   }
+// }
+
+// // KendaraanCardCustom (tidak ada perubahan)
+// class KendaraanCardCustom extends StatelessWidget {
+//   final Kendaraan kendaraan;
+//   final bool isSelected;
+//   final VoidCallback onTap;
+//   final VoidCallback onImageTap;
+
+//   static const Color primaryBlue = Color(0xFF1A73E8);
+//   static const Color lightBlue = Color(0xFFE8F0FE);
+//   static const Color accentColor = Color(0xFF34A853);
+//   static const Color whiteColor = Colors.white;
+
+//   const KendaraanCardCustom({
+//     super.key,
+//     required this.kendaraan,
+//     required this.isSelected,
+//     required this.onTap,
+//     required this.onImageTap,
+//   });
+
+//   String formatRupiah(dynamic price) {
+//     try {
+//       double numericPrice =
+//           price is int
+//               ? price.toDouble()
+//               : price is double
+//                   ? price
+//                   : 0.0;
+//       final formatter = NumberFormat.currency(
+//         locale: 'id_ID',
+//         symbol: 'Rp',
+//         decimalDigits: 0,
+//       );
+//       return formatter.format(numericPrice);
+//     } catch (e) {
+//       return 'Rp 0';
+//     }
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Card(
+//       margin: const EdgeInsets.only(bottom: 16),
+//       elevation: 2,
+//       shape: RoundedRectangleBorder(
+//         borderRadius: BorderRadius.circular(12),
+//         side: isSelected
+//             ? const BorderSide(color: primaryBlue, width: 2)
+//             : BorderSide.none,
+//       ),
+//       child: InkWell(
+//         onTap: onTap,
+//         borderRadius: BorderRadius.circular(12),
+//         child: Padding(
+//           padding: const EdgeInsets.all(16),
+//           child: Row(
+//             children: [
+//               GestureDetector(
+//                 onTap: onImageTap,
+//                 child: Container(
+//                   width: 100,
+//                   height: 80,
+//                   decoration: BoxDecoration(
+//                     borderRadius: BorderRadius.circular(8),
+//                     color: lightBlue,
+//                   ),
+//                   child: ClipRRect(
+//                     borderRadius: BorderRadius.circular(8),
+//                     child:
+//                         kendaraan.gambar.isNotEmpty
+//                             ? FadeInImage.assetNetwork(
+//                                 placeholder:
+//                                     'assets/images/minibus.jpg', // Placeholder
+//                                 image: kendaraan.gambar,
+//                                 fit: BoxFit.cover,
+//                                 imageErrorBuilder:
+//                                     (context, error, stackTrace) => Icon(
+//                                       Icons.directions_bus,
+//                                       size: 40,
+//                                       color: primaryBlue,
+//                                     ),
+//                               )
+//                             : Icon(
+//                                 Icons.directions_bus,
+//                                 size: 40,
+//                                 color: primaryBlue,
+//                               ),
+//                   ),
+//                 ),
+//               ),
+
+//               const SizedBox(width: 16),
+
+//               Expanded(
+//                 child: Column(
+//                   crossAxisAlignment: CrossAxisAlignment.start,
+//                   children: [
+//                     Text(
+//                       kendaraan.jenis,
+//                       style: const TextStyle(
+//                         fontSize: 16,
+//                         fontWeight: FontWeight.bold,
+//                       ),
+//                     ),
+//                     const SizedBox(height: 8),
+//                     Row(
+//                       children: [
+//                         Icon(Icons.category, size: 16, color: Colors.grey),
+//                         const SizedBox(width: 4),
+//                         Text(kendaraan.tipe),
+//                         const SizedBox(width: 16),
+//                         Icon(Icons.people, size: 16, color: Colors.grey),
+//                         const SizedBox(width: 4),
+//                         Text('${kendaraan.kapasitas} orang'),
+//                       ],
+//                     ),
+//                     const SizedBox(height: 8),
+//                     Text(
+//                       formatRupiah(kendaraan.harga),
+//                       style: const TextStyle(
+//                         fontSize: 16,
+//                         fontWeight: FontWeight.bold,
+//                         color: primaryBlue,
+//                       ),
+//                     ),
+//                   ],
+//                 ),
+//               ),
+
+//               if (isSelected)
+//                 Padding(
+//                   padding: const EdgeInsets.only(left: 8.0),
+//                   child: Icon(Icons.check_circle, color: primaryBlue),
+//                 ),
+//             ],
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+// }
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -8,8 +833,15 @@ import 'package:travelapp/screens/user/pilih_kursi_screen.dart';
 
 class PemilihanKendaraanScreen extends StatefulWidget {
   final Destinasi destinasi;
+  final DateTime selectedDate; // NEW: Add selectedDate
+  final TimeOfDay selectedTime; // NEW: Add selectedTime
 
-  const PemilihanKendaraanScreen({super.key, required this.destinasi});
+  const PemilihanKendaraanScreen({
+    super.key,
+    required this.destinasi,
+    required this.selectedDate, // NEW: Require selectedDate
+    required this.selectedTime, // NEW: Require selectedTime
+  });
 
   @override
   State<PemilihanKendaraanScreen> createState() =>
@@ -63,17 +895,26 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
 
   // Filter kendaraan berdasarkan tipe dan kapasitas
   List<Kendaraan> _filterKendaraan(List<Kendaraan> list) {
-    // HAPUS BARIS INI:
-    // List<Kendaraan> filteredByDestinasi = list.where((k) => k.id.startsWith(widget.destinasi.id)).toList();
-    // Karena KendaraanService.getKendaraanByDestinasi sudah memastikan hanya kendaraan untuk destinasi ini yang diambil.
-
-    // Gunakan langsung 'list' yang sudah difilter oleh backend berdasarkan destinasi ID
     if (selectedFilter == 'Semua') {
       return list;
     } else if (selectedFilter == 'Kecil') {
-      return list.where((k) => k.kapasitas <= 12 || k.tipe.toLowerCase().contains('minibus') || k.tipe.toLowerCase().contains('suv')).toList();
+      return list
+          .where(
+            (k) =>
+                k.kapasitas <= 12 ||
+                k.tipe.toLowerCase().contains('minibus') ||
+                k.tipe.toLowerCase().contains('suv'),
+          )
+          .toList();
     } else if (selectedFilter == 'Besar') {
-      return list.where((k) => k.kapasitas > 12 || k.tipe.toLowerCase().contains('bus') || k.tipe.toLowerCase().contains('van')).toList();
+      return list
+          .where(
+            (k) =>
+                k.kapasitas > 12 ||
+                k.tipe.toLowerCase().contains('bus') ||
+                k.tipe.toLowerCase().contains('van'),
+          )
+          .toList();
     }
     return list; // Fallback
   }
@@ -92,68 +933,67 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
                 Container(
                   height: 200,
                   width: double.infinity,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     borderRadius: BorderRadius.vertical(
                       top: Radius.circular(20),
                     ),
                     color: lightBlue,
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.vertical(
+                    borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(20),
                     ),
                     child:
                         kendaraan.gambar.isNotEmpty
                             ? FadeInImage.assetNetwork(
-                                placeholder:
-                                    'assets/images/loading.gif', // Pastikan path placeholder benar
-                                image: kendaraan.gambar,
-                                fit: BoxFit.cover,
-                                imageErrorBuilder:
-                                    (context, error, stackTrace) => Center(
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Icon(
-                                            Icons.directions_bus,
-                                            size: 60,
-                                            color: primaryBlue,
+                              placeholder:
+                                  'assets/images/loading.gif', // Pastikan path placeholder benar
+                              image: kendaraan.gambar,
+                              fit: BoxFit.cover,
+                              imageErrorBuilder:
+                                  (context, error, stackTrace) => Center(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.directions_bus,
+                                          size: 60,
+                                          color: primaryBlue,
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Gambar tidak tersedia',
+                                          style: TextStyle(
+                                            color: Colors.grey[600],
+                                            fontSize: 12,
                                           ),
-                                          SizedBox(height: 8),
-                                          Text(
-                                            'Gambar tidak tersedia',
-                                            style: TextStyle(
-                                              color: Colors.grey[600],
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
+                                        ),
+                                      ],
                                     ),
-                              )
-                            : Center(
-                                child: Icon(
-                                  Icons.directions_bus,
-                                  size: 60,
-                                  color: primaryBlue,
-                                ),
+                                  ),
+                            )
+                            : const Center(
+                              child: Icon(
+                                Icons.directions_bus,
+                                size: 60,
+                                color: primaryBlue,
                               ),
+                            ),
                   ),
                 ),
-
                 Padding(
-                  padding: EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
                       Text(
                         kendaraan.jenis,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      SizedBox(height: 12),
+                      const SizedBox(height: 12),
                       _buildDetailRow(
                         Icons.category,
                         'Tipe: ${kendaraan.tipe}',
@@ -166,16 +1006,16 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
                         Icons.speed,
                         'Fasilitas: ${kendaraan.fasilitas}',
                       ),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
                       Text(
                         formatRupiah(kendaraan.harga),
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: primaryBlue,
                         ),
                       ),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
                       Material(
                         elevation: 2,
                         child: ElevatedButton(
@@ -188,9 +1028,9 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: primaryBlue,
                             foregroundColor: whiteColor,
-                            minimumSize: Size(double.infinity, 50),
+                            minimumSize: const Size(double.infinity, 50),
                           ),
-                          child: Text('Pilih Kendaraan Ini'),
+                          child: const Text('Pilih Kendaraan Ini'),
                         ),
                       ),
                     ],
@@ -273,17 +1113,17 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
               );
             }
 
-            // Langsung gunakan kendaraanList dari provider, karena sudah difilter oleh backend.
-            // Kemudian terapkan filter "Kecil/Besar/Semua" di frontend.
-            final filteredList = _filterKendaraan(kendaraanProvider.kendaraanList);
+            final filteredList = _filterKendaraan(
+              kendaraanProvider.kendaraanList,
+            );
 
-            if (filteredList.isEmpty && !kendaraanProvider.isLoading) { // Cek juga kalau tidak sedang loading
+            if (filteredList.isEmpty && !kendaraanProvider.isLoading) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Image.asset(
-                      'assets/images/bus.jpg', // Ganti dengan ikon atau gambar yang sesuai
+                      'assets/images/bus.jpg',
                       height: 150,
                       color: primaryBlue.withOpacity(0.5),
                     ),
@@ -300,7 +1140,7 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 40),
                       child: Text(
-                        'Silakan coba lagi atau periksa koneksi internet Anda atau tambahkan kendaraan via admin panel.', // Tambahkan saran
+                        'Silakan coba lagi atau periksa koneksi internet Anda atau tambahkan kendaraan via admin panel.',
                         textAlign: TextAlign.center,
                         style: TextStyle(color: Colors.grey[600], fontSize: 14),
                       ),
@@ -328,7 +1168,7 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
 
             return Column(
               children: [
-                // Destination Card (tidak berubah)
+                // Display selected date and time
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
                   child: Container(
@@ -381,70 +1221,60 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
                           const SizedBox(height: 16),
                           Row(
                             children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          Icons.place,
-                                          size: 18,
-                                          color: Colors.grey[600],
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Expanded(
-                                          child: Text(
-                                            widget.destinasi.lokasi,
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              color: Colors.grey[700],
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          Icons.calendar_today,
-                                          size: 18,
-                                          color: Colors.grey[600],
-                                        ),
-                                        const SizedBox(width: 6),
-                                        const Text(
-                                          'Buka setiap hari',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
+                              Icon(
+                                Icons.calendar_today,
+                                size: 18,
+                                color: Colors.grey[600],
                               ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: accentColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  formatRupiah(widget.destinasi.harga),
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: accentColor,
-                                  ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Tanggal: ${DateFormat('dd MMMM yyyy', 'id_ID').format(widget.selectedDate)}',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[700],
                                 ),
                               ),
                             ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.access_time,
+                                size: 18,
+                                color: Colors.grey[600],
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Waktu: ${widget.selectedTime.format(context)}',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[700],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Align(
+                            alignment: Alignment.bottomRight,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: accentColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                formatRupiah(widget.destinasi.harga),
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: accentColor,
+                                ),
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -452,7 +1282,7 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
                   ),
                 ),
 
-                // Filter Section (tidak berubah)
+                // Filter Section
                 Container(
                   margin: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -501,7 +1331,7 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
                   ),
                 ),
 
-                // Results Count (tidak berubah)
+                // Results Count
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
                   child: Row(
@@ -516,7 +1346,7 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
                         ),
                       ),
                       if (selectedKendaraan != null)
-                        Text(
+                        const Text(
                           '1 dipilih',
                           style: TextStyle(
                             color: primaryBlue,
@@ -528,7 +1358,7 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
                   ),
                 ),
 
-                // Vehicle List (tidak berubah)
+                // Vehicle List
                 Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -537,8 +1367,7 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
                       final kendaraan = filteredList[index];
                       return KendaraanCardCustom(
                         kendaraan: kendaraan,
-                        isSelected:
-                            selectedKendaraan?.id == kendaraan.id,
+                        isSelected: selectedKendaraan?.id == kendaraan.id,
                         onTap: () {
                           setState(() {
                             selectedKendaraan = kendaraan;
@@ -552,7 +1381,7 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
                   ),
                 ),
 
-                // Continue Button (tidak berubah)
+                // Continue Button
                 if (selectedKendaraan != null)
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -578,11 +1407,10 @@ class _PemilihanKendaraanScreenState extends State<PemilihanKendaraanScreen> {
                               context,
                               MaterialPageRoute(
                                 builder:
-                                    (ctx) =>
-                                        PilihKursiScreen(
-                                            destinasi: widget.destinasi,
-                                            kendaraan: selectedKendaraan!,
-                                        ),
+                                    (ctx) => PilihKursiScreen(
+                                      destinasi: widget.destinasi,
+                                      kendaraan: selectedKendaraan!,
+                                    ),
                               ),
                             );
                           },
@@ -708,8 +1536,8 @@ class KendaraanCardCustom extends StatelessWidget {
           price is int
               ? price.toDouble()
               : price is double
-                  ? price
-                  : 0.0;
+              ? price
+              : 0.0;
       final formatter = NumberFormat.currency(
         locale: 'id_ID',
         symbol: 'Rp',
@@ -728,9 +1556,10 @@ class KendaraanCardCustom extends StatelessWidget {
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: isSelected
-            ? const BorderSide(color: primaryBlue, width: 2)
-            : BorderSide.none,
+        side:
+            isSelected
+                ? const BorderSide(color: primaryBlue, width: 2)
+                : BorderSide.none,
       ),
       child: InkWell(
         onTap: onTap,
@@ -753,28 +1582,26 @@ class KendaraanCardCustom extends StatelessWidget {
                     child:
                         kendaraan.gambar.isNotEmpty
                             ? FadeInImage.assetNetwork(
-                                placeholder:
-                                    'assets/images/minibus.jpg', // Placeholder
-                                image: kendaraan.gambar,
-                                fit: BoxFit.cover,
-                                imageErrorBuilder:
-                                    (context, error, stackTrace) => Icon(
-                                      Icons.directions_bus,
-                                      size: 40,
-                                      color: primaryBlue,
-                                    ),
-                              )
-                            : Icon(
-                                Icons.directions_bus,
-                                size: 40,
-                                color: primaryBlue,
-                              ),
+                              placeholder:
+                                  'assets/images/minibus.jpg', // Placeholder
+                              image: kendaraan.gambar,
+                              fit: BoxFit.cover,
+                              imageErrorBuilder:
+                                  (context, error, stackTrace) => const Icon(
+                                    Icons.directions_bus,
+                                    size: 40,
+                                    color: primaryBlue,
+                                  ),
+                            )
+                            : const Icon(
+                              Icons.directions_bus,
+                              size: 40,
+                              color: primaryBlue,
+                            ),
                   ),
                 ),
               ),
-
               const SizedBox(width: 16),
-
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -810,7 +1637,6 @@ class KendaraanCardCustom extends StatelessWidget {
                   ],
                 ),
               ),
-
               if (isSelected)
                 Padding(
                   padding: const EdgeInsets.only(left: 8.0),

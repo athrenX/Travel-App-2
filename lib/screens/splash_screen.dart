@@ -296,6 +296,7 @@ import 'package:travelapp/screens/admin/dashboard_screen.dart';
 import 'package:travelapp/screens/auth/login_screen.dart';
 import 'package:travelapp/models/user.dart';
 import 'dart:math' as Math;
+import 'package:travelapp/services/auth_service.dart'; // <--- Tambahkan baris ini
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -409,7 +410,7 @@ class _SplashScreenState extends State<SplashScreen>
     final token = prefs.getString('auth_token');
     final nama = prefs.getString('user_nama');
     final email = prefs.getString('user_email');
-    final role = prefs.getString('user_role');
+    // HAPUS BARIS INI: final role = prefs.getString('user_role'); // Tidak relevan lagi
 
     print("🔑 Token: ${token != null ? 'Found' : 'Not found'}");
 
@@ -423,36 +424,68 @@ class _SplashScreenState extends State<SplashScreen>
       listen: false,
     );
 
+    // Pastikan kita punya nama dan email untuk inisialisasi awal AuthProvider
+    // Meskipun getCurrentUser akan mengambil data lengkap, kita butuh User object awal
+    // untuk setUser, yang mana membutuhkan nama dan email.
+    // Untuk role, kita akan ambil dari authProvider.user setelah getCurrentUser().
     if (token != null && nama != null && email != null) {
-      // Set user dan token di provider
-      final user = User(id: null, nama: nama, email: email, role: role);
-      authProvider.setUser(user, token);
+      // Inisialisasi AuthProvider dengan data dasar yang ada di SharedPreferences
+      // Role di sini sementara bisa null atau default, karena akan diperbarui oleh getCurrentUser()
+      final userFromPrefs = User(
+        id: null,
+        nama: nama,
+        email: email,
+        role: null,
+      ); // role diset null sementara
+      authProvider.setUser(userFromPrefs, token);
 
-      // Refresh data user dari API agar data lengkap
+      // Refresh data user dari API agar data lengkap dan terbaru
       try {
-        await authProvider.getCurrentUser();
+        await authProvider
+            .getCurrentUser(); // Ini akan memperbarui authProvider._user
+        print(
+          '✅ Data user berhasil diperbarui dari API: ${authProvider.user?.email}, Role: ${authProvider.user?.role}',
+        );
       } catch (e) {
-        print('❌ Error saat refresh user: $e');
+        print('❌ Error saat refresh user dari API: $e');
+        await AuthService.clearUserAndToken();
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+        );
+        return; // Penting: Hentikan eksekusi jika gagal refresh user
       }
 
       // Update token wishlist dan load wishlist user
       wishlistProvider.updateToken(token);
       try {
         await wishlistProvider.loadWishlist();
+        print('✅ Wishlist berhasil dimuat.');
       } catch (e) {
         print('❌ Error saat load wishlist: $e');
       }
 
       if (!mounted) return;
+
+      // AMBIL ROLE TERBARU DAN PALING AKURAT DARI AUTHPROVIDER.USER
+      final currentRole = authProvider.user?.role;
       print(
-        "👤 User found, navigating to ${role == 'admin' ? 'Dashboard' : 'Home'}",
+        'DEBUG-NAV: Nilai string role dari provider yang digunakan untuk navigasi: "$currentRole"',
+      );
+      print(
+        'DEBUG-NAV: Apakah role sama dengan "admin"? ${currentRole == 'admin'}',
+      );
+
+      print(
+        "👤 User found, navigating to ${currentRole == 'admin' ? 'Dashboard' : 'Home'}", // Gunakan currentRole
       );
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder:
               (_) =>
-                  (role == 'admin')
+                  (currentRole == 'admin') // Gunakan currentRole di sini
                       ? const DashboardScreen()
                       : const HomeScreen(),
         ),

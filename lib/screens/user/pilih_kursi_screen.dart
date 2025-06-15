@@ -49,10 +49,13 @@ class _PilihKursiScreenState extends State<PilihKursiScreen>
     _updateTotalPrice();
     _fetchLatestKendaraanData();
     WidgetsBinding.instance.addObserver(this);
+
+    _passengersController.addListener(_onPassengerCountChanged);
   }
 
   @override
   void dispose() {
+    _passengersController.removeListener(_onPassengerCountChanged);
     _passengersController.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -63,6 +66,16 @@ class _PilihKursiScreenState extends State<PilihKursiScreen>
     if (state == AppLifecycleState.resumed) {
       _fetchLatestKendaraanData();
     }
+  }
+
+  void _onPassengerCountChanged() {
+    setState(() {
+      final int maxPassengers = int.tryParse(_passengersController.text) ?? 1;
+      if (selectedSeats.length > maxPassengers) {
+        selectedSeats = selectedSeats.sublist(0, maxPassengers);
+      }
+      _updateTotalPrice();
+    });
   }
 
   Future<void> _fetchLatestKendaraanData() async {
@@ -79,7 +92,8 @@ class _PilihKursiScreenState extends State<PilihKursiScreen>
         setState(() {
           _currentKendaraan = latestData;
           selectedSeats.removeWhere((seat) =>
-              !_currentKendaraan.availableSeats.contains(seat));
+              !_currentKendaraan.availableSeats.contains(seat) ||
+              _currentKendaraan.heldSeats.contains(seat));
           _updateTotalPrice();
         });
         print(
@@ -90,8 +104,8 @@ class _PilihKursiScreenState extends State<PilihKursiScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content:
-                  Text("Gagal memuat ketersediaan kursi terbaru: ${e.toString()}")),
+              content: Text(
+                  "Gagal memuat ketersediaan kursi terbaru: ${e.toString()}")),
         );
       }
     }
@@ -124,15 +138,16 @@ class _PilihKursiScreenState extends State<PilihKursiScreen>
         content: Text(
             'Kursi $seatNumber sedang ditahan. Silakan pilih kursi lain.'),
         backgroundColor: heldColor,
+        duration: const Duration(seconds: 2),
       ));
       return;
     }
 
     if (!_currentKendaraan.availableSeats.contains(seatNumber)) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(
-            'Kursi $seatNumber tidak tersedia. Silakan refresh.'),
+        content: Text('Kursi $seatNumber tidak tersedia. Silakan refresh.'),
         backgroundColor: unavailableColor,
+        duration: const Duration(seconds: 2),
       ));
       return;
     }
@@ -149,6 +164,7 @@ class _PilihKursiScreenState extends State<PilihKursiScreen>
             SnackBar(
               content: Text('Anda hanya bisa memilih $maxPassengers kursi.'),
               backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 2),
             ),
           );
         }
@@ -163,20 +179,24 @@ class _PilihKursiScreenState extends State<PilihKursiScreen>
 
     final int numberOfPassengers = int.tryParse(_passengersController.text) ?? 0;
     if (selectedSeats.isEmpty ||
-        selectedSeats.length != numberOfPassengers) {
+        selectedSeats.length != numberOfPassengers ||
+        numberOfPassengers == 0) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
                 'Jumlah kursi (${selectedSeats.length}) harus sama dengan jumlah penumpang ($numberOfPassengers) dan tidak boleh kosong.'),
             backgroundColor: unavailableColor,
+            duration: const Duration(seconds: 3),
           ),
         );
       }
       return;
     }
 
-    setState(() { _isHoldingSeats = true; });
+    setState(() {
+      _isHoldingSeats = true;
+    });
 
     showDialog(
       context: context,
@@ -220,7 +240,8 @@ class _PilihKursiScreenState extends State<PilihKursiScreen>
 
       final orderProvider = Provider.of<OrderProvider>(context, listen: false);
       final createdPemesanan = await orderProvider.addOrder(pemesananUntukDikirim);
-      print("✅ Pemesanan berhasil dibuat di backend dengan ID: ${createdPemesanan.id}");
+      print(
+          "✅ Pemesanan berhasil dibuat di backend dengan ID: ${createdPemesanan.id}");
 
       if (mounted) {
         Navigator.of(context).pop(); // Tutup loading
@@ -229,6 +250,7 @@ class _PilihKursiScreenState extends State<PilihKursiScreen>
           const SnackBar(
             content: Text('Pemesanan berhasil dibuat! Melanjutkan ke pembayaran.'),
             backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
           ),
         );
 
@@ -263,7 +285,8 @@ class _PilihKursiScreenState extends State<PilihKursiScreen>
 
       // LOGIKA PENTING: Lepaskan kursi jika booking gagal setelah ditahan
       if (successfullyHeldSeats.isNotEmpty) {
-        print("🔁 Mencoba melepaskan kursi yang gagal dipesan: $successfullyHeldSeats");
+        print(
+            "🔁 Mencoba melepaskan kursi yang gagal dipesan: $successfullyHeldSeats");
         try {
           await KendaraanService.releaseHeldSeats(
               _currentKendaraan.id, successfullyHeldSeats);
@@ -282,15 +305,9 @@ class _PilihKursiScreenState extends State<PilihKursiScreen>
       }
     }
   }
-  
-  // Widget build dan semua widget helper lainnya (seperti _buildSeat, dll)
-  // tetap sama seperti yang sudah Anda miliki. Cukup salin dan tempel
-  // seluruh isi kelas State ini.
-  
+
   @override
   Widget build(BuildContext context) {
-    // ... Seluruh kode UI Anda dari sini ke bawah tidak perlu diubah.
-    // ... Cukup pastikan fungsi-fungsi di atas sudah benar.
     return Scaffold(
       backgroundColor: lightColor,
       appBar: AppBar(
@@ -308,17 +325,17 @@ class _PilihKursiScreenState extends State<PilihKursiScreen>
       ),
       body: Column(
         children: [
-          // Vehicle Info Card
+          // Vehicle Info Card - Compacted
           Container(
-            margin: const EdgeInsets.fromLTRB(16, 20, 16, 10),
+            margin: const EdgeInsets.fromLTRB(16, 12, 16, 8), // Reduced top/bottom margin
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.05),
-                  blurRadius: 15,
-                  offset: const Offset(0, 5),
+                  blurRadius: 10, // Slightly less blur
+                  offset: const Offset(0, 4), // Slightly less offset
                 ),
               ],
             ),
@@ -327,7 +344,7 @@ class _PilihKursiScreenState extends State<PilihKursiScreen>
               children: [
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(12), // Reduced padding
                   decoration: BoxDecoration(
                     color: primaryColor.withOpacity(0.1),
                     borderRadius: const BorderRadius.only(
@@ -338,18 +355,18 @@ class _PilihKursiScreenState extends State<PilihKursiScreen>
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(10),
+                        padding: const EdgeInsets.all(8), // Reduced padding
                         decoration: BoxDecoration(
                           color: primaryColor.withOpacity(0.2),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(
+                        child: const Icon(
                           Icons.directions_bus_rounded,
                           color: primaryColor,
-                          size: 28,
+                          size: 24, // Smaller icon
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 12), // Reduced space
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -357,16 +374,16 @@ class _PilihKursiScreenState extends State<PilihKursiScreen>
                             Text(
                               _currentKendaraan.jenis,
                               style: const TextStyle(
-                                fontSize: 20,
+                                fontSize: 18, // Slightly smaller font
                                 fontWeight: FontWeight.bold,
                                 color: darkColor,
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 2), // Reduced space
                             Text(
                               '${_currentKendaraan.kapasitas} kursi · ${_currentKendaraan.tipe}',
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: 13, // Slightly smaller font
                                 color: Colors.grey[600],
                               ),
                             ),
@@ -377,7 +394,7 @@ class _PilihKursiScreenState extends State<PilihKursiScreen>
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(12), // Reduced padding
                   child: Column(
                     children: [
                       Row(
@@ -388,15 +405,15 @@ class _PilihKursiScreenState extends State<PilihKursiScreen>
                               Text(
                                 'Harga per kursi',
                                 style: TextStyle(
-                                  fontSize: 13,
+                                  fontSize: 12, // Reduced font size
                                   color: Colors.grey[600],
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: 2), // Reduced space
                               Text(
                                 formatRupiah(widget.destinasi.harga),
                                 style: const TextStyle(
-                                  fontSize: 18,
+                                  fontSize: 16, // Reduced font size
                                   fontWeight: FontWeight.bold,
                                   color: primaryColor,
                                 ),
@@ -406,25 +423,25 @@ class _PilihKursiScreenState extends State<PilihKursiScreen>
                           const Spacer(),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
+                              horizontal: 10, // Reduced padding
+                              vertical: 6, // Reduced padding
                             ),
                             decoration: BoxDecoration(
                               color: secondaryColor.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(18), // Slightly smaller radius
                             ),
                             child: Row(
                               children: [
-                                Icon(
+                                const Icon(
                                   Icons.chair_alt_outlined,
-                                  size: 18,
+                                  size: 16, // Reduced icon size
                                   color: secondaryColor,
                                 ),
-                                const SizedBox(width: 6),
+                                const SizedBox(width: 4), // Reduced space
                                 Text(
-                                  'Kursi terpilih: ${selectedSeats.length}',
-                                  style: TextStyle(
-                                    fontSize: 14,
+                                  'Terpilih: ${selectedSeats.length}',
+                                  style: const TextStyle(
+                                    fontSize: 13, // Reduced font size
                                     fontWeight: FontWeight.w600,
                                     color: secondaryColor,
                                   ),
@@ -434,26 +451,21 @@ class _PilihKursiScreenState extends State<PilihKursiScreen>
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
-                      // Input jumlah peserta
+                      const SizedBox(height: 12), // Reduced space
+                      // Input jumlah peserta - Compacted
                       TextField(
                         controller: _passengersController,
                         keyboardType: TextInputType.number,
                         decoration: InputDecoration(
                           labelText: 'Jumlah Penumpang',
+                          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12), // Reduced content padding
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(10), // Slightly smaller radius
                           ),
                           filled: true,
                           fillColor: lightColor,
-                          suffixIcon: const Icon(Icons.group),
+                          suffixIcon: const Icon(Icons.group, size: 20), // Smaller icon
                         ),
-                        onChanged: (text) {
-                          setState(() {
-                            selectedSeats.clear();
-                            _updateTotalPrice();
-                          });
-                        },
                       ),
                     ],
                   ),
@@ -462,29 +474,29 @@ class _PilihKursiScreenState extends State<PilihKursiScreen>
             ),
           ),
 
-          // Legend
+          // Legend - Compacted
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), // Reduced vertical padding
             child: Row(
               children: [
                 _buildLegendItem(primaryColor, 'Terpilih'),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8), // Reduced space
                 _buildLegendItem(lightColor, 'Tersedia'),
-                const SizedBox(width: 10),
-                _buildLegendItem(heldColor, 'Ditahan'), // Legenda baru
-                const SizedBox(width: 10),
-                _buildLegendItem(unavailableColor, 'Tidak tersedia'),
+                const SizedBox(width: 8), // Reduced space
+                _buildLegendItem(heldColor.withOpacity(0.4), 'Ditahan'),
+                const SizedBox(width: 8), // Reduced space
+                _buildLegendItem(unavailableColor.withOpacity(0.2), 'Tidak tersedia'),
               ],
             ),
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 12), // Reduced space
 
-          // Seat Selection Area
+          // Seat Selection Area - Expanded and Compacted
           Expanded(
             child: Container(
-              margin: const EdgeInsets.all(16),
+              margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
@@ -498,10 +510,10 @@ class _PilihKursiScreenState extends State<PilihKursiScreen>
               ),
               child: Column(
                 children: [
-                  // Driver Area
+                  // Driver Area - Compacted
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(12), // Reduced padding
                     decoration: BoxDecoration(
                       color: Colors.grey[100],
                       borderRadius: const BorderRadius.only(
@@ -515,14 +527,14 @@ class _PilihKursiScreenState extends State<PilihKursiScreen>
                           'Area Pengemudi',
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
-                            fontSize: 15,
+                            fontSize: 14, // Reduced font size
                             color: darkColor.withOpacity(0.8),
                           ),
                         ),
-                        const SizedBox(height: 10),
-                        Center(child: _buildSeat(0)),
+                        const SizedBox(height: 8), // Reduced space
+                        _buildDriverSeat(), // Use a dedicated widget for driver seat
                         Container(
-                          margin: const EdgeInsets.only(top: 16),
+                          margin: const EdgeInsets.only(top: 12), // Reduced margin
                           height: 1,
                           color: Colors.grey[300],
                         ),
@@ -530,17 +542,17 @@ class _PilihKursiScreenState extends State<PilihKursiScreen>
                     ),
                   ),
 
-                  // Passenger Seats
+                  // Passenger Seats - Main focus
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(12), // Reduced padding
                       child: GridView.builder(
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 4,
-                          childAspectRatio: 1,
-                          mainAxisSpacing: 12,
-                          crossAxisSpacing: 12,
+                          crossAxisCount: 5, // Coba 5 kolom agar lebih padat
+                          childAspectRatio: 0.8, // Slightly taller than wide for better number visibility
+                          mainAxisSpacing: 8, // Reduced spacing
+                          crossAxisSpacing: 8, // Reduced spacing
                         ),
                         itemCount: _currentKendaraan.kapasitas,
                         itemBuilder: (context, index) {
@@ -607,15 +619,18 @@ class _PilihKursiScreenState extends State<PilihKursiScreen>
                     onPressed: (selectedSeats.length ==
                                 (int.tryParse(_passengersController.text) ??
                                     0) &&
-                            selectedSeats.isNotEmpty &&
-                            !_isHoldingSeats)
+                                selectedSeats.isNotEmpty &&
+                                !_isHoldingSeats &&
+                                (int.tryParse(_passengersController.text) ?? 0) > 0)
                         ? _processBooking
                         : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryColor,
                       foregroundColor: Colors.white,
                       disabledBackgroundColor: Colors.grey[300],
-                      elevation: selectedSeats.isNotEmpty ? 2 : 0,
+                      elevation: (selectedSeats.length == (int.tryParse(_passengersController.text) ?? 0) &&
+                                selectedSeats.isNotEmpty &&
+                                (int.tryParse(_passengersController.text) ?? 0) > 0) ? 2 : 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
@@ -662,86 +677,96 @@ class _PilihKursiScreenState extends State<PilihKursiScreen>
     );
   }
 
+  Widget _buildDriverSeat() {
+    return Container(
+      width: 50, // More compact driver seat
+      height: 50,
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: BorderRadius.circular(10), // Slightly smaller radius
+        border: Border.all(color: Colors.grey[400]!, width: 2),
+      ),
+      child: const Center(
+        child: Icon(
+          Icons.drive_eta,
+          size: 28, // Smaller icon
+          color: darkColor,
+        ),
+      ),
+    );
+  }
+
   Widget _buildSeat(int seatNumber) {
-    bool isDriver = seatNumber == 0;
     bool isAvailable = _currentKendaraan.availableSeats.contains(seatNumber);
     bool isHeld = _currentKendaraan.heldSeats.contains(seatNumber);
     bool isSelected = selectedSeats.contains(seatNumber);
 
+    Color seatColor;
+    Color borderColor;
+    Color textColor;
+
+    if (isSelected) {
+      seatColor = primaryColor;
+      borderColor = primaryColor;
+      textColor = Colors.white;
+    } else if (isHeld) {
+      seatColor = heldColor.withOpacity(0.2);
+      borderColor = heldColor;
+      textColor = heldColor.darken(0.3);
+    } else if (isAvailable) {
+      seatColor = lightColor;
+      borderColor = Colors.grey[300]!;
+      textColor = darkColor;
+    } else { // Unavailable
+      seatColor = unavailableColor.withOpacity(0.1);
+      borderColor = unavailableColor;
+      textColor = unavailableColor.darken(0.3);
+    }
+
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 200),
       curve: Curves.easeInOut,
-      width: 52,
-      height: 52,
-      margin: const EdgeInsets.all(6),
+      // Fixed size for seat boxes, will be scaled by GridView's childAspectRatio
       decoration: BoxDecoration(
-        color: isDriver
-            ? Colors.grey[200]
-            : isSelected
-                ? primaryColor
-                : isHeld
-                    ? heldColor.withOpacity(0.4) // Warna untuk ditahan
-                    : isAvailable
-                        ? lightColor
-                        : unavailableColor
-                            .withOpacity(0.2), // Warna untuk tidak tersedia
-        borderRadius: BorderRadius.circular(12),
+        color: seatColor,
+        borderRadius: BorderRadius.circular(10), // Slightly smaller radius
         border: Border.all(
-          color: isDriver
-              ? Colors.grey
-              : isSelected
-                  ? primaryColor
-                  : isHeld
-                      ? heldColor // Border untuk ditahan
-                      : isAvailable
-                          ? Colors.grey[300]!
-                          : unavailableColor, // Border untuk tidak tersedia
-          width: 2,
+          color: borderColor,
+          width: 1.5, // Slightly thinner border for smaller seats
         ),
         boxShadow: [
           if (isSelected)
             BoxShadow(
               color: primaryColor.withOpacity(0.4),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
+              blurRadius: 6, // Reduced blur
+              offset: const Offset(0, 2), // Reduced offset
             ),
         ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap:
-              isAvailable && !isDriver && !isHeld ? () => _toggleSeat(seatNumber) : null,
-          borderRadius: BorderRadius.circular(10),
+          onTap: isAvailable && !isHeld ? () => _toggleSeat(seatNumber) : null,
+          borderRadius: BorderRadius.circular(8), // Match container radius
           splashColor: primaryColor.withOpacity(0.1),
           highlightColor: primaryColor.withOpacity(0.05),
-          child: Center(
-            child: isDriver
-                ? const Icon(
-                    Icons.airline_seat_recline_extra,
-                    size: 28,
-                    color: darkColor,
-                  )
-                : Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        seatNumber.toString(),
-                        style: TextStyle(
-                          color: isSelected ? Colors.white : darkColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      Icon(
-                        Icons.event_seat,
-                        size: 20,
-                        color: isSelected
-                            ? Colors.white
-                            : darkColor.withOpacity(0.7),
-                      ),
-                    ],
-                  ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                seatNumber.toString(),
+                style: TextStyle(
+                  color: textColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14, // Smaller font for seat number
+                ),
+              ),
+              const Icon(
+                Icons.event_seat,
+                size: 16, // Smaller icon
+                color: Colors.transparent, // Icon is just for visual structure, color handled by text/background
+              ),
+            ],
           ),
         ),
       ),
@@ -750,31 +775,39 @@ class _PilihKursiScreenState extends State<PilihKursiScreen>
 
   Widget _buildLegendItem(Color color, String text) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), // Reduced padding
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20), // Maintain roundness
         border: Border.all(color: Colors.grey[200]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 3, // Reduced blur
+            offset: const Offset(0, 1), // Reduced offset
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 16,
-            height: 16,
+            width: 18, // Smaller color swatch
+            height: 18, // Smaller color swatch
             decoration: BoxDecoration(
               color: color,
               borderRadius: BorderRadius.circular(4),
               border: Border.all(
-                color: color == lightColor ? Colors.grey[300]! : color,
+                color: color == lightColor ? Colors.grey[400]! : color.darken(0.1),
+                width: 1.0, // Thinner border
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6), // Reduced space
           Text(
             text,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 12, // Reduced font size
               fontWeight: FontWeight.w500,
               color: darkColor.withOpacity(0.8),
             ),
@@ -782,5 +815,15 @@ class _PilihKursiScreenState extends State<PilihKursiScreen>
         ],
       ),
     );
+  }
+}
+
+// Extension to darken a color, useful for borders/text with translucent backgrounds
+extension ColorBrightness on Color {
+  Color darken([double amount = .1]) {
+    assert(amount >= 0 && amount <= 1);
+    final hsl = HSLColor.fromColor(this);
+    final hslDark = hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0));
+    return hslDark.toColor();
   }
 }
