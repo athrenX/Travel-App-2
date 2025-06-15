@@ -89,7 +89,10 @@ class _PembayaranScreenState extends State<PembayaranScreen> {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder:
-                (ctx) => PembayaranSuksesScreen(pemesanan: updatedPemesanan),
+                (ctx) => PembayaranSuksesScreen(
+                  pemesanan: updatedPemesanan,
+                  paymentMethod: _selectedPaymentMethod,
+                ),
           ),
         );
       }
@@ -290,10 +293,45 @@ class _PembayaranScreenState extends State<PembayaranScreen> {
                         color: textColor.withOpacity(0.7),
                       ),
                     ),
+                    const SizedBox(height: 12),
+                    Center(
+                      child: Image.asset(
+                        'assets/images/Fake_QR.png',
+                        height: 200, // Ukuran besar
+                        width: 200, // Ukuran besar
+                        fit: BoxFit.contain,
+                        errorBuilder:
+                            (context, error, stackTrace) => Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.qr_code,
+                                  size: 120,
+                                  color: Colors.grey,
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  'QR code tidak ditemukan',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.red,
+                                  ),
+                                ),
+                              ],
+                            ),
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Image.asset(
-                      'assets/Fake_QR.png',
-                      height: 48,
+                    Center(
+                      child: Text(
+                        'Scan QR ini untuk pembayaran cepat',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: textColor.withOpacity(0.6),
+                          fontStyle: FontStyle.italic,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                     ), // ganti dengan asset QRIS kamu
                   ] else if (_selectedPaymentMethod == 'Kartu Kredit') ...[
                     Text(

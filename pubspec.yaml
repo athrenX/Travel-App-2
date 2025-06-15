@@ -65,7 +65,8 @@ flutter:
     - assets/images/karimun jawa.webp
     - assets/images/minibus.jpg
     - assets/images/arvind.jpg
-
+    - assets/images/Fake_QR.png
+ 
 
 
   # Deklarasi folder gambar untuk diakses dalam aplikasi

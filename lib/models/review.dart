@@ -1,7 +1,7 @@
 class Review {
   final String id;
   final String userId;
-  final String destinasiId;
+  final int destinasiId;
   final String orderId;
   final String userName;
   final int rating;
@@ -21,27 +21,27 @@ class Review {
 
   factory Review.fromJson(Map<String, dynamic> json) {
     return Review(
-      id: json['id'],
-      userId: json['userId'],
-      destinasiId: json['destinasiId'],
-      orderId: json['orderId'],
-      userName: json['userName'],
-      rating: json['rating'],
+      id: json['id'].toString(),
+      userId: json['user_id'].toString(),
+      destinasiId: int.parse(json['destinasi_id'].toString()),
+      orderId: json['order_id'].toString(),
+      userName: json['user_name'],
+      rating: int.parse(json['rating'].toString()),
       comment: json['comment'],
-      createdAt: DateTime.parse(json['createdAt']),
+      createdAt: DateTime.parse(json['created_at']),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'userId': userId,
-      'destinasiId': destinasiId,
-      'orderId': orderId,
-      'userName': userName,
-      'rating': rating,
-      'comment': comment,
-      'createdAt': createdAt.toIso8601String(),
+      "id": id,
+      "user_id": userId,
+      "destinasi_id": destinasiId,
+      "order_id": orderId,
+      "user_name": userName,
+      "rating": rating,
+      "comment": comment,
+      "created_at": createdAt.toIso8601String(), // Format tanggal ke string ISO
     };
   }
 }

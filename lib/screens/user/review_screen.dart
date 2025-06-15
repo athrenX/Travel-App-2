@@ -29,12 +29,22 @@ class _ReviewScreenState extends State<ReviewScreen> {
   @override
   void initState() {
     super.initState();
-    final reviewProvider = Provider.of<ReviewProvider>(context, listen: false);
-    _existingReview = reviewProvider.getReviewByOrder(widget.pemesanan.id);
+    _loadExistingReview();
+  }
 
-    if (_existingReview != null) {
-      _rating = _existingReview!.rating;
-      _commentController.text = _existingReview!.comment;
+  void _loadExistingReview() async {
+    final reviewProvider = Provider.of<ReviewProvider>(context, listen: false);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final review = await reviewProvider.fetchReviewByOrder(
+      widget.pemesanan.id,
+      authProvider.token ?? '',
+    );
+    if (mounted && review != null) {
+      setState(() {
+        _existingReview = review;
+        _rating = _existingReview!.rating;
+        _commentController.text = _existingReview!.comment;
+      });
     }
   }
 
@@ -120,11 +130,30 @@ class _ReviewScreenState extends State<ReviewScreen> {
                       child: Stack(
                         children: [
                           // Background image
-                          Image.asset(
+                          Image.network(
                             widget.destinasi.gambar,
                             height: 200,
                             width: double.infinity,
                             fit: BoxFit.cover,
+                            errorBuilder:
+                                (context, error, stackTrace) => Container(
+                                  height: 200,
+                                  color: Colors.grey.shade200,
+                                  child: Icon(
+                                    Icons.broken_image,
+                                    size: 60,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                            loadingBuilder: (context, child, progress) {
+                              if (progress == null) return child;
+                              return Container(
+                                height: 200,
+                                child: Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                              );
+                            },
                           ),
                           // Gradient overlay
                           Container(
@@ -474,7 +503,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
       final review = Review(
         id: _existingReview?.id ?? '', // ID dikosongkan saat post baru
         userId: authProvider.user?.id ?? '',
-        destinasiId: widget.destinasi.id,
+        destinasiId: int.parse(widget.destinasi.id.toString()),
         orderId: widget.pemesanan.id,
         userName: userName,
         rating: _rating,

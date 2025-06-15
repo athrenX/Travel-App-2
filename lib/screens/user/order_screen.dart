@@ -662,7 +662,10 @@ class _OrderScreenState extends State<OrderScreen> {
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 12),
               ),
-              child: const Text('Batalkan'),
+              child: const Text(
+                'Batalkan',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+              ),
             ),
             const SizedBox(width: 8),
             ElevatedButton(
@@ -682,7 +685,10 @@ class _OrderScreenState extends State<OrderScreen> {
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 12),
               ),
-              child: const Text('Bayar Sekarang'),
+              child: const Text(
+                'Bayar Sekarang',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+              ),
             ),
           ],
         );

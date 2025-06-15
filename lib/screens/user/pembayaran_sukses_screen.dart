@@ -5,8 +5,12 @@ import 'package:travelapp/screens/user/home_screen.dart';
 
 class PembayaranSuksesScreen extends StatelessWidget {
   final Pemesanan pemesanan;
-
-  const PembayaranSuksesScreen({super.key, required this.pemesanan});
+  final String paymentMethod;
+  const PembayaranSuksesScreen({
+    super.key,
+    required this.pemesanan,
+    required this.paymentMethod,
+  });
 
   static const Color primaryColor = Color(0xFF4361EE);
   static const Color backgroundColor = Color(0xFFF8F9FA);
@@ -96,6 +100,10 @@ class PembayaranSuksesScreen extends StatelessWidget {
                 'Total Dibayar',
                 _formatRupiah(pemesanan.totalHarga),
               ),
+              _buildDetailRow(
+                'Metode Pembayaran',
+                paymentMethod,
+              ), // <--- TAMBAHKAN INI
               const SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,
