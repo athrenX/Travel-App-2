@@ -7,6 +7,7 @@ import 'package:travelapp/screens/admin/kelola_pembayaran_screen.dart';
 import 'package:travelapp/screens/admin/AdminOrderListScreen.dart';
 import 'package:travelapp/screens/admin/kelola_review_screen.dart';
 import 'package:travelapp/screens/auth/login_screen.dart';
+import 'package:travelapp/providers/review_provider.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -17,6 +18,8 @@ class DashboardScreen extends StatelessWidget {
     const Color primaryBlue = Color(0xFF1A73E8);
     const Color darkBlue = Color(0xFF0D47A1);
     const Color lightBlue = Color(0xFFE8F0FE);
+    final reviewProvider = Provider.of<ReviewProvider>(context);
+    final reviews = reviewProvider.allReviews; // atau nama variabel yang sesuai
 
     return Scaffold(
       appBar: AppBar(
@@ -88,8 +91,25 @@ class DashboardScreen extends StatelessWidget {
                           icon: Icons.reviews_outlined,
                           title: 'Kelola Review',
                           iconColor: Colors.teal,
-                          onTap:
-                              () => _navigateTo(context, KelolaReviewScreen()),
+                          onTap: () async {
+                            final reviewProvider = Provider.of<ReviewProvider>(
+                              context,
+                              listen: false,
+                            );
+                            final authProvider = Provider.of<AuthProvider>(
+                              context,
+                              listen: false,
+                            );
+                            final token = authProvider.token ?? '';
+                            await reviewProvider.fetchAllReviews(token);
+
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const KelolaReviewScreen(),
+                              ),
+                            );
+                          },
                         );
 
                       default:

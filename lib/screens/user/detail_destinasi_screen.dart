@@ -1294,12 +1294,17 @@ class _DetailDestinasiScreenState extends State<DetailDestinasiScreen> {
                                                   rating: review.rating,
                                                   comment: review.comment,
                                                   date: DateFormat(
-                                                    'd MMM,yyyy',
+                                                    'd MMM, yyyy',
                                                     'id_ID',
                                                   ).format(review.createdAt),
+                                                  userProfilePictureUrl:
+                                                      review
+                                                          .userProfilePictureUrl, // <-- WAJIB!
                                                 ),
-                                                if (reviews.indexOf(review) <
-                                                    reviews.length - 1)
+                                                if (shownReviews.indexOf(
+                                                      review,
+                                                    ) <
+                                                    shownReviews.length - 1)
                                                   const Divider(height: 1),
                                               ],
                                             ),
@@ -1350,12 +1355,13 @@ class ReviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('Render ReviewCard: $name, $userProfilePictureUrl');
+    // Cek URL valid (http/https) dan tidak kosong
     final bool hasProfileImage =
-        userProfilePictureUrl != null && userProfilePictureUrl!.isNotEmpty;
-
-    debugPrint(
-      'ReviewCard for ${name}: FINAL Image URL being used: ${userProfilePictureUrl ?? "null (using initials fallback)"}',
-    );
+        userProfilePictureUrl != null &&
+        userProfilePictureUrl!.isNotEmpty &&
+        (userProfilePictureUrl!.startsWith('http://') ||
+            userProfilePictureUrl!.startsWith('https://'));
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -1365,22 +1371,23 @@ class ReviewCard extends StatelessWidget {
           Row(
             children: [
               CircleAvatar(
+                radius: 24,
                 backgroundColor: Colors.blue.shade100,
                 backgroundImage:
                     hasProfileImage
                         ? NetworkImage(userProfilePictureUrl!)
-                            as ImageProvider<Object>?
                         : null,
                 child:
-                    hasProfileImage
-                        ? null
-                        : Text(
+                    !hasProfileImage
+                        ? Text(
                           (name.isNotEmpty ? name[0] : '?').toUpperCase(),
                           style: TextStyle(
                             color: Colors.blue.shade800,
                             fontWeight: FontWeight.bold,
+                            fontSize: 20,
                           ),
-                        ),
+                        )
+                        : null,
               ),
               const SizedBox(width: 12),
               Expanded(

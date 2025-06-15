@@ -5,6 +5,8 @@ import 'dart:convert';
 
 class ReviewProvider with ChangeNotifier {
   Map<String, List<Review>> _reviews = {};
+  List<Review> _allReviews = [];
+
   String? _errorMessage;
   bool _isLoading = false;
 
@@ -15,7 +17,38 @@ class ReviewProvider with ChangeNotifier {
     return _reviews[destinasiId] ?? [];
   }
 
-  final String baseUrl = 'http://192.168.1.4:8000/api';
+  List<Review> get allReviews => _allReviews;
+
+  Future<void> fetchAllReviews(String token) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/reviews'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        final List<dynamic> data = decoded is List ? decoded : decoded['data'];
+        _allReviews = data.map((json) => Review.fromJson(json)).toList();
+        print('[DEBUG] Total review didapatkan: ${_allReviews.length}');
+      } else {
+        _errorMessage =
+            'Gagal memuat semua review: ${response.statusCode} ${response.body}';
+      }
+    } catch (e) {
+      _errorMessage = 'Error: $e';
+    }
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  final String baseUrl = 'http://192.168.1.14:8000/api';
 
   Future<void> postReview(
     String userId,
