@@ -31,8 +31,6 @@ class KendaraanProvider with ChangeNotifier {
       _kendaraanList[index] = updatedKendaraan;
       notifyListeners();
     } else {
-      // Jika kendaraan tidak ditemukan (misal baru ditambahkan), tambahkan saja.
-      // Meskipun untuk kasus ini, harusnya sudah ada di list.
       print("DEBUG: Kendaraan ${updatedKendaraan.id} tidak ditemukan di list lokal, menambahkan.");
       _kendaraanList.add(updatedKendaraan);
       notifyListeners();

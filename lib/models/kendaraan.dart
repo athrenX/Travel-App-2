@@ -1,10 +1,9 @@
 import 'dart:convert';
 
 class Kendaraan {
-  final String id; // Pastikan ini String
+  final String id;
   final String jenis;
   final int kapasitas;
-  final double harga;
   final String tipe;
   final String gambar;
   final String fasilitas;
@@ -15,7 +14,6 @@ class Kendaraan {
     required this.id,
     required this.jenis,
     required this.kapasitas,
-    required this.harga,
     required this.tipe,
     required this.gambar,
     this.fasilitas = 'AC, Audio',
@@ -28,7 +26,6 @@ class Kendaraan {
       'id': id,
       'jenis': jenis,
       'kapasitas': kapasitas,
-      'harga': harga,
       'tipe': tipe,
       'gambar': gambar,
       'fasilitas': fasilitas,
@@ -38,12 +35,7 @@ class Kendaraan {
   }
 
   factory Kendaraan.fromMap(Map<String, dynamic> map) {
-    final String id = map['id']?.toString() ?? ''; // PENTING: .toString()
-    final double harga = map['harga'] is int
-        ? map['harga'].toDouble()
-        : map['harga'] is String
-            ? double.tryParse(map['harga'].toString()) ?? 0.0
-            : map['harga']?.toDouble() ?? 0.0;
+    final String id = map['id']?.toString() ?? '';
 
     List<int> parsedAvailableSeats = [];
     if (map['available_seats'] != null) {
@@ -89,7 +81,6 @@ class Kendaraan {
       id: id,
       jenis: map['jenis']?.toString() ?? '',
       kapasitas: map['kapasitas'] ?? 0,
-      harga: harga,
       tipe: map['tipe']?.toString() ?? '',
       gambar: map['gambar']?.toString() ?? '',
       fasilitas: map['fasilitas']?.toString() ?? 'AC, Audio',

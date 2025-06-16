@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:travelapp/models/review.dart';
 
 class ReviewService {
-  static const String _baseUrl = 'http://192.168.1.4:8000/api';
+  static const String _baseUrl = 'http://192.168.1.13:8000/api';
 
   static Future<List<Review>> fetchReviewsByDestinasi(
     String destinasiId,

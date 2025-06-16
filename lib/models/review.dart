@@ -34,7 +34,7 @@ class Review {
       if (fotoProfil.startsWith('http')) {
         fullProfileUrl = fotoProfil;
       } else {
-        fullProfileUrl = 'http://192.168.1.14:8000/storage/$fotoProfil';
+        fullProfileUrl = 'http://192.168.1.13:8000/storage/$fotoProfil';
       }
     } else {
       fullProfileUrl = null;
@@ -49,7 +49,7 @@ class Review {
       userProfilePictureUrl:
           json['user_profile_picture_url'] ??
           (json['user'] != null && json['user']['foto_profil'] != null
-              ? 'http://192.168.1.14:8000/storage/' +
+              ? 'http://192.168.1.13:8000/storage/' +
                   json['user']['foto_profil']
               : null),
       destinasiName: json['destinasi']?['nama'],

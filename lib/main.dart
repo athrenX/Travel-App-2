@@ -9,8 +9,11 @@ import 'package:travelapp/providers/order_provider.dart';
 import 'package:travelapp/providers/review_provider.dart';
 import 'package:travelapp/providers/theme_provider.dart';
 import 'package:travelapp/providers/wishlist_provider.dart';
-import 'package:travelapp/providers/activity_provider.dart'; // Pastikan import ini ada
-import 'package:travelapp/services/activity_service.dart'; // Pastikan import ini ada
+import 'package:travelapp/providers/activity_provider.dart';
+import 'package:travelapp/services/activity_service.dart';
+
+// Import tema yang sudah Anda definisikan
+import 'package:travelapp/utils/app_theme.dart'; // Asumsi file tema Anda berada di themes/theme.dart
 
 import 'package:travelapp/screens/auth/login_screen.dart';
 import 'package:travelapp/screens/auth/register_screen.dart';
@@ -45,7 +48,7 @@ class _MyAppWrapperState extends State<MyAppWrapper> {
     WidgetsFlutterBinding.ensureInitialized();
     await initializeDateFormatting('id_ID', null);
     await _authProvider.tryAutoLogin();
-    await _themeProvider.loadTheme();
+    await _themeProvider.loadTheme(); // Memuat tema yang tersimpan
 
     setState(() {
       _isInitialized = true;
@@ -70,14 +73,11 @@ class _MyAppWrapperState extends State<MyAppWrapper> {
         ChangeNotifierProvider<WishlistProvider>(
           create: (_) => WishlistProvider(),
         ),
-
         ChangeNotifierProvider(create: (_) => ReviewProvider()),
         ChangeNotifierProvider(
-          create:
-              (_) => ActivityProvider(
-                activityService:
-                    ActivityService(), // pakai default baseUrl di service
-              ),
+          create: (_) => ActivityProvider(
+            activityService: ActivityService(),
+          ),
         ),
       ],
       child: const MyApp(),
@@ -96,30 +96,8 @@ class MyApp extends StatelessWidget {
           title: 'Travel App',
           debugShowCheckedModeBanner: false,
           themeMode: themeProvider.themeMode,
-          theme: ThemeData(
-            brightness: Brightness.light,
-            scaffoldBackgroundColor: Colors.white,
-            appBarTheme: const AppBarTheme(
-              backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
-            ),
-            cardColor: Colors.white,
-            textTheme: const TextTheme(
-              bodyLarge: TextStyle(color: Colors.black87),
-            ),
-          ),
-          darkTheme: ThemeData(
-            brightness: Brightness.dark,
-            scaffoldBackgroundColor: Colors.black,
-            appBarTheme: const AppBarTheme(
-              backgroundColor: Colors.black,
-              foregroundColor: Colors.white,
-            ),
-            cardColor: Colors.grey[900],
-            textTheme: const TextTheme(
-              bodyLarge: TextStyle(color: Colors.white70),
-            ),
-          ),
+          theme: lightTheme, // Gunakan lightTheme yang sudah didefinisikan
+          darkTheme: darkTheme, // Gunakan darkTheme yang sudah didefinisikan
           home: const SplashScreen(),
           routes: {
             '/login': (context) => const LoginScreen(),

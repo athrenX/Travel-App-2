@@ -48,7 +48,7 @@ class ReviewProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  final String baseUrl = 'http://192.168.1.14:8000/api';
+  final String baseUrl = 'http://192.168.1.13:8000/api';
 
   Future<void> postReview(
     String userId,

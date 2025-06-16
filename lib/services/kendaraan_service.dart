@@ -2,10 +2,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travelapp/models/kendaraan.dart';
-import 'package:travelapp/config.dart'; // Ini sudah benar sekarang setelah membuat file config.dart
+import 'package:travelapp/config.dart';
 
 class KendaraanService {
-  static const String _baseUrl = AppConfig.baseUrl; // Menggunakan base URL dari config
+  static const String _baseUrl = AppConfig.baseUrl;
 
   static Future<Map<String, String>> _getHeaders() async {
     final prefs = await SharedPreferences.getInstance();
@@ -37,8 +37,6 @@ class KendaraanService {
       rethrow;
     }
   }
-
-  // --- Metode baru untuk menahan dan melepas kursi ---
 
   static Future<Kendaraan> holdKendaraanSeats(String kendaraanId, List<int> seatsToHold) async {
     final url = Uri.parse('$_baseUrl/api/kendaraan/$kendaraanId/hold-seats');

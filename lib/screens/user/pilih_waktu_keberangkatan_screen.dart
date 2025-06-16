@@ -18,7 +18,18 @@ class _PilihWaktuKeberangkatanScreenState
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
 
+  @override
+  void initState() {
+    super.initState();
+    // Inisialisasi dengan tanggal dan waktu saat ini jika belum ada
+    _selectedDate = DateTime.now();
+    _selectedTime = TimeOfDay.now();
+  }
+
   Future<void> _selectDate(BuildContext context) async {
+    final theme = Theme.of(context); // Akses tema
+    final colorScheme = theme.colorScheme;
+
     final DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: _selectedDate ?? DateTime.now(),
@@ -26,15 +37,15 @@ class _PilihWaktuKeberangkatanScreenState
       lastDate: DateTime.now().add(const Duration(days: 365)),
       builder: (BuildContext context, Widget? child) {
         return Theme(
-          data: ThemeData.light().copyWith(
-            primaryColor: const Color(0xFF1A73E8), // primaryBlue
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF1A73E8), // primaryBlue
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: Colors.black87,
+          // Gunakan tema aplikasi Anda untuk DatePicker
+          data: theme.copyWith(
+            colorScheme: colorScheme.copyWith(
+              primary: colorScheme.primary, // Warna utama DatePicker
+              onPrimary: colorScheme.onPrimary, // Warna teks/ikon di primary
+              surface: colorScheme.surface, // Background DatePicker
+              onSurface: colorScheme.onSurface, // Warna teks di background
             ),
-            dialogBackgroundColor: Colors.white,
+            dialogBackgroundColor: colorScheme.surface, // Background dialog
           ),
           child: child!,
         );
@@ -48,20 +59,23 @@ class _PilihWaktuKeberangkatanScreenState
   }
 
   Future<void> _selectTime(BuildContext context) async {
+    final theme = Theme.of(context); // Akses tema
+    final colorScheme = theme.colorScheme;
+
     final TimeOfDay? pickedTime = await showTimePicker(
       context: context,
       initialTime: _selectedTime ?? TimeOfDay.now(),
       builder: (BuildContext context, Widget? child) {
         return Theme(
-          data: ThemeData.light().copyWith(
-            primaryColor: const Color(0xFF1A73E8), // primaryBlue
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF1A73E8), // primaryBlue
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: Colors.black87,
+          // Gunakan tema aplikasi Anda untuk TimePicker
+          data: theme.copyWith(
+            colorScheme: colorScheme.copyWith(
+              primary: colorScheme.primary,
+              onPrimary: colorScheme.onPrimary,
+              surface: colorScheme.surface,
+              onSurface: colorScheme.onSurface,
             ),
-            dialogBackgroundColor: Colors.white,
+            dialogBackgroundColor: colorScheme.surface, // Background dialog
           ),
           child: child!,
         );
@@ -75,7 +89,8 @@ class _PilihWaktuKeberangkatanScreenState
   }
 
   String _formatDate(DateTime date) {
-    return DateFormat('dd MMMM yyyy', 'id_ID').format(date);
+    // Perbaiki karakter unicode yang salah, pastikan hanya karakter ASCII atau karakter yang valid dalam string.
+    return DateFormat('dd MMMM, yyyy', 'id_ID').format(date); // Changed ' silam' to 'yyyy' for year
   }
 
   String _formatTime(TimeOfDay time) {
@@ -84,23 +99,24 @@ class _PilihWaktuKeberangkatanScreenState
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryBlue = Color(0xFF1A73E8);
-    const Color darkBlue = Color(0xFF0D47A1);
-    const Color whiteColor = Colors.white;
+    // Akses tema di sini
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
 
     return Scaffold(
+      backgroundColor: colorScheme.background, // Background dari tema
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Pilih Waktu Keberangkatan',
-          style: TextStyle(
-            color: whiteColor,
+          style: textTheme.titleLarge?.copyWith(
+            color: colorScheme.onPrimary,
             fontWeight: FontWeight.bold,
-            fontSize: 20,
           ),
         ),
-        backgroundColor: primaryBlue,
+        backgroundColor: colorScheme.primary, // Warna AppBar
         elevation: 0,
-        iconTheme: const IconThemeData(color: whiteColor),
+        iconTheme: IconThemeData(color: colorScheme.onPrimary), // Warna ikon AppBar
         centerTitle: true,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
@@ -113,6 +129,7 @@ class _PilihWaktuKeberangkatanScreenState
           children: [
             Card(
               elevation: 4,
+              color: colorScheme.surface, // Warna card
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
               child: Padding(
@@ -122,28 +139,26 @@ class _PilihWaktuKeberangkatanScreenState
                   children: [
                     Text(
                       widget.destinasi.nama,
-                      style: const TextStyle(
-                        fontSize: 22,
+                      style: textTheme.headlineSmall?.copyWith( // Sesuaikan gaya teks
                         fontWeight: FontWeight.bold,
-                        color: darkBlue,
+                        color: textTheme.bodyLarge?.color, // Warna teks
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       widget.destinasi.lokasi,
-                      style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                      style: textTheme.bodyMedium?.copyWith(color: textTheme.bodyMedium?.color?.withOpacity(0.7)), // Warna teks
                     ),
-                    const Divider(height: 24),
+                    Divider(height: 24, color: theme.dividerColor), // Divider
                     Text(
                       'Harga: ${NumberFormat.currency(
-                        locale: 'id_ID',
-                        symbol: 'Rp ',
-                        decimalDigits: 0,
-                      ).format(widget.destinasi.harga)} / orang',
-                      style: const TextStyle(
-                        fontSize: 18,
+                            locale: 'id_ID',
+                            symbol: 'Rp ',
+                            decimalDigits: 0,
+                          ).format(widget.destinasi.harga)} / orang',
+                      style: textTheme.titleMedium?.copyWith( // Sesuaikan gaya teks
                         fontWeight: FontWeight.bold,
-                        color: Colors.green,
+                        color: colorScheme.secondary, // Warna harga
                       ),
                     ),
                   ],
@@ -158,6 +173,7 @@ class _PilihWaktuKeberangkatanScreenState
                   ? 'Belum dipilih'
                   : _formatDate(_selectedDate!),
               onTap: () => _selectDate(context),
+              theme: theme, // Teruskan tema
             ),
             const SizedBox(height: 16),
             _buildSelectionCard(
@@ -167,6 +183,7 @@ class _PilihWaktuKeberangkatanScreenState
                   ? 'Belum dipilih'
                   : _formatTime(_selectedTime!),
               onTap: () => _selectTime(context),
+              theme: theme, // Teruskan tema
             ),
             const Spacer(),
             ElevatedButton(
@@ -185,17 +202,19 @@ class _PilihWaktuKeberangkatanScreenState
                     }
                   : null, // Disable button if date or time not selected
               style: ElevatedButton.styleFrom(
-                backgroundColor: primaryBlue,
-                foregroundColor: whiteColor,
+                backgroundColor: colorScheme.primary, // Warna tombol
+                foregroundColor: colorScheme.onPrimary, // Warna teks tombol
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 elevation: 4,
+                disabledBackgroundColor: colorScheme.surfaceVariant, // Warna disabled
+                disabledForegroundColor: textTheme.bodyMedium?.color?.withOpacity(0.4), // Warna teks disabled
               ),
-              child: const Text(
+              child: Text(
                 'Lanjutkan ke Pemilihan Kendaraan',
-                style: TextStyle(
+                style: textTheme.titleMedium?.copyWith( // Gaya teks tombol
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -213,9 +232,14 @@ class _PilihWaktuKeberangkatanScreenState
     required String title,
     required String value,
     required VoidCallback onTap,
+    required ThemeData theme, // Tambahkan parameter tema
   }) {
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
     return Card(
       elevation: 2,
+      color: colorScheme.surface, // Warna card
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: onTap,
@@ -224,7 +248,7 @@ class _PilihWaktuKeberangkatanScreenState
           padding: const EdgeInsets.all(16.0),
           child: Row(
             children: [
-              Icon(icon, color: const Color(0xFF1A73E8), size: 28),
+              Icon(icon, color: colorScheme.primary, size: 28), // Ikon
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -232,26 +256,25 @@ class _PilihWaktuKeberangkatanScreenState
                   children: [
                     Text(
                       title,
-                      style: TextStyle(
+                      style: textTheme.titleSmall?.copyWith(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: Colors.grey[700],
+                        color: textTheme.bodyLarge?.color?.withOpacity(0.7), // Teks judul
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       value,
-                      style: const TextStyle(
+                      style: textTheme.titleMedium?.copyWith(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF0D47A1),
+                        color: textTheme.bodyLarge?.color, // Teks nilai
                       ),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.arrow_forward_ios,
-                  size: 20, color: Colors.grey),
+              Icon(Icons.arrow_forward_ios, size: 20, color: textTheme.bodyMedium?.color?.withOpacity(0.6)), // Ikon panah
             ],
           ),
         ),

@@ -1,12 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart'; // Ensure this import is correct and provider is in pubspec.yaml
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../providers/auth_provider.dart';
 import '../../models/user.dart';
 import 'package:travelapp/providers/wishlist_provider.dart';
-import 'package:travelapp/providers/theme_provider.dart';
+// import 'package:travelapp/providers/theme_provider.dart'; // This line remains commented out as requested
 import 'package:http/http.dart' as http;
 
 String _currentPaymentMethod = 'Bank Transfer';
@@ -43,12 +43,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadUser() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    // Ensure user is not null before accessing properties like paymentMethod
+    user = authProvider.user; // Assign user here
     _selectedPaymentMethod = user?.paymentMethod ?? 'Bank Transfer';
     _currentPaymentMethod = _selectedPaymentMethod;
 
     if (mounted) {
       setState(() {
-        user = authProvider.user;
         _nameController.text = user?.nama ?? '';
         _emailController.text = user?.email ?? '';
         _isLoading = false;
@@ -57,8 +58,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showChangePasswordDialog() {
-    final TextEditingController _nameController = TextEditingController();
-    final TextEditingController _emailController = TextEditingController();
+    // These controllers should ideally be defined once per dialog, or globally if reused
+    // For this specific dialog, they are local, which is fine.
     final TextEditingController _oldPasswordController =
         TextEditingController();
     final TextEditingController _newPasswordController =
@@ -398,28 +399,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _imageFile != null
                 ? kIsWeb
                     ? Image.network(
-                      _imageFile!.path,
-                      width: 120,
-                      height: 120,
-                      fit: BoxFit.cover,
-                    )
+                        _imageFile!.path,
+                        width: 120,
+                        height: 120,
+                        fit: BoxFit.cover,
+                      )
                     : Image.file(
-                      _imageFile!,
-                      width: 120,
-                      height: 120,
-                      fit: BoxFit.cover,
-                    )
+                        _imageFile!,
+                        width: 120,
+                        height: 120,
+                        fit: BoxFit.cover,
+                      )
                 : user?.fotoProfil != null && user!.fotoProfil!.isNotEmpty
-                ? Image.network(
-                  user!.fotoProfil!,
-                  width: 120,
-                  height: 120,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return _buildDefaultAvatar();
-                  },
-                )
-                : _buildDefaultAvatar(),
+                    ? Image.network(
+                        user!.fotoProfil!,
+                        width: 120,
+                        height: 120,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return _buildDefaultAvatar();
+                        },
+                      )
+                    : _buildDefaultAvatar(),
       ),
     );
   }
@@ -434,7 +435,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           end: Alignment.bottomRight,
         ),
       ),
-      child: Center(child: Icon(Icons.person, size: 60, color: Colors.white)),
+      child: const Center(child: Icon(Icons.person, size: 60, color: Colors.white)),
     );
   }
 
@@ -562,13 +563,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           setState(() {
             _selectedPaymentMethod = method;
           });
-          Navigator.pop(context);
+          Navigator.pop(context); // Close the dialog after selection
         },
       ),
     );
   }
 
   void _showEditProfileDialog() {
+    // Make sure to initialize controllers with current user data when the dialog opens
+    _nameController.text = user?.nama ?? '';
+    _emailController.text = user?.email ?? '';
+
     showDialog(
       context: context,
       builder:
@@ -668,18 +673,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     );
                     await authProvider.updateUserProfile(
                       nama: _nameController.text,
-                      fotoProfil: _imageFile,
+                      // Pass _imageFile if you want to update it from here,
+                      // though current logic suggests image update is separate.
+                      // If you want to allow changing profile image from this dialog,
+                      // you'd need a similar pick image mechanism here.
+                      fotoProfil: null, // Set to null or a new File if updated
                       email: _emailController.text,
                     );
 
-                    if (mounted) {
-                      setState(() {
-                        user = user?.copyWith(
-                          nama: _nameController.text,
-                          email: _emailController.text,
-                        );
-                      });
-                    }
+                    // Re-load user data after update to reflect changes
+                    await _loadUser();
 
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -740,248 +743,284 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body:
           _isLoading
               ? Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.blue[800]!),
-                ),
-              )
-              : Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Colors.blue[50]!, Colors.white],
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.blue[800]!),
                   ),
-                ),
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      // Profile Image Section
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.1),
-                              spreadRadius: 2,
-                              blurRadius: 10,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                _buildProfileImage(),
-                                Positioned(
-                                  bottom: -5,
-                                  right: -5,
-                                  child: _buildCameraIcon(),
-                                ),
-                              ],
-                            ),
-                            if (_imageFile != null)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 16),
-                                child: ElevatedButton.icon(
-                                  onPressed: () async {
-                                    final authProvider =
-                                        Provider.of<AuthProvider>(
-                                          context,
-                                          listen: false,
-                                        );
-                                    try {
-                                      await authProvider.updateUserProfile(
-                                        nama: user?.nama ?? '',
-                                        email: user?.email ?? '',
-                                        fotoProfil: _imageFile,
-                                      );
-                                      await _loadUser();
-                                      setState(() {
-                                        _imageFile = null;
-                                      });
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: const Row(
-                                            children: [
-                                              Icon(
-                                                Icons.check_circle,
-                                                color: Colors.white,
-                                              ),
-                                              SizedBox(width: 8),
-                                              Text(
-                                                'Foto profil berhasil diperbarui',
-                                              ),
-                                            ],
-                                          ),
-                                          backgroundColor: Colors.green[600],
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    } catch (e) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Row(
-                                            children: [
-                                              const Icon(
-                                                Icons.error,
-                                                color: Colors.white,
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Text('Gagal mengunggah foto: $e'),
-                                            ],
-                                          ),
-                                          backgroundColor: Colors.red[600],
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                  },
-                                  icon: const Icon(Icons.save),
-                                  label: const Text("Simpan Foto"),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.blue[800],
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 20,
-                                      vertical: 10,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    elevation: 2,
-                                  ),
-                                ),
-                              ),
-                            const SizedBox(height: 16),
-                            if (user != null) ...[
-                              Text(
-                                user!.nama,
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.blue[900],
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                user!.email,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.grey[600],
-                                ),
+                )
+              : Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Colors.blue[50]!, Colors.white],
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        // Profile Image Section
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.1),
+                                spreadRadius: 2,
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
                               ),
                             ],
-                          ],
+                          ),
+                          child: Column(
+                            children: [
+                              Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  _buildProfileImage(),
+                                  Positioned(
+                                    bottom: -5,
+                                    right: -5,
+                                    child: _buildCameraIcon(),
+                                  ),
+                                ],
+                              ),
+                              if (_imageFile != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 16),
+                                  child: ElevatedButton.icon(
+                                    onPressed: () async {
+                                      final authProvider =
+                                          Provider.of<AuthProvider>(
+                                            context,
+                                            listen: false,
+                                          );
+                                      try {
+                                        await authProvider.updateUserProfile(
+                                          nama: user?.nama ?? '',
+                                          email: user?.email ?? '',
+                                          fotoProfil: _imageFile,
+                                        );
+                                        await _loadUser();
+                                        setState(() {
+                                          _imageFile = null;
+                                        });
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: const Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.check_circle,
+                                                  color: Colors.white,
+                                                ),
+                                                SizedBox(width: 8),
+                                                Text(
+                                                  'Foto profil berhasil diperbarui',
+                                                ),
+                                              ],
+                                            ),
+                                            backgroundColor: Colors.green[600],
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(
+                                                8,
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      } catch (e) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Row(
+                                              children: [
+                                                const Icon(
+                                                  Icons.error,
+                                                  color: Colors.white,
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Text('Gagal mengunggah foto: $e'),
+                                              ],
+                                            ),
+                                            backgroundColor: Colors.red[600],
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(
+                                                8,
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                    icon: const Icon(Icons.save),
+                                    label: const Text("Simpan Foto"),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.blue[800],
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 20,
+                                        vertical: 10,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      elevation: 2,
+                                    ),
+                                  ),
+                                ),
+                              const SizedBox(height: 16),
+                              if (user != null) ...[
+                                Text(
+                                  user!.nama,
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue[900],
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  user!.email,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
                         ),
-                      ),
 
-                      const SizedBox(height: 24),
+                        const SizedBox(height: 24),
 
-                      // Menu Options
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.1),
-                              spreadRadius: 2,
-                              blurRadius: 10,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
+                        // Menu Options
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.1),
+                                spreadRadius: 2,
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            children: [
+                              _buildMenuTile(
+                                icon: Icons.payment,
+                                title: 'Metode Pembayaran',
+                                subtitle: _selectedPaymentMethod,
+                                onTap: _showPaymentMethodDialog,
+                              ),
+                              _buildDivider(),
+                              _buildMenuTile(
+                                icon: Icons.edit,
+                                title: 'Edit Profil',
+                                subtitle: 'Ubah informasi profil Anda',
+                                onTap: _showEditProfileDialog,
+                              ),
+                              _buildDivider(),
+                              _buildMenuTile(
+                                icon: Icons.lock,
+                                title: 'Ubah Password',
+                                subtitle: 'Ganti password akun Anda',
+                                onTap: _showChangePasswordDialog,
+                              ),
+                              _buildDivider(),
+                              // The _buildThemeToggle() call is intentionally removed here
+                            ],
+                          ),
                         ),
-                        child: Column(
-                          children: [
-                            _buildMenuTile(
-                              icon: Icons.payment,
-                              title: 'Metode Pembayaran',
-                              subtitle: _selectedPaymentMethod,
-                              onTap: _showPaymentMethodDialog,
-                            ),
-                            _buildDivider(),
-                            _buildMenuTile(
-                              icon: Icons.edit,
-                              title: 'Edit Profil',
-                              subtitle: 'Ubah informasi profil Anda',
-                              onTap: _showEditProfileDialog,
-                            ),
-                            _buildDivider(),
-                            _buildMenuTile(
-                              icon: Icons.lock,
-                              title: 'Ubah Password',
-                              subtitle: 'Ganti password akun Anda',
-                              onTap: _showChangePasswordDialog,
-                            ),
-                            _buildDivider(),
-                            _buildThemeToggle(),
-                          ],
-                        ),
-                      ),
 
-                      const SizedBox(height: 16),
+                        const SizedBox(height: 16),
 
-                      // Save Payment Method Button
-                      if (_selectedPaymentMethod != _currentPaymentMethod)
+                        // Save Payment Method Button
+                        if (_selectedPaymentMethod != _currentPaymentMethod)
+                          Container(
+                            width: double.infinity,
+                            margin: const EdgeInsets.only(bottom: 16),
+                            child: ElevatedButton.icon(
+                              onPressed: () async {
+                                final authProvider = Provider.of<AuthProvider>(
+                                  context,
+                                  listen: false,
+                                );
+                                await authProvider.updateUserProfile(
+                                  nama: user?.nama ?? '',
+                                  email: user?.email ?? '',
+                                  paymentMethod: _selectedPaymentMethod,
+                                );
+                                setState(() {
+                                  _currentPaymentMethod = _selectedPaymentMethod;
+                                  // Also update the user object's paymentMethod
+                                  user = user?.copyWith(paymentMethod: _selectedPaymentMethod);
+                                });
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: const Row(
+                                      children: [
+                                        Icon(
+                                          Icons.check_circle,
+                                          color: Colors.white,
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'Metode pembayaran berhasil diperbarui',
+                                        ),
+                                      ],
+                                    ),
+                                    backgroundColor: Colors.green[600],
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.save),
+                              label: const Text('Simpan Metode Pembayaran'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue[800],
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 2,
+                              ),
+                            ),
+                          ),
+
+                        // Logout Button
                         Container(
                           width: double.infinity,
-                          margin: const EdgeInsets.only(bottom: 16),
                           child: ElevatedButton.icon(
                             onPressed: () async {
                               final authProvider = Provider.of<AuthProvider>(
                                 context,
                                 listen: false,
                               );
-                              await authProvider.updateUserProfile(
-                                nama: user?.nama ?? '',
-                                email: user?.email ?? '',
-                                paymentMethod: _selectedPaymentMethod,
-                              );
-                              setState(() {
-                                _currentPaymentMethod = _selectedPaymentMethod;
-                              });
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: const Row(
-                                    children: [
-                                      Icon(
-                                        Icons.check_circle,
-                                        color: Colors.white,
-                                      ),
-                                      SizedBox(width: 8),
-                                      Text(
-                                        'Metode pembayaran berhasil diperbarui',
-                                      ),
-                                    ],
-                                  ),
-                                  backgroundColor: Colors.green[600],
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                              );
+                              final wishlistProvider =
+                                  Provider.of<WishlistProvider>(
+                                    context,
+                                    listen: false,
+                                  );
+
+                              await authProvider.logout();
+                              wishlistProvider.updateToken(
+                                null,
+                              ); // reset wishlist token dan data
+
+                              Navigator.pushReplacementNamed(context, '/login');
                             },
-                            icon: const Icon(Icons.save),
-                            label: const Text('Simpan Metode Pembayaran'),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue[800],
+                              backgroundColor: Colors.red[600],
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
@@ -989,56 +1028,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                               elevation: 2,
                             ),
-                          ),
-                        ),
-
-                      // Logout Button
-                      Container(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: () async {
-                            final authProvider = Provider.of<AuthProvider>(
-                              context,
-                              listen: false,
-                            );
-                            final wishlistProvider =
-                                Provider.of<WishlistProvider>(
-                                  context,
-                                  listen: false,
-                                );
-
-                            await authProvider.logout();
-                            wishlistProvider.updateToken(
-                              null,
-                            ); // reset wishlist token dan data
-
-                            Navigator.pushReplacementNamed(context, '/login');
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red[600],
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 2,
-                          ),
-                          icon: const Icon(Icons.logout),
-                          label: const Text(
-                            'Logout',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                            icon: const Icon(Icons.logout),
+                            label: const Text(
+                              'Logout',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ),
-                      ),
 
-                      const SizedBox(height: 20),
-                    ],
+                        const SizedBox(height: 20),
+                      ],
+                    ),
                   ),
                 ),
-              ),
     );
   }
 
@@ -1082,55 +1087,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildThemeToggle() {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, _) {
-        return ListTile(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 8,
-          ),
-          leading: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.blue[100],
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              themeProvider.themeMode == ThemeMode.dark
-                  ? Icons.dark_mode
-                  : Icons.light_mode,
-              color: Colors.blue[700],
-              size: 24,
-            ),
-          ),
-          title: Text(
-            'Mode Gelap',
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 16,
-              color: Colors.grey[800],
-            ),
-          ),
-          subtitle: Text(
-            themeProvider.themeMode == ThemeMode.dark ? 'Aktif' : 'Nonaktif',
-            style: TextStyle(color: Colors.grey[600], fontSize: 14),
-          ),
-          trailing: Switch(
-            activeColor: Colors.blue[600],
-            activeTrackColor: Colors.blue[200],
-            inactiveThumbColor: Colors.grey[400],
-            inactiveTrackColor: Colors.grey[200],
-            value: themeProvider.themeMode == ThemeMode.dark,
-            onChanged: (bool value) {
-              themeProvider.toggleTheme(value);
-            },
-          ),
-        );
-      },
-    );
-  }
-
   Widget _buildDivider() {
     return Divider(
       height: 1,
@@ -1140,4 +1096,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       endIndent: 20,
     );
   }
+
+  // _buildThemeToggle() method has been removed as per previous request.
 }
